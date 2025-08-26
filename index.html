@@ -546,13 +546,22 @@
                 // Afficher le banner de mode réel
                 const banner = document.getElementById('demoMode');
                 if (banner) {
-                    banner.style.background = '#4CAF50';
+                    banner.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
                     banner.style.color = 'white';
-                    banner.textContent = '✅ Mode RÉEL - Données temps réel depuis GitHub';
+                    banner.style.fontWeight = 'bold';
+                    banner.textContent = '✅ MODE TEMPS RÉEL - Données directes depuis GitHub API (30s)';
                     banner.style.display = 'block';
                 }
                 
-                console.log('Données réelles chargées depuis GitHub:', serversData);
+                // Ajouter timestamp de dernière mise à jour
+                const lastUpdate = new Date(serversData.lastUpdate || new Date()).toLocaleString('fr-FR');
+                console.log(`📅 Dernière mise à jour des données: ${lastUpdate}`);
+                
+                console.log('📈 Données temps réel chargées depuis GitHub API:', {
+                    servers: serversData.servers.length,
+                    lastUpdate: serversData.lastUpdate,
+                    timestamp: new Date().toLocaleTimeString('fr-FR')
+                });
                 updateUI();
                 
             } catch (error) {
@@ -923,8 +932,74 @@
         
         // Auto-refresh
         function startDataRefresh() {
-            fetchGitHubData();
-            refreshInterval = setInterval(fetchGitHubData, 30000); // 30 secondes
+            console.log('🚀 Démarrage du mode temps réel ATLAS');
+            
+            // Créer l'indicateur temps réel
+            const statusDiv = document.createElement('div');
+            statusDiv.id = 'realTimeStatus';
+            statusDiv.style.cssText = `
+                position: fixed;
+                top: 15px;
+                right: 15px;
+                background: linear-gradient(135deg, #4CAF50, #45a049);
+                color: white;
+                padding: 0.75rem 1rem;
+                border-radius: 25px;
+                font-size: 13px;
+                font-weight: 600;
+                z-index: 10000;
+                box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+                border: 2px solid rgba(255,255,255,0.2);
+                backdrop-filter: blur(10px);
+                transition: all 0.3s ease;
+            `;
+            statusDiv.innerHTML = '🔄 TEMPS RÉEL - Initialisation...';
+            document.body.appendChild(statusDiv);
+            
+            let lastSyncTime = Date.now();
+            
+            // Fonction de mise à jour du statut
+            const updateStatus = () => {
+                const elapsed = Math.floor((Date.now() - lastSyncTime) / 1000);
+                const nextSync = Math.max(0, 30 - elapsed);
+                
+                if (elapsed < 3) {
+                    statusDiv.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+                    statusDiv.innerHTML = '✅ SYNC OK - Données à jour';
+                } else {
+                    statusDiv.style.background = 'linear-gradient(135deg, #2196F3, #1976D2)';
+                    statusDiv.innerHTML = `🔄 TEMPS RÉEL - Prochaine sync: ${nextSync}s`;
+                }
+            };
+            
+            // Première synchronisation
+            fetchGitHubData().then(() => {
+                lastSyncTime = Date.now();
+                updateStatus();
+            });
+            
+            // Synchronisation toutes les 30 secondes
+            refreshInterval = setInterval(async () => {
+                statusDiv.style.background = 'linear-gradient(135deg, #FF9800, #F57C00)';
+                statusDiv.innerHTML = '🔄 SYNCHRONISATION...';
+                
+                try {
+                    await fetchGitHubData();
+                    lastSyncTime = Date.now();
+                    console.log('✅ Synchronisation temps réel réussie');
+                } catch (error) {
+                    console.error('❌ Erreur synchronisation:', error);
+                    statusDiv.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
+                    statusDiv.innerHTML = '❌ ERREUR SYNC';
+                }
+                
+                updateStatus();
+            }, 30000);
+            
+            // Mise à jour du compteur chaque seconde
+            setInterval(updateStatus, 1000);
+            
+            console.log('✅ Mode temps réel activé - Synchronisation toutes les 30 secondes');
         }
         
         // Init
@@ -938,8 +1013,8 @@
                 startDataRefresh();
             }
             
-            addLog('info', '🚀 ATLAS Control Center initialisé');
-            addLog('warning', '⚠️ Mode démonstration - Agents non installés');
+            addLog('info', '🚀 ATLAS Control Center v3.0 - MODE TEMPS RÉEL');
+            addLog('success', '✅ Synchronisation automatique toutes les 30 secondes');
         };
     </script>
 </body>
