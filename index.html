@@ -650,8 +650,9 @@
                         <span class="server-status ${statusBadge}">${server.state}</span>
                     </div>
                     <div class="server-info">
-                        📍 ${server.ip} | ${server.role}
-                        ${server.agentInstalled ? '✅ Agent installé' : '⚠️ Agent requis'}
+                        📍 ${server.ip} | ${server.role}<br>
+                        ${server.agentInstalled ? `✅ Agent v${server.agentVersion || 'inconnu'}` : '⚠️ Agent requis'}
+                        ${server.lastContact ? `<br>📡 Contact: ${new Date(server.lastContact).toLocaleString('fr-FR')}` : ''}
                     </div>
                     <div class="server-metrics">
                         <div class="metric">
@@ -887,25 +888,31 @@
         }
         
         async function updateServer(hostname) {
+            console.log('updateServer appelé pour', hostname);
             addLog('info', `🚀 Lancement MAJ sur ${hostname}`);
             await createCommand('UPDATE_SERVER', hostname);
         }
         
         async function rebootServer(hostname) {
+            console.log('rebootServer appelé pour', hostname);
             if (!confirm(`Redémarrer ${hostname} ?`)) return;
             addLog('warning', `🔄 Redémarrage ${hostname}`);
             await createCommand('REBOOT_SERVER', hostname);
         }
         
         async function backupServer(hostname) {
+            console.log('backupServer appelé pour', hostname);
             addLog('info', `💾 Lancement backup sur ${hostname}`);
             await createCommand('BACKUP_SERVER', hostname);
         }
         
         async function createCommand(action, target, parameters = {}) {
+            console.log('createCommand appelé:', action, target);
             try {
                 const token = localStorage.getItem('github_token');
                 if (!token) {
+                    console.error('Token GitHub manquant dans localStorage');
+                    alert('Token GitHub manquant. Rafraîchissez la page et entrez votre token.');
                     throw new Error('Token GitHub manquant');
                 }
                 
