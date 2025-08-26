@@ -10,6 +10,14 @@
     
     <!-- Styles modernes -->
     <style>
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(400px); opacity: 0; }
+        }
         * {
             margin: 0;
             padding: 0;
@@ -889,15 +897,46 @@
         
         async function updateServer(hostname) {
             console.log('updateServer appelé pour', hostname);
-            addLog('info', `🚀 Lancement MAJ sur ${hostname}`);
-            await createCommand('UPDATE_SERVER', hostname);
+            
+            // Confirmation utilisateur
+            if (!confirm(`⚠️ LANCER LES MISES À JOUR WINDOWS ?\n\nServeur: ${hostname}\n\nCette action va :\n• Télécharger les mises à jour Windows\n• Installer les mises à jour\n• Peut nécessiter un redémarrage\n\n⏱️ Durée estimée : 15-45 minutes\n\nContinuer ?`)) {
+                addLog('info', `❌ MAJ annulée pour ${hostname}`);
+                return;
+            }
+            
+            addLog('warning', `🚀 DÉMARRAGE MAJ sur ${hostname}`);
+            addLog('info', `⏳ Création de la commande...`);
+            
+            const success = await createCommand('UPDATE_SERVER', hostname);
+            
+            if (success) {
+                addLog('success', `✅ Commande MAJ envoyée à ${hostname}`);
+                addLog('info', `⏱️ L'agent exécutera la commande dans max 15 minutes`);
+            } else {
+                addLog('error', `❌ Échec envoi commande à ${hostname}`);
+            }
         }
         
         async function rebootServer(hostname) {
             console.log('rebootServer appelé pour', hostname);
-            if (!confirm(`Redémarrer ${hostname} ?`)) return;
-            addLog('warning', `🔄 Redémarrage ${hostname}`);
-            await createCommand('REBOOT_SERVER', hostname);
+            
+            if (!confirm(`⚠️ REDÉMARRER LE SERVEUR ?\n\nServeur: ${hostname}\n\n⚠️ ATTENTION :\n• Arrêt de tous les services\n• VMs Hyper-V arrêtées\n• Indisponibilité 5-10 minutes\n• Redémarrage dans 60 secondes\n\nÊtes-vous SÛR ?`)) {
+                addLog('info', `❌ Reboot annulé pour ${hostname}`);
+                return;
+            }
+            
+            // Double confirmation pour reboot
+            if (!confirm(`🔴 DERNIÈRE CONFIRMATION\n\n${hostname} va redémarrer dans 60 secondes !\n\nCONFIRMER LE REBOOT ?`)) {
+                return;
+            }
+            
+            addLog('error', `🔄 REBOOT COMMANDÉ pour ${hostname}`);
+            
+            const success = await createCommand('REBOOT_SERVER', hostname);
+            
+            if (success) {
+                addLog('warning', `⚠️ ${hostname} redémarre dans 60 secondes !`);
+            }
         }
         
         async function backupServer(hostname) {
@@ -969,10 +1008,57 @@
                 
                 addLog('success', `✅ Commande ${action} envoyée à ${target} (${commandId})`);
                 
+                // Afficher notification flottante
+                showCommandNotification(commandId, action, target);
+                return true;
+                
             } catch (error) {
                 addLog('error', `❌ Erreur commande ${action}: ${error.message}`);
                 console.error('Erreur création commande:', error);
+                return false;
             }
+        }
+        
+        function showCommandNotification(commandId, action, target) {
+            // Créer une notification flottante
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #4CAF50, #45a049);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                z-index: 10000;
+                max-width: 400px;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            const actionText = {
+                'UPDATE_SERVER': '🚀 Mises à jour Windows',
+                'REBOOT_SERVER': '🔄 Redémarrage serveur',
+                'BACKUP_SERVER': '💾 Sauvegarde Veeam'
+            }[action] || action;
+            
+            notification.innerHTML = `
+                <h3 style="margin: 0 0 10px 0;">✅ Commande envoyée !</h3>
+                <div><strong>Action :</strong> ${actionText}</div>
+                <div><strong>Serveur :</strong> ${target}</div>
+                <div><strong>ID :</strong> ${commandId.substr(-12)}</div>
+                <div style="margin-top: 10px; font-size: 0.9em; opacity: 0.9;">
+                    ⏱️ Exécution dans les 15 prochaines minutes
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Retirer après 10 secondes
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 10000);
         }
         
         function checkAllUpdates() {
