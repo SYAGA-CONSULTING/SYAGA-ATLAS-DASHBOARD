@@ -632,6 +632,11 @@
                             ⚠️ ${server.pendingUpdates} mise(s) à jour en attente
                         </div>` : ''}
                     <div class="server-actions">
+                        ${!server.agentInstalled ? `
+                        <button class="action-btn btn-success" onclick="deployAgent('${server.hostname}', '${server.ip}')" style="width: 100%;">
+                            🚀 Déployer Agent
+                        </button>
+                        ` : `
                         <button class="action-btn btn-primary" onclick="updateServer('${server.hostname}')">
                             🚀 MAJ
                         </button>
@@ -641,6 +646,7 @@
                         <button class="action-btn btn-success" onclick="backupServer('${server.hostname}')">
                             💾 Backup
                         </button>
+                        `}
                     </div>
                 `;
                 
@@ -676,6 +682,77 @@
             
             // TODO: Créer commande dans GitHub
             await createCommand('START_ORCHESTRATION', null);
+        }
+        
+        async function deployAgent(hostname, ip) {
+            if (!confirm(`Déployer l'agent ATLAS sur ${hostname} (${ip}) ?`)) return;
+            
+            addLog('info', `🚀 Préparation du déploiement sur ${hostname}...`);
+            
+            // Demander le token GitHub
+            const githubToken = prompt('Entrez votre GitHub Token (ghp_xxx):');
+            if (!githubToken) {
+                addLog('error', 'Déploiement annulé - Token requis');
+                return;
+            }
+            
+            // Créer modal avec instructions
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                padding: 2rem;
+                border-radius: 10px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                z-index: 10000;
+                max-width: 900px;
+                width: 90%;
+            `;
+            
+            const installCmd = `Invoke-WebRequest -Uri "https://raw.githubusercontent.com/SYAGA-CONSULTING/syaga-infrastructure/main/monitoring/atlas/agents/Install-ATLAS-Agent.ps1" -OutFile "C:\\Install-ATLAS.ps1"; C:\\Install-ATLAS.ps1 -GitHubToken "${githubToken}" -Mode PRODUCTION`;
+            
+            modal.innerHTML = `
+                <h3 style="color: #667eea; margin-bottom: 1rem;">📦 Déploiement Agent ATLAS</h3>
+                <div style="background: #E8F5E9; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <strong style="color: #2E7D32;">🏢 Serveur :</strong> ${hostname} (${ip})
+                </div>
+                
+                <p style="color: #666; margin-bottom: 1rem;">Copiez et exécutez cette commande <strong>en tant qu'administrateur</strong> sur le serveur :</p>
+                
+                <div style="background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 5px; font-family: 'Consolas', monospace; font-size: 13px; position: relative;">
+                    <button onclick="navigator.clipboard.writeText('${installCmd}'); this.textContent='✅ Copié !'" 
+                            style="position: absolute; top: 10px; right: 10px; background: #667eea; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                        📋 Copier
+                    </button>
+                    <div style="color: #d4d4d4; user-select: all; padding-right: 80px; word-break: break-all;">${installCmd}</div>
+                </div>
+                
+                <details style="margin-top: 1rem;">
+                    <summary style="color: #667eea; cursor: pointer; font-weight: 500;">▶ Déploiement à distance (option)</summary>
+                    <div style="background: #f5f5f5; padding: 1rem; border-radius: 5px; margin-top: 0.5rem;">
+                        <p style="color: #666; margin: 0 0 0.5rem 0; font-size: 14px;">Depuis votre poste administrateur Windows :</p>
+                        <div style="background: #1e1e1e; color: #d4d4d4; padding: 0.5rem; border-radius: 3px; font-family: monospace; font-size: 12px;">
+                            Invoke-Command -ComputerName ${hostname} -ScriptBlock { ${installCmd} }
+                        </div>
+                    </div>
+                </details>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button onclick="this.parentElement.parentElement.remove(); addLog('success', '✅ Agent déployé sur ${hostname}. Actualisation dans ~15 minutes...')" 
+                            style="flex: 1; padding: 0.75rem; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
+                        ✅ C'est fait
+                    </button>
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            style="padding: 0.75rem 2rem; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
+                        Fermer
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
         }
         
         async function emergencyStop() {
