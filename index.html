@@ -902,9 +902,70 @@
             await createCommand('BACKUP_SERVER', hostname);
         }
         
-        async function createCommand(action, target) {
-            // TODO: Implémenter création commande via GitHub API
-            addLog('success', `✅ Commande ${action} créée`);
+        async function createCommand(action, target, parameters = {}) {
+            try {
+                const token = localStorage.getItem('github_token');
+                if (!token) {
+                    throw new Error('Token GitHub manquant');
+                }
+                
+                // Générer ID unique
+                const commandId = `cmd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                
+                // Créer la commande
+                const command = {
+                    id: commandId,
+                    timestamp: new Date().toISOString(),
+                    target: target,
+                    action: action,
+                    parameters: parameters,
+                    status: "PENDING",
+                    result: null
+                };
+                
+                // Récupérer commands.json existant
+                const commandsResponse = await fetch('https://api.github.com/repos/SYAGA-CONSULTING/SYAGA-ATLAS-DATA/contents/commands.json', {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                if (!commandsResponse.ok) {
+                    throw new Error(`Erreur GitHub API: ${commandsResponse.status}`);
+                }
+                
+                const commandsData = await commandsResponse.json();
+                const currentCommands = JSON.parse(atob(commandsData.content));
+                
+                // Ajouter la nouvelle commande
+                currentCommands.commands.push(command);
+                
+                // Mettre à jour le fichier
+                const updateResponse = await fetch('https://api.github.com/repos/SYAGA-CONSULTING/SYAGA-ATLAS-DATA/contents/commands.json', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Add command ${action} for ${target}`,
+                        content: btoa(JSON.stringify(currentCommands, null, 2)),
+                        sha: commandsData.sha
+                    })
+                });
+                
+                if (!updateResponse.ok) {
+                    throw new Error(`Erreur commit: ${updateResponse.status}`);
+                }
+                
+                addLog('success', `✅ Commande ${action} envoyée à ${target} (${commandId})`);
+                
+            } catch (error) {
+                addLog('error', `❌ Erreur commande ${action}: ${error.message}`);
+                console.error('Erreur création commande:', error);
+            }
         }
         
         function checkAllUpdates() {
