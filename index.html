@@ -563,57 +563,50 @@
         }
         
         function usesDemoData() {
-            console.warn('ATTENTION: Utilisation des données de démo - pas de connexion GitHub');
+            console.error('ERREUR FATALE: Accès aux données GitHub impossible');
             
-            serversData = {
-                servers: [
-                    {
-                        hostname: 'SYAGA-HOST01',
-                        ip: '192.168.10.11',
-                        role: 'Hyper-V Host',
-                        state: 'OK',
-                        pendingUpdates: 3,
-                        cpuUsage: 45,
-                        memoryUsage: 62,
-                        diskSpaceGB: 450,
-                        agentInstalled: false
-                    },
-                    {
-                        hostname: 'SYAGA-HOST02',
-                        ip: '192.168.10.12',
-                        role: 'Hyper-V Host',
-                        state: 'OK',
-                        pendingUpdates: 2,
-                        cpuUsage: 38,
-                        memoryUsage: 55,
-                        diskSpaceGB: 480,
-                        agentInstalled: false
-                    },
-                    {
-                        hostname: 'SYAGA-HOST04',
-                        ip: '192.168.10.14',
-                        role: 'Hyper-V Host',
-                        state: 'Warning',
-                        pendingUpdates: 5,
-                        cpuUsage: 72,
-                        memoryUsage: 84,
-                        diskSpaceGB: 120,
-                        agentInstalled: false
-                    },
-                    {
-                        hostname: 'SYAGA-VEEAM01',
-                        ip: '192.168.10.20',
-                        role: 'Backup Server',
-                        state: 'OK',
-                        pendingUpdates: 0,
-                        cpuUsage: 25,
-                        memoryUsage: 40,
-                        diskSpaceGB: 1800,
-                        agentInstalled: false
-                    }
-                ]
-            };
+            // Affichage d'erreur - PAS de données de démo
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #f44336;
+                color: white;
+                padding: 2rem;
+                border-radius: 10px;
+                text-align: center;
+                z-index: 10000;
+                max-width: 500px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            `;
             
+            errorDiv.innerHTML = `
+                <h2>❌ CONNEXION GITHUB REQUISE</h2>
+                <p>Le dashboard ATLAS ne fonctionne qu'avec les données temps réel.</p>
+                <p><strong>Solutions :</strong></p>
+                <ul style="text-align: left; margin: 1rem 0;">
+                    <li>Vérifiez votre token GitHub</li>
+                    <li>Vérifiez votre connexion internet</li>
+                    <li>Vérifiez l'accès au repo SYAGA-ATLAS-DATA</li>
+                </ul>
+                <div style="margin-top: 1.5rem;">
+                    <button onclick="localStorage.removeItem('github_token'); location.reload()" 
+                            style="padding: 0.75rem 1.5rem; background: white; color: #f44336; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 1rem;">
+                        Nouveau Token
+                    </button>
+                    <button onclick="location.reload()" 
+                            style="padding: 0.75rem 1.5rem; background: #ff7961; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Ressayer
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(errorDiv);
+            
+            // Dashboard vide - aucune donnée de démo
+            serversData = { servers: [] };
             updateUI();
         }
         
