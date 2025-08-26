@@ -507,31 +507,64 @@
             }
         }
         
-        // Données GitHub
+        // Données GitHub avec authentification utilisateur
         async function fetchGitHubData() {
             try {
-                // Pour l'instant, on simule avec des données locales
-                // En prod, on ferait un appel à l'API GitHub
-                const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/servers.json`);
+                // Demander le token à l'utilisateur la première fois
+                let token = localStorage.getItem('github_token');
+                if (!token) {
+                    token = prompt('Pour accéder aux données temps réel, entrez votre GitHub Token (ghp_xxx):');
+                    if (token) {
+                        localStorage.setItem('github_token', token);
+                    }
+                }
+                
+                if (!token) {
+                    throw new Error('Token GitHub requis pour accéder aux données temps réel');
+                }
+                
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/servers.json`, {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
                 
                 if (!response.ok) {
-                    throw new Error('Erreur GitHub API');
+                    if (response.status === 401 || response.status === 403) {
+                        // Token invalide, le supprimer et redemander
+                        localStorage.removeItem('github_token');
+                        throw new Error('Token GitHub invalide ou expiré');
+                    }
+                    throw new Error(`Erreur GitHub API: ${response.status}`);
                 }
                 
                 const data = await response.json();
                 const content = atob(data.content);
                 serversData = JSON.parse(content);
                 
+                // Afficher le banner de mode réel
+                const banner = document.getElementById('demoMode');
+                if (banner) {
+                    banner.style.background = '#4CAF50';
+                    banner.style.color = 'white';
+                    banner.textContent = '✅ Mode RÉEL - Données temps réel depuis GitHub';
+                    banner.style.display = 'block';
+                }
+                
+                console.log('Données réelles chargées depuis GitHub:', serversData);
                 updateUI();
                 
             } catch (error) {
-                console.error('Erreur chargement données:', error);
-                // Utiliser données de démo
+                console.error('Impossible de charger les données GitHub:', error);
+                alert('Impossible d\'accéder aux données GitHub. Bascule en mode simulation.');
                 usesDemoData();
             }
         }
         
         function usesDemoData() {
+            console.warn('ATTENTION: Utilisation des données de démo - pas de connexion GitHub');
+            
             serversData = {
                 servers: [
                     {
