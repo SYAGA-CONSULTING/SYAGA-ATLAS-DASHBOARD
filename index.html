@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATLAS Control Center - SYAGA</title>
+    
+    <!-- MSAL pour Azure AD Auth -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <!-- Styles modernes -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        #loginButton, #logoutButton {
+            padding: 0.5rem 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+        
+        #loginButton:hover, #logoutButton:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        /* Control Panel */
+        .control-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .control-btn {
+            padding: 1rem;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .control-btn:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .control-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .control-btn i {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Servers Grid */
+        .servers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .server-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border-left: 5px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+        
+        .server-card.online { border-left-color: #4CAF50; }
+        .server-card.warning { border-left-color: #FF9800; }
+        .server-card.error { border-left-color: #F44336; }
+        .server-card.installing { 
+            border-left-color: #2196F3;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 5px 20px rgba(33, 150, 243, 0.3); }
+            50% { box-shadow: 0 5px 30px rgba(33, 150, 243, 0.5); }
+            100% { box-shadow: 0 5px 20px rgba(33, 150, 243, 0.3); }
+        }
+        
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .server-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .server-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-ok { background: #E8F5E9; color: #2E7D32; }
+        .status-warning { background: #FFF3E0; color: #E65100; }
+        .status-error { background: #FFEBEE; color: #C62828; }
+        .status-installing { background: #E3F2FD; color: #1565C0; }
+        
+        .server-info {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .server-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .metric {
+            text-align: center;
+            padding: 0.5rem;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        
+        .metric-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .metric-label {
+            font-size: 0.75rem;
+            color: #999;
+        }
+        
+        .server-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #4CAF50; color: white; }
+        .btn-warning { background: #FF9800; color: white; }
+        .btn-danger { background: #F44336; color: white; }
+        
+        /* Logs */
+        .logs-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            padding: 0.3rem 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .log-info { color: #4FC3F7; }
+        .log-success { color: #81C784; }
+        .log-warning { color: #FFB74D; }
+        .log-error { color: #E57373; }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Auth Screen */
+        .auth-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        .auth-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .auth-logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .auth-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .auth-subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Screen -->
+    <div id="authScreen" class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">🚀</div>
+            <h1 class="auth-title">ATLAS Control Center</h1>
+            <p class="auth-subtitle">Orchestration Infrastructure SYAGA</p>
+            <button id="loginButton" onclick="signIn()">Se connecter avec Azure AD</button>
+        </div>
+    </div>
+    
+    <!-- Main App (hidden initially) -->
+    <div id="mainApp" style="display: none;">
+        <header class="header">
+            <div class="logo">🚀 ATLAS Control Center</div>
+            <div class="user-info">
+                <span id="userName"></span>
+                <div class="user-avatar" id="userAvatar">?</div>
+                <button id="logoutButton" onclick="signOut()">Déconnexion</button>
+            </div>
+        </header>
+        
+        <div class="container">
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalServers">4</div>
+                    <div class="stat-label">Serveurs Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="onlineServers">0</div>
+                    <div class="stat-label">En Ligne</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="pendingUpdates">0</div>
+                    <div class="stat-label">MAJ en Attente</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeAlerts">0</div>
+                    <div class="stat-label">Alertes Actives</div>
+                </div>
+            </div>
+            
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <h2>🎮 Centre de Commande</h2>
+                <div class="control-grid">
+                    <div class="control-btn" onclick="startOrchestration()">
+                        <i>🚀</i>
+                        <strong>Démarrer Orchestration</strong>
+                        <small>Lance MAJ séquentielle</small>
+                    </div>
+                    <div class="control-btn" onclick="checkAllUpdates()">
+                        <i>🔍</i>
+                        <strong>Vérifier MAJ</strong>
+                        <small>Scan tous serveurs</small>
+                    </div>
+                    <div class="control-btn" onclick="emergencyStop()">
+                        <i>🛑</i>
+                        <strong>Arrêt Urgence</strong>
+                        <small>Stop toutes opérations</small>
+                    </div>
+                    <div class="control-btn" onclick="refreshData()">
+                        <i>🔄</i>
+                        <strong>Rafraîchir</strong>
+                        <small>Actualiser données</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Servers -->
+            <div class="control-panel">
+                <h2>🖥️ État des Serveurs</h2>
+                <div id="serversGrid" class="servers-grid">
+                    <!-- Chargé dynamiquement -->
+                </div>
+            </div>
+            
+            <!-- Logs -->
+            <div class="control-panel">
+                <h2>📝 Logs Temps Réel</h2>
+                <div id="logsContainer" class="logs-container">
+                    <!-- Chargé dynamiquement -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration MSAL (Azure AD)
+        const msalConfig = {
+            auth: {
+                clientId: '679093c3-95c4-4291-a5a5-af88b29ca748', // À remplacer
+                authority: 'https://login.microsoftonline.com/6027d81c-ad9b-48f5-9da6-96f1bad11429',
+                redirectUri: window.location.origin
+            },
+            cache: {
+                cacheLocation: 'localStorage',
+                storeAuthStateInCookie: false
+            }
+        };
+        
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        
+        // GitHub Configuration
+        const GITHUB_OWNER = 'SYAGA-CONSULTING';
+        const GITHUB_REPO = 'SYAGA-ATLAS-DATA';
+        const GITHUB_TOKEN = null; // Sera défini après auth
+        
+        // État global
+        let currentUser = null;
+        let serversData = null;
+        let refreshInterval = null;
+        
+        // Authentification
+        async function signIn() {
+            try {
+                const loginRequest = {
+                    scopes: ['User.Read']
+                };
+                
+                const loginResponse = await msalInstance.loginPopup(loginRequest);
+                currentUser = loginResponse.account;
+                
+                showMainApp();
+                loadUserInfo();
+                startDataRefresh();
+                
+            } catch (error) {
+                console.error('Erreur connexion:', error);
+                addLog('error', 'Erreur de connexion: ' + error.message);
+            }
+        }
+        
+        async function signOut() {
+            await msalInstance.logoutPopup();
+            currentUser = null;
+            hideMainApp();
+        }
+        
+        function showMainApp() {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+        }
+        
+        function hideMainApp() {
+            document.getElementById('authScreen').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+            if (refreshInterval) clearInterval(refreshInterval);
+        }
+        
+        function loadUserInfo() {
+            if (currentUser) {
+                document.getElementById('userName').textContent = currentUser.name;
+                document.getElementById('userAvatar').textContent = 
+                    currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase();
+            }
+        }
+        
+        // Données GitHub
+        async function fetchGitHubData() {
+            try {
+                // Pour l'instant, on simule avec des données locales
+                // En prod, on ferait un appel à l'API GitHub
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/servers.json`);
+                
+                if (!response.ok) {
+                    throw new Error('Erreur GitHub API');
+                }
+                
+                const data = await response.json();
+                const content = atob(data.content);
+                serversData = JSON.parse(content);
+                
+                updateUI();
+                
+            } catch (error) {
+                console.error('Erreur chargement données:', error);
+                // Utiliser données de démo
+                usesDemoData();
+            }
+        }
+        
+        function usesDemoData() {
+            serversData = {
+                servers: [
+                    {
+                        hostname: 'SYAGA-HOST01',
+                        ip: '192.168.10.11',
+                        role: 'Hyper-V Host',
+                        state: 'OK',
+                        pendingUpdates: 3,
+                        cpuUsage: 45,
+                        memoryUsage: 62,
+                        diskSpaceGB: 450,
+                        agentInstalled: false
+                    },
+                    {
+                        hostname: 'SYAGA-HOST02',
+                        ip: '192.168.10.12',
+                        role: 'Hyper-V Host',
+                        state: 'OK',
+                        pendingUpdates: 2,
+                        cpuUsage: 38,
+                        memoryUsage: 55,
+                        diskSpaceGB: 480,
+                        agentInstalled: false
+                    },
+                    {
+                        hostname: 'SYAGA-HOST04',
+                        ip: '192.168.10.14',
+                        role: 'Hyper-V Host',
+                        state: 'Warning',
+                        pendingUpdates: 5,
+                        cpuUsage: 72,
+                        memoryUsage: 84,
+                        diskSpaceGB: 120,
+                        agentInstalled: false
+                    },
+                    {
+                        hostname: 'SYAGA-VEEAM01',
+                        ip: '192.168.10.20',
+                        role: 'Backup Server',
+                        state: 'OK',
+                        pendingUpdates: 0,
+                        cpuUsage: 25,
+                        memoryUsage: 40,
+                        diskSpaceGB: 1800,
+                        agentInstalled: false
+                    }
+                ]
+            };
+            
+            updateUI();
+        }
+        
+        function updateUI() {
+            if (!serversData) return;
+            
+            // Stats
+            const totalServers = serversData.servers.length;
+            const onlineServers = serversData.servers.filter(s => s.state !== 'Offline').length;
+            const totalPending = serversData.servers.reduce((sum, s) => sum + (s.pendingUpdates || 0), 0);
+            const alerts = serversData.servers.filter(s => s.state === 'Error' || s.state === 'Warning').length;
+            
+            document.getElementById('totalServers').textContent = totalServers;
+            document.getElementById('onlineServers').textContent = onlineServers;
+            document.getElementById('pendingUpdates').textContent = totalPending;
+            document.getElementById('activeAlerts').textContent = alerts;
+            
+            // Servers Grid
+            const grid = document.getElementById('serversGrid');
+            grid.innerHTML = '';
+            
+            serversData.servers.forEach(server => {
+                const statusClass = getStatusClass(server.state);
+                const statusBadge = getStatusBadge(server.state);
+                
+                const card = document.createElement('div');
+                card.className = `server-card ${statusClass}`;
+                
+                card.innerHTML = `
+                    <div class="server-header">
+                        <span class="server-name">${server.hostname}</span>
+                        <span class="server-status ${statusBadge}">${server.state}</span>
+                    </div>
+                    <div class="server-info">
+                        📍 ${server.ip} | ${server.role}
+                        ${server.agentInstalled ? '✅ Agent installé' : '⚠️ Agent requis'}
+                    </div>
+                    <div class="server-metrics">
+                        <div class="metric">
+                            <div class="metric-value">${server.cpuUsage || 0}%</div>
+                            <div class="metric-label">CPU</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${server.memoryUsage || 0}%</div>
+                            <div class="metric-label">RAM</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${server.diskSpaceGB || 0}GB</div>
+                            <div class="metric-label">Disque</div>
+                        </div>
+                    </div>
+                    ${server.pendingUpdates > 0 ? 
+                        `<div style="margin: 1rem 0; padding: 0.5rem; background: #FFF3E0; border-radius: 8px; color: #E65100;">
+                            ⚠️ ${server.pendingUpdates} mise(s) à jour en attente
+                        </div>` : ''}
+                    <div class="server-actions">
+                        <button class="action-btn btn-primary" onclick="updateServer('${server.hostname}')">
+                            🚀 MAJ
+                        </button>
+                        <button class="action-btn btn-warning" onclick="rebootServer('${server.hostname}')">
+                            🔄 Reboot
+                        </button>
+                        <button class="action-btn btn-success" onclick="backupServer('${server.hostname}')">
+                            💾 Backup
+                        </button>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        function getStatusClass(state) {
+            switch(state) {
+                case 'OK': return 'online';
+                case 'Warning': return 'warning';
+                case 'Error': return 'error';
+                case 'Installing': return 'installing';
+                default: return '';
+            }
+        }
+        
+        function getStatusBadge(state) {
+            switch(state) {
+                case 'OK': return 'status-ok';
+                case 'Warning': return 'status-warning';
+                case 'Error': return 'status-error';
+                case 'Installing': return 'status-installing';
+                default: return '';
+            }
+        }
+        
+        // Actions
+        async function startOrchestration() {
+            if (!confirm('Démarrer l\'orchestration des mises à jour ?')) return;
+            
+            addLog('info', '🚀 Démarrage orchestration...');
+            
+            // TODO: Créer commande dans GitHub
+            await createCommand('START_ORCHESTRATION', null);
+        }
+        
+        async function emergencyStop() {
+            if (!confirm('⚠️ ARRÊT D\'URGENCE - Confirmer ?')) return;
+            
+            addLog('error', '🛑 ARRÊT D\'URGENCE ACTIVÉ');
+            
+            // TODO: Créer commande d'arrêt
+            await createCommand('EMERGENCY_STOP', null);
+        }
+        
+        async function updateServer(hostname) {
+            addLog('info', `🚀 Lancement MAJ sur ${hostname}`);
+            await createCommand('UPDATE_SERVER', hostname);
+        }
+        
+        async function rebootServer(hostname) {
+            if (!confirm(`Redémarrer ${hostname} ?`)) return;
+            addLog('warning', `🔄 Redémarrage ${hostname}`);
+            await createCommand('REBOOT_SERVER', hostname);
+        }
+        
+        async function backupServer(hostname) {
+            addLog('info', `💾 Lancement backup sur ${hostname}`);
+            await createCommand('BACKUP_SERVER', hostname);
+        }
+        
+        async function createCommand(action, target) {
+            // TODO: Implémenter création commande via GitHub API
+            addLog('success', `✅ Commande ${action} créée`);
+        }
+        
+        function checkAllUpdates() {
+            addLog('info', '🔍 Vérification des mises à jour...');
+            fetchGitHubData();
+        }
+        
+        function refreshData() {
+            addLog('info', '🔄 Actualisation des données...');
+            fetchGitHubData();
+        }
+        
+        // Logs
+        function addLog(type, message) {
+            const container = document.getElementById('logsContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // Auto-refresh
+        function startDataRefresh() {
+            fetchGitHubData();
+            refreshInterval = setInterval(fetchGitHubData, 30000); // 30 secondes
+        }
+        
+        // Init
+        window.onload = async () => {
+            // Vérifier auth existante
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length > 0) {
+                currentUser = accounts[0];
+                showMainApp();
+                loadUserInfo();
+                startDataRefresh();
+            }
+            
+            addLog('info', '🚀 ATLAS Control Center initialisé');
+            addLog('warning', '⚠️ Mode démonstration - Agents non installés');
+        };
+    </script>
+</body>
+</html>
