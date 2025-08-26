@@ -390,6 +390,11 @@
             <div class="control-panel">
                 <h2>🎮 Centre de Commande</h2>
                 <div class="control-grid">
+                    <div class="control-btn" onclick="showDeploymentGuide()" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border: 2px solid #2E7D32;">
+                        <i>📦</i>
+                        <strong>DÉPLOYER AGENTS</strong>
+                        <small>Installer sur 4 serveurs SYAGA</small>
+                    </div>
                     <div class="control-btn" onclick="startOrchestration()">
                         <i>🚀</i>
                         <strong>Démarrer Orchestration</strong>
@@ -753,6 +758,88 @@
             `;
             
             document.body.appendChild(modal);
+        }
+        
+        function showDeploymentGuide() {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white;
+                padding: 2rem;
+                border-radius: 10px;
+                max-width: 900px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+            `;
+            
+            content.innerHTML = `
+                <h2 style="color: #4CAF50; margin-bottom: 1rem;">🚀 Déploiement des agents ATLAS v3.0</h2>
+                
+                <div style="background: #FFF3E0; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <strong style="color: #E65100;">⚠️ L'installation va automatiquement :</strong>
+                    <ul style="margin: 0.5rem 0 0 1rem; color: #666;">
+                        <li>❌ Nettoyer les anciennes tâches PWU</li>
+                        <li>📦 Installer l'agent ATLAS v3.0</li>
+                        <li>🔄 Synchroniser avec GitHub</li>
+                        <li>⏰ Créer une tâche toutes les 15 min</li>
+                    </ul>
+                </div>
+                
+                <h3 style="color: #333; margin: 1rem 0;">🖥️ Sélectionnez un serveur pour déployer :</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                    <button onclick="deployAgent('SYAGA-HOST01', '192.168.10.11'); this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                            style="padding: 1rem; background: linear-gradient(135deg, #667eea, #5a67d8); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: transform 0.2s;"
+                            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        🖥️ SYAGA-HOST01<br>
+                        <small style="opacity: 0.9;">192.168.10.11 - Hyper-V</small>
+                    </button>
+                    <button onclick="deployAgent('SYAGA-HOST02', '192.168.10.12'); this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                            style="padding: 1rem; background: linear-gradient(135deg, #667eea, #5a67d8); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: transform 0.2s;"
+                            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        🖥️ SYAGA-HOST02<br>
+                        <small style="opacity: 0.9;">192.168.10.12 - Hyper-V</small>
+                    </button>
+                    <button onclick="deployAgent('SYAGA-HOST04', '192.168.10.14'); this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                            style="padding: 1rem; background: linear-gradient(135deg, #667eea, #5a67d8); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: transform 0.2s;"
+                            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        🖥️ SYAGA-HOST04<br>
+                        <small style="opacity: 0.9;">192.168.10.14 - Hyper-V</small>
+                    </button>
+                    <button onclick="deployAgent('SYAGA-VEEAM01', '192.168.10.20'); this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                            style="padding: 1rem; background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: transform 0.2s;"
+                            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        💾 SYAGA-VEEAM01<br>
+                        <small style="opacity: 0.9;">192.168.10.20 - Backup</small>
+                    </button>
+                </div>
+                
+                <button onclick="this.parentElement.parentElement.remove()" 
+                        style="width: 100%; padding: 0.75rem; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
+                    Fermer
+                </button>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
+            // Fermer en cliquant sur le fond
+            modal.onclick = function(e) {
+                if (e.target === modal) modal.remove();
+            };
         }
         
         async function emergencyStop() {
