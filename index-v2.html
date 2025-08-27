@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATLAS Control Center v2.0 - Orchestration Complète</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        /* Tabs Navigation */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .tab:hover:not(.active) {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        /* Server Grid */
+        .servers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .server-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .server-card:hover {
+            transform: scale(1.02);
+        }
+        
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .server-name {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .server-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-online {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        /* Progress Bars */
+        .metric {
+            margin: 1rem 0;
+        }
+        
+        .metric-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        /* Action Buttons */
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .action-btn {
+            padding: 0.75rem;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .action-btn:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+            transform: translateY(-2px);
+        }
+        
+        /* Orchestration Panel */
+        .orchestration-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .orchestration-header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        
+        .sequence-builder {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 1.5rem;
+            min-height: 200px;
+        }
+        
+        .sequence-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .sequence-item.active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-left: 4px solid #667eea;
+        }
+        
+        /* VMs Grid */
+        .vms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .vm-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .vm-card:hover {
+            background: #e9ecef;
+            transform: scale(1.05);
+        }
+        
+        .vm-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .vm-name {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        
+        .vm-status {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        /* Logs Section */
+        .logs-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .log-time {
+            color: #569cd6;
+        }
+        
+        .log-level-info {
+            color: #4ec9b0;
+        }
+        
+        .log-level-warning {
+            color: #ce9178;
+        }
+        
+        .log-level-error {
+            color: #f48771;
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid rgba(102, 126, 234, 0.1);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideIn 0.5s;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .notification.success {
+            border-left: 4px solid #28a745;
+        }
+        
+        .notification.error {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .notification.warning {
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🚀 ATLAS Control Center v2.0</div>
+        <div class="user-info">
+            <div id="tokenStatus">Token: <span id="tokenIndicator">❌</span></div>
+            <button onclick="location.reload()">🔄 Refresh</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navigation Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+            <button class="tab" onclick="showTab('hyperv')">💻 Hyper-V</button>
+            <button class="tab" onclick="showTab('updates')">🔄 Windows Update</button>
+            <button class="tab" onclick="showTab('veeam')">💾 Veeam Backup</button>
+            <button class="tab" onclick="showTab('orchestration')">🎯 Orchestration</button>
+            <button class="tab" onclick="showTab('logs')">📋 Logs</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalServers">0</div>
+                    <div class="stat-label">Serveurs Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="onlineServers">0</div>
+                    <div class="stat-label">En Ligne</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalVMs">0</div>
+                    <div class="stat-label">VMs Hyper-V</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="pendingUpdates">0</div>
+                    <div class="stat-label">MAJ en Attente</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="backupStatus">✅</div>
+                    <div class="stat-label">État Veeam</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeAlerts">0</div>
+                    <div class="stat-label">Alertes Actives</div>
+                </div>
+            </div>
+
+            <div class="servers-grid" id="serversGrid">
+                <!-- Servers will be populated here -->
+            </div>
+        </div>
+
+        <!-- Hyper-V Tab -->
+        <div id="hyperv" class="tab-content">
+            <div class="orchestration-panel">
+                <div class="orchestration-header">🖥️ Gestion Hyper-V</div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="hvHosts">0</div>
+                        <div class="stat-label">Hôtes Hyper-V</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="runningVMs">0</div>
+                        <div class="stat-label">VMs En Cours</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stoppedVMs">0</div>
+                        <div class="stat-label">VMs Arrêtées</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="replicationStatus">✅</div>
+                        <div class="stat-label">État Réplication</div>
+                    </div>
+                </div>
+
+                <h3 style="margin: 2rem 0 1rem;">Actions Hyper-V</h3>
+                <div class="actions-grid">
+                    <button class="action-btn" onclick="executeAction('LIVE_MIGRATE')">
+                        🔄 Live Migration
+                    </button>
+                    <button class="action-btn" onclick="executeAction('START_REPLICATION')">
+                        📡 Démarrer Réplication
+                    </button>
+                    <button class="action-btn" onclick="executeAction('FAILOVER_TEST')">
+                        🧪 Test Failover
+                    </button>
+                    <button class="action-btn" onclick="executeAction('BALANCE_VMS')">
+                        ⚖️ Équilibrer VMs
+                    </button>
+                    <button class="action-btn" onclick="executeAction('EXPORT_VM')">
+                        📦 Exporter VM
+                    </button>
+                    <button class="action-btn" onclick="executeAction('CHECKPOINT_ALL')">
+                        📸 Checkpoint Toutes VMs
+                    </button>
+                </div>
+
+                <h3 style="margin: 2rem 0 1rem;">VMs par Hôte</h3>
+                <div id="vmsGrid" class="vms-grid">
+                    <!-- VMs will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Windows Update Tab -->
+        <div id="updates" class="tab-content">
+            <div class="orchestration-panel">
+                <div class="orchestration-header">🔄 Orchestration Windows Update</div>
+                
+                <h3>Séquence de Mise à Jour</h3>
+                <div class="sequence-builder" id="updateSequence">
+                    <div class="sequence-item">
+                        <span>1. Sauvegarder configurations</span>
+                        <span class="status">⏱️ En attente</span>
+                    </div>
+                    <div class="sequence-item">
+                        <span>2. Migrer VMs critiques</span>
+                        <span class="status">⏱️ En attente</span>
+                    </div>
+                    <div class="sequence-item">
+                        <span>3. Installer mises à jour</span>
+                        <span class="status">⏱️ En attente</span>
+                    </div>
+                    <div class="sequence-item">
+                        <span>4. Redémarrer serveurs</span>
+                        <span class="status">⏱️ En attente</span>
+                    </div>
+                    <div class="sequence-item">
+                        <span>5. Vérifier services</span>
+                        <span class="status">⏱️ En attente</span>
+                    </div>
+                </div>
+
+                <div class="actions-grid" style="margin-top: 2rem;">
+                    <button class="action-btn" onclick="executeAction('SCAN_UPDATES')">
+                        🔍 Scanner MAJ
+                    </button>
+                    <button class="action-btn" onclick="executeAction('DOWNLOAD_UPDATES')">
+                        ⬇️ Télécharger MAJ
+                    </button>
+                    <button class="action-btn" onclick="executeAction('INSTALL_UPDATES')">
+                        📥 Installer MAJ
+                    </button>
+                    <button class="action-btn" onclick="executeAction('SCHEDULE_REBOOT')">
+                        ⏰ Planifier Redémarrage
+                    </button>
+                    <button class="action-btn" onclick="executeAction('ROLLBACK_UPDATE')">
+                        ↩️ Annuler MAJ
+                    </button>
+                    <button class="action-btn" onclick="startOrchestration()">
+                        ▶️ Démarrer Orchestration
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Veeam Tab -->
+        <div id="veeam" class="tab-content">
+            <div class="orchestration-panel">
+                <div class="orchestration-header">💾 Gestion Veeam Backup</div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="lastBackup">OK</div>
+                        <div class="stat-label">Dernière Sauvegarde</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="backupSize">2.4TB</div>
+                        <div class="stat-label">Taille Totale</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="nextBackup">02:00</div>
+                        <div class="stat-label">Prochaine Sauvegarde</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="retentionDays">30</div>
+                        <div class="stat-label">Rétention (jours)</div>
+                    </div>
+                </div>
+
+                <div class="actions-grid" style="margin-top: 2rem;">
+                    <button class="action-btn" onclick="executeAction('START_BACKUP')">
+                        ▶️ Démarrer Backup
+                    </button>
+                    <button class="action-btn" onclick="executeAction('VERIFY_BACKUP')">
+                        ✅ Vérifier Backup
+                    </button>
+                    <button class="action-btn" onclick="executeAction('RESTORE_VM')">
+                        🔄 Restaurer VM
+                    </button>
+                    <button class="action-btn" onclick="executeAction('BACKUP_COPY')">
+                        📋 Copier Backup
+                    </button>
+                    <button class="action-btn" onclick="executeAction('TAPE_EXPORT')">
+                        📼 Export Bande
+                    </button>
+                    <button class="action-btn" onclick="executeAction('CLEANUP_OLD')">
+                        🗑️ Nettoyer Anciens
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orchestration Tab -->
+        <div id="orchestration" class="tab-content">
+            <div class="orchestration-panel">
+                <div class="orchestration-header">🎯 Orchestration Globale</div>
+                
+                <h3>Scénarios Prédéfinis</h3>
+                <div class="actions-grid">
+                    <button class="action-btn" onclick="runScenario('MAINTENANCE_COMPLETE')">
+                        🛠️ Maintenance Complète
+                    </button>
+                    <button class="action-btn" onclick="runScenario('DISASTER_RECOVERY')">
+                        🚨 Disaster Recovery
+                    </button>
+                    <button class="action-btn" onclick="runScenario('ROLLING_UPDATE')">
+                        🔄 Rolling Update
+                    </button>
+                    <button class="action-btn" onclick="runScenario('EMERGENCY_SHUTDOWN')">
+                        ⚠️ Arrêt d'Urgence
+                    </button>
+                    <button class="action-btn" onclick="runScenario('WEEKEND_MAINTENANCE')">
+                        📅 Maintenance Weekend
+                    </button>
+                    <button class="action-btn" onclick="runScenario('PERFORMANCE_OPTIMIZATION')">
+                        ⚡ Optimisation Perf
+                    </button>
+                </div>
+
+                <h3 style="margin-top: 2rem;">Séquençage Custom</h3>
+                <div class="sequence-builder">
+                    <div id="customSequence">
+                        <!-- Custom sequence will be built here -->
+                    </div>
+                    <button class="action-btn" style="width: 100%; margin-top: 1rem;" onclick="addSequenceStep()">
+                        ➕ Ajouter Étape
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="logs" class="tab-content">
+            <div class="orchestration-panel">
+                <div class="orchestration-header">📋 Logs Temps Réel</div>
+                <div class="logs-container" id="logsContainer">
+                    <!-- Logs will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <div id="notificationMessage"></div>
+    </div>
+
+    <script>
+        // Configuration - Token doit être entré par l'utilisateur
+        let GITHUB_TOKEN = localStorage.getItem('githubToken') || '';
+        const GITHUB_REPO = 'SYAGA-CONSULTING/SYAGA-ATLAS-DATA';
+        const REFRESH_INTERVAL = 30000; // 30 seconds
+        
+        // Prompt for token if not set
+        if (!GITHUB_TOKEN) {
+            GITHUB_TOKEN = prompt('Entrez votre GitHub Token:');
+            if (GITHUB_TOKEN) {
+                localStorage.setItem('githubToken', GITHUB_TOKEN);
+            }
+        }
+
+        // State
+        let servers = [];
+        let commands = [];
+        let currentTab = 'dashboard';
+
+        // Initialize
+        async function init() {
+            checkToken();
+            await loadData();
+            setInterval(loadData, REFRESH_INTERVAL);
+        }
+
+        // Check token
+        function checkToken() {
+            if (GITHUB_TOKEN) {
+                document.getElementById('tokenIndicator').textContent = '✅';
+            }
+        }
+
+        // Load data from GitHub
+        async function loadData() {
+            try {
+                // Load servers
+                const serversResponse = await fetch(
+                    `https://api.github.com/repos/${GITHUB_REPO}/contents/servers.json`,
+                    {
+                        headers: {
+                            'Authorization': `token ${GITHUB_TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    }
+                );
+                
+                if (serversResponse.ok) {
+                    const serversData = await serversResponse.json();
+                    const content = atob(serversData.content);
+                    const serversJson = JSON.parse(content);
+                    servers = serversJson.servers;
+                    updateDashboard();
+                }
+
+                // Load commands
+                const commandsResponse = await fetch(
+                    `https://api.github.com/repos/${GITHUB_REPO}/contents/commands.json`,
+                    {
+                        headers: {
+                            'Authorization': `token ${GITHUB_TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    }
+                );
+                
+                if (commandsResponse.ok) {
+                    const commandsData = await commandsResponse.json();
+                    const content = atob(commandsData.content);
+                    const commandsJson = JSON.parse(content);
+                    commands = commandsJson.commands;
+                }
+
+                // Load logs
+                await loadLogs();
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showNotification('Erreur de chargement des données', 'error');
+            }
+        }
+
+        // Update dashboard
+        function updateDashboard() {
+            // Update stats
+            document.getElementById('totalServers').textContent = servers.length;
+            document.getElementById('onlineServers').textContent = 
+                servers.filter(s => s.state === 'OK').length;
+            
+            let totalVMs = 0;
+            servers.forEach(s => {
+                const match = s.hypervStatus?.match(/(\d+)\/(\d+) VMs/);
+                if (match) totalVMs += parseInt(match[2]);
+            });
+            document.getElementById('totalVMs').textContent = totalVMs;
+            
+            const totalPending = servers.reduce((sum, s) => sum + (s.pendingUpdates || 0), 0);
+            document.getElementById('pendingUpdates').textContent = totalPending;
+
+            // Update server cards
+            const grid = document.getElementById('serversGrid');
+            grid.innerHTML = servers.map(server => `
+                <div class="server-card">
+                    <div class="server-header">
+                        <div class="server-name">${server.hostname}</div>
+                        <div class="server-status ${server.state === 'OK' ? 'status-online' : 'status-offline'}">
+                            ${server.state}
+                        </div>
+                    </div>
+                    
+                    <div class="metric">
+                        <div class="metric-label">
+                            <span>CPU</span>
+                            <span>${server.cpuUsage || 0}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${server.cpuUsage || 0}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric">
+                        <div class="metric-label">
+                            <span>RAM</span>
+                            <span>${server.memoryUsage || 0}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${server.memoryUsage || 0}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric">
+                        <div class="metric-label">
+                            <span>Disque</span>
+                            <span>${server.diskSpaceGB || 0} GB libre</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 1rem; font-size: 0.85rem; color: #666;">
+                        <div>Agent: v${server.agentVersion || '?'}</div>
+                        <div>MAJ: ${server.pendingUpdates || 0} en attente</div>
+                        <div>${server.hypervStatus || 'N/A'}</div>
+                    </div>
+                    
+                    <div class="actions-grid" style="margin-top: 1rem;">
+                        <button class="action-btn" onclick="serverAction('${server.hostname}', 'UPDATE')">
+                            🔄 MAJ
+                        </button>
+                        <button class="action-btn" onclick="serverAction('${server.hostname}', 'REBOOT')">
+                            🔁 Reboot
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            updateHyperVTab();
+        }
+
+        // Update Hyper-V tab
+        function updateHyperVTab() {
+            const hvHosts = servers.filter(s => s.role === 'Hyper-V Host').length;
+            document.getElementById('hvHosts').textContent = hvHosts;
+
+            // Mock VM data (would come from real API)
+            const vmsGrid = document.getElementById('vmsGrid');
+            vmsGrid.innerHTML = servers.filter(s => s.role === 'Hyper-V Host').map(server => {
+                const match = server.hypervStatus?.match(/(\d+)\/(\d+) VMs/);
+                const running = match ? parseInt(match[1]) : 0;
+                const total = match ? parseInt(match[2]) : 0;
+                
+                return `
+                    <div class="vm-card">
+                        <div class="vm-icon">🖥️</div>
+                        <div class="vm-name">${server.hostname}</div>
+                        <div class="vm-status">${running}/${total} VMs actives</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Load logs
+        async function loadLogs() {
+            try {
+                const response = await fetch(
+                    `https://api.github.com/repos/${GITHUB_REPO}/contents/logs/SYAGA-HOST01.log`,
+                    {
+                        headers: {
+                            'Authorization': `token ${GITHUB_TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    }
+                );
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const content = atob(data.content);
+                    const lines = content.split('\n').slice(-50); // Last 50 lines
+                    
+                    const logsContainer = document.getElementById('logsContainer');
+                    logsContainer.innerHTML = lines.map(line => {
+                        let levelClass = 'log-level-info';
+                        if (line.includes('error') || line.includes('Error')) levelClass = 'log-level-error';
+                        else if (line.includes('warning') || line.includes('Warning')) levelClass = 'log-level-warning';
+                        
+                        const timeMatch = line.match(/\[([\d-]+ [\d:]+)\]/);
+                        const time = timeMatch ? timeMatch[1] : '';
+                        
+                        return `<div class="log-entry">
+                            <span class="log-time">${time}</span>
+                            <span class="${levelClass}">${line}</span>
+                        </div>`;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+            }
+        }
+
+        // Execute action
+        async function executeAction(action) {
+            showNotification(`Exécution: ${action}`, 'success');
+            
+            // Create command
+            const command = {
+                id: `cmd-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                target: 'SYAGA-HOST01',
+                action: action,
+                parameters: {},
+                status: 'PENDING'
+            };
+            
+            await sendCommand(command);
+        }
+
+        // Server action
+        async function serverAction(hostname, action) {
+            const actionMap = {
+                'UPDATE': 'START_UPDATES',
+                'REBOOT': 'REBOOT_SERVER'
+            };
+            
+            const command = {
+                id: `cmd-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                target: hostname,
+                action: actionMap[action],
+                parameters: {},
+                status: 'PENDING'
+            };
+            
+            await sendCommand(command);
+            showNotification(`${action} envoyé à ${hostname}`, 'success');
+        }
+
+        // Send command to GitHub
+        async function sendCommand(command) {
+            try {
+                // Get current commands
+                const response = await fetch(
+                    `https://api.github.com/repos/${GITHUB_REPO}/contents/commands.json`,
+                    {
+                        headers: {
+                            'Authorization': `token ${GITHUB_TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    }
+                );
+                
+                const data = await response.json();
+                const content = atob(data.content);
+                const commandsJson = JSON.parse(content);
+                
+                // Add new command
+                commandsJson.commands.unshift(command);
+                
+                // Update file
+                const updateResponse = await fetch(
+                    `https://api.github.com/repos/${GITHUB_REPO}/contents/commands.json`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${GITHUB_TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: `Dashboard: ${command.action}`,
+                            content: btoa(JSON.stringify(commandsJson, null, 4)),
+                            sha: data.sha
+                        })
+                    }
+                );
+                
+                if (updateResponse.ok) {
+                    showNotification('Commande envoyée avec succès', 'success');
+                }
+            } catch (error) {
+                console.error('Error sending command:', error);
+                showNotification('Erreur envoi commande', 'error');
+            }
+        }
+
+        // Run scenario
+        async function runScenario(scenario) {
+            showNotification(`Démarrage scénario: ${scenario}`, 'warning');
+            
+            const scenarios = {
+                'MAINTENANCE_COMPLETE': [
+                    'BACKUP_ALL',
+                    'MIGRATE_VMS',
+                    'START_UPDATES',
+                    'REBOOT_SEQUENCE',
+                    'VERIFY_SERVICES'
+                ],
+                'DISASTER_RECOVERY': [
+                    'FAILOVER_ALL',
+                    'START_BACKUP_SITE',
+                    'RESTORE_SERVICES'
+                ],
+                'ROLLING_UPDATE': [
+                    'UPDATE_HOST1',
+                    'MIGRATE_TO_HOST2',
+                    'UPDATE_HOST2',
+                    'BALANCE_LOAD'
+                ]
+            };
+            
+            const steps = scenarios[scenario] || [];
+            for (const step of steps) {
+                await executeAction(step);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        }
+
+        // Start orchestration
+        function startOrchestration() {
+            showNotification('Orchestration démarrée', 'success');
+            
+            const sequence = document.querySelectorAll('#updateSequence .sequence-item');
+            let current = 0;
+            
+            const interval = setInterval(() => {
+                if (current < sequence.length) {
+                    sequence[current].classList.add('active');
+                    sequence[current].querySelector('.status').textContent = '✅ Terminé';
+                    current++;
+                } else {
+                    clearInterval(interval);
+                    showNotification('Orchestration terminée', 'success');
+                }
+            }, 3000);
+        }
+
+        // Show tab
+        function showTab(tabName) {
+            currentTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const messageEl = document.getElementById('notificationMessage');
+            
+            notification.className = `notification ${type}`;
+            messageEl.textContent = message;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 5000);
+        }
+
+        // Add sequence step
+        function addSequenceStep() {
+            const customSequence = document.getElementById('customSequence');
+            const step = document.createElement('div');
+            step.className = 'sequence-item';
+            step.innerHTML = `
+                <input type="text" placeholder="Nom de l'étape" style="border: none; background: transparent;">
+                <button onclick="this.parentElement.remove()">❌</button>
+            `;
+            customSequence.appendChild(step);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
