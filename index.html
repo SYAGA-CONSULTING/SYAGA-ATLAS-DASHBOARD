@@ -3,21 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATLAS Control Center - SYAGA</title>
+    <title>📊 ATLAS Dashboard - SYAGA Consulting</title>
     
     <!-- MSAL pour Azure AD Auth -->
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     
-    <!-- Styles modernes -->
     <style>
-        @keyframes slideIn {
-            from { transform: translateX(400px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(400px); opacity: 0; }
-        }
         * {
             margin: 0;
             padding: 0;
@@ -25,12 +16,12 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
             min-height: 100vh;
+            color: #333;
         }
         
-        /* Header */
         .header {
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(20px);
@@ -67,50 +58,77 @@
             font-weight: bold;
         }
         
-        #loginButton, #logoutButton {
-            padding: 0.5rem 1.5rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: transform 0.2s;
-        }
-        
-        #loginButton:hover, #logoutButton:hover {
-            transform: scale(1.05);
-        }
-        
-        /* Container */
         .container {
             max-width: 1400px;
             margin: 2rem auto;
             padding: 0 2rem;
         }
         
-        /* Stats Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
+        /* Data Badge System */
+        .data-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+        
+        .real-data {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .fake-data {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .estimated-data {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
         }
         
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        .card-header {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
             transition: transform 0.3s;
         }
         
-        .stat-card:hover {
-            transform: translateY(-5px);
+        .stat-item:hover {
+            transform: translateY(-3px);
         }
         
         .stat-value {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: bold;
             color: #667eea;
         }
@@ -120,196 +138,168 @@
             margin-top: 0.5rem;
         }
         
-        /* Control Panel */
-        .control-panel {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        /* Server Table */
+        .server-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
         }
         
-        .control-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1.5rem;
+        .server-table th,
+        .server-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
         }
         
-        .control-btn {
-            padding: 1rem;
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            cursor: pointer;
+        .server-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .server-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Updates Section */
+        .update-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
             transition: all 0.3s;
-            text-align: center;
         }
         
-        .control-btn:hover {
-            border-color: #667eea;
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        .update-item:hover {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
-        .control-btn.active {
+        .update-critical {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .update-important {
+            border-left: 4px solid #fd7e14;
+        }
+        
+        .update-recommended {
+            border-left: 4px solid #28a745;
+        }
+        
+        .update-info {
+            flex: 1;
+        }
+        
+        .update-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        
+        .update-kb {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .update-size {
+            font-size: 0.85rem;
+            color: #666;
+            margin-right: 1rem;
+        }
+        
+        /* Action Buttons */
+        .action-btn {
+            padding: 0.5rem 1rem;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border-color: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.2s;
         }
         
-        .control-btn i {
-            font-size: 2rem;
-            display: block;
-            margin-bottom: 0.5rem;
+        .action-btn:hover {
+            transform: scale(1.05);
         }
         
-        /* Servers Grid */
-        .servers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
+        .action-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
         }
         
-        .server-card {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            border-left: 5px solid #e0e0e0;
-            transition: all 0.3s;
+        /* Status Indicators */
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
         }
         
-        .server-card.online { border-left-color: #4CAF50; }
-        .server-card.warning { border-left-color: #FF9800; }
-        .server-card.error { border-left-color: #F44336; }
-        .server-card.installing { 
-            border-left-color: #2196F3;
+        .status-online {
+            background: #28a745;
+        }
+        
+        .status-offline {
+            background: #dc3545;
+        }
+        
+        .status-warning {
+            background: #ffc107;
+        }
+        
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+        }
+        
+        /* Refresh indicator */
+        .refresh-indicator {
+            color: #28a745;
             animation: pulse 2s infinite;
         }
         
         @keyframes pulse {
-            0% { box-shadow: 0 5px 20px rgba(33, 150, 243, 0.3); }
-            50% { box-shadow: 0 5px 30px rgba(33, 150, 243, 0.5); }
-            100% { box-shadow: 0 5px 20px rgba(33, 150, 243, 0.3); }
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
         
-        .server-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        
-        .server-name {
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        
-        .server-status {
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
+        .last-update {
             font-size: 0.85rem;
-            font-weight: 500;
-        }
-        
-        .status-ok { background: #E8F5E9; color: #2E7D32; }
-        .status-warning { background: #FFF3E0; color: #E65100; }
-        .status-error { background: #FFEBEE; color: #C62828; }
-        .status-installing { background: #E3F2FD; color: #1565C0; }
-        
-        .server-info {
             color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
         }
-        
-        .server-metrics {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        
-        .metric {
-            text-align: center;
-            padding: 0.5rem;
-            background: #f5f5f5;
-            border-radius: 8px;
-        }
-        
-        .metric-value {
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .metric-label {
-            font-size: 0.75rem;
-            color: #999;
-        }
-        
-        .server-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .action-btn {
-            flex: 1;
-            padding: 0.5rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        
-        .action-btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .btn-primary { background: #667eea; color: white; }
-        .btn-success { background: #4CAF50; color: white; }
-        .btn-warning { background: #FF9800; color: white; }
-        .btn-danger { background: #F44336; color: white; }
-        
-        /* Logs */
-        .logs-container {
-            background: #1e1e1e;
-            color: #d4d4d4;
-            padding: 1rem;
-            border-radius: 10px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.85rem;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .log-entry {
-            padding: 0.3rem 0;
-            border-bottom: 1px solid #333;
-        }
-        
-        .log-info { color: #4FC3F7; }
-        .log-success { color: #81C784; }
-        .log-warning { color: #FFB74D; }
-        .log-error { color: #E57373; }
         
         /* Loading */
         .loading {
             text-align: center;
-            padding: 3rem;
+            padding: 2rem;
+            color: #666;
         }
         
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
         }
         
         @keyframes spin {
@@ -317,859 +307,553 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Auth Screen */
-        .auth-container {
+        /* Login */
+        .login-screen {
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
-        .auth-card {
+        .login-card {
             background: white;
             padding: 3rem;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             text-align: center;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.2);
             max-width: 400px;
+            width: 90%;
         }
         
-        .auth-logo {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-        
-        .auth-title {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-            color: #333;
-        }
-        
-        .auth-subtitle {
-            color: #666;
+        .login-card h1 {
             margin-bottom: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        #loginButton {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+        
+        #loginButton:hover {
+            transform: scale(1.05);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* Time Display */
+        .time-display {
+            font-size: 0.85rem;
+            color: #666;
+            font-family: monospace;
+        }
+        
+        .timezone-info {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 0.25rem;
         }
     </style>
 </head>
 <body>
-    <!-- Auth Screen -->
-    <div id="authScreen" class="auth-container">
-        <div class="auth-card">
-            <div class="auth-logo">🚀</div>
-            <h1 class="auth-title">ATLAS Control Center</h1>
-            <p class="auth-subtitle">Orchestration Infrastructure SYAGA</p>
-            <button id="loginButton" onclick="signIn()">Se connecter avec Azure AD</button>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <h1>🚀 ATLAS Dashboard</h1>
+            <p style="margin-bottom: 2rem; color: #666;">
+                Connectez-vous avec votre compte Microsoft 365 SYAGA
+            </p>
+            <button id="loginButton">
+                📧 Se connecter avec Microsoft
+            </button>
         </div>
     </div>
-    
-    <!-- Main App (hidden initially) -->
-    <div id="mainApp" style="display: none;">
-        <header class="header">
-            <div class="logo">🚀 ATLAS Control Center v3.0 - MODE RÉEL UNIQUEMENT</div>
+
+    <!-- Main Dashboard -->
+    <div id="mainContent" class="hidden">
+        <div class="header">
+            <div class="logo">📊 ATLAS Dashboard - SYAGA Consulting</div>
             <div class="user-info">
+                <span class="last-update" id="lastUpdate">Chargement...</span>
+                <span class="refresh-indicator" id="refreshIndicator">●</span>
+                <div class="user-avatar" id="userAvatar"></div>
                 <span id="userName"></span>
-                <div class="user-avatar" id="userAvatar">?</div>
-                <button id="logoutButton" onclick="signOut()">Déconnexion</button>
+                <button class="action-btn" id="logoutButton">Déconnexion</button>
             </div>
-        </header>
-        
+        </div>
+
         <div class="container">
-            <!-- Stats -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="totalServers">4</div>
-                    <div class="stat-label">Serveurs Total</div>
+            <!-- Légende des données -->
+            <div class="card">
+                <div class="card-header">
+                    🏷️ Légende des Données
+                    <div class="time-display">
+                        Heure locale (GMT+2) : <span id="localTime"></span>
+                        <div class="timezone-info">Les logs agents sont en GMT+2, GitHub API en GMT</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="onlineServers">0</div>
-                    <div class="stat-label">En Ligne</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="pendingUpdates">0</div>
-                    <div class="stat-label">MAJ en Attente</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="activeAlerts">0</div>
-                    <div class="stat-label">Alertes Actives</div>
+                <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                    <div><span class="data-badge real-data">✅ RÉEL</span> Données live depuis l'agent ATLAS</div>
+                    <div><span class="data-badge estimated-data">⚠️ ESTIMÉ</span> Calculé ou dérivé</div>
+                    <div><span class="data-badge fake-data">🔴 FICTIF</span> Exemple/template à implémenter</div>
                 </div>
             </div>
-            
-            <!-- Control Panel -->
-            <div class="control-panel">
-                <h2>🎮 Centre de Commande</h2>
-                <div class="control-grid">
-                    <div class="control-btn" onclick="showDeploymentGuide()" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border: 2px solid #2E7D32;">
-                        <i>📦</i>
-                        <strong>DÉPLOYER AGENTS</strong>
-                        <small>Installer sur 4 serveurs SYAGA</small>
+
+            <!-- Stats Principales -->
+            <div class="card">
+                <div class="card-header">
+                    📈 Vue d'Ensemble
+                    <span class="refresh-indicator" id="refreshIndicator2">●</span>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalServers">0</div>
+                        <div class="stat-label">Serveurs <span class="data-badge real-data">✅ RÉEL</span></div>
                     </div>
-                    <div class="control-btn" onclick="startOrchestration()">
-                        <i>🚀</i>
-                        <strong>Démarrer Orchestration</strong>
-                        <small>Lance MAJ séquentielle</small>
+                    <div class="stat-item">
+                        <div class="stat-value" id="onlineServers">0</div>
+                        <div class="stat-label">En Ligne <span class="data-badge real-data">✅ RÉEL</span></div>
                     </div>
-                    <div class="control-btn" onclick="checkAllUpdates()">
-                        <i>🔍</i>
-                        <strong>Vérifier MAJ</strong>
-                        <small>Scan tous serveurs</small>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalPendingUpdates">0</div>
+                        <div class="stat-label">MAJ en Attente <span class="data-badge real-data">✅ RÉEL</span></div>
                     </div>
-                    <div class="control-btn" onclick="emergencyStop()">
-                        <i>🛑</i>
-                        <strong>Arrêt Urgence</strong>
-                        <small>Stop toutes opérations</small>
-                    </div>
-                    <div class="control-btn" onclick="refreshData()">
-                        <i>🔄</i>
-                        <strong>Rafraîchir</strong>
-                        <small>Actualiser données</small>
+                    <div class="stat-item">
+                        <div class="stat-value" id="agentsRunning">0</div>
+                        <div class="stat-label">Agents Actifs <span class="data-badge real-data">✅ RÉEL</span></div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Servers -->
-            <div class="control-panel">
-                <h2>🖥️ État des Serveurs</h2>
-                <div id="serversGrid" class="servers-grid">
-                    <!-- Chargé dynamiquement -->
+
+            <!-- Serveurs -->
+            <div class="card">
+                <div class="card-header">
+                    🖥️ État des Serveurs
+                    <span class="data-badge real-data">✅ Données Temps Réel</span>
+                </div>
+                <table class="server-table">
+                    <thead>
+                        <tr>
+                            <th>Serveur</th>
+                            <th>État</th>
+                            <th>Agent</th>
+                            <th>CPU</th>
+                            <th>RAM</th>
+                            <th>Disque Libre</th>
+                            <th>MAJ Pending</th>
+                            <th>Dernier Contact (GMT+2)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="serversTable">
+                        <tr>
+                            <td colspan="8" class="loading">
+                                <span class="spinner"></span> Chargement des données...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mises à jour détaillées -->
+            <div class="card">
+                <div class="card-header">
+                    🔄 Mises à jour Windows en Détail
+                    <div>
+                        <span class="data-badge fake-data">🔴 FICTIF - En Développement</span>
+                        <button class="action-btn" onclick="scanForUpdates()">🔍 Scanner MAJ</button>
+                    </div>
+                </div>
+                <div id="updatesDetail">
+                    <div class="update-item update-critical">
+                        <div class="update-info">
+                            <div class="update-title">Mise à jour cumulative pour Windows Server 2022 (KB5029921)</div>
+                            <div class="update-kb">KB5029921 • Critique • Sécurité</div>
+                        </div>
+                        <div class="update-size">342 MB</div>
+                        <button class="action-btn" onclick="installUpdate('KB5029921')">Installer</button>
+                    </div>
+                    
+                    <div class="update-item update-important">
+                        <div class="update-info">
+                            <div class="update-title">Définitions Windows Defender</div>
+                            <div class="update-kb">Automatique • Important • Antivirus</div>
+                        </div>
+                        <div class="update-size">18 MB</div>
+                        <button class="action-btn" onclick="installUpdate('DefenderDef')">Installer</button>
+                    </div>
+                    
+                    <div class="update-item update-recommended">
+                        <div class="update-info">
+                            <div class="update-title">Mise à jour .NET Framework 4.8.1</div>
+                            <div class="update-kb">KB5028851 • Recommandé • Framework</div>
+                        </div>
+                        <div class="update-size">124 MB</div>
+                        <button class="action-btn" onclick="installUpdate('KB5028851')">Installer</button>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #dee2e6;">
+                    <h4>Actions Groupées</h4>
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                        <button class="action-btn" onclick="installAllUpdates()">📥 Installer Toutes MAJ</button>
+                        <button class="action-btn" onclick="scheduleUpdates()">⏰ Planifier Installation</button>
+                        <button class="action-btn" onclick="downloadOnly()">⬇️ Télécharger Seulement</button>
+                        <button class="action-btn" onclick="rebootServer()">🔄 Redémarrer Serveur</button>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Logs -->
-            <div class="control-panel">
-                <h2>📝 Logs Temps Réel</h2>
-                <div id="logsContainer" class="logs-container">
-                    <!-- Chargé dynamiquement -->
+
+            <!-- Hyper-V (si applicable) -->
+            <div class="card" id="hypervCard" style="display: none;">
+                <div class="card-header">
+                    💻 Hyper-V
+                    <span class="data-badge real-data">✅ Status Réel</span>
+                    <span class="data-badge fake-data">🔴 Détails Fictifs</span>
+                </div>
+                <div id="hypervDetails">
+                    <!-- Sera rempli par JavaScript -->
+                </div>
+            </div>
+
+            <!-- Logs en Temps Réel -->
+            <div class="card">
+                <div class="card-header">
+                    📋 Logs Agents (Temps Réel UTF-8)
+                    <span class="data-badge real-data">✅ Live depuis GitHub</span>
+                </div>
+                <div style="background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 0.9rem; max-height: 300px; overflow-y: auto;" id="logsContainer">
+                    <div class="loading" style="color: #d4d4d4;">
+                        <span class="spinner"></span> Chargement des logs...
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <script>
-        // Configuration MSAL (Azure AD)
+        // Configuration MSAL
         const msalConfig = {
             auth: {
-                clientId: '679093c3-95c4-4291-a5a5-af88b29ca748', // À remplacer
-                authority: 'https://login.microsoftonline.com/6027d81c-ad9b-48f5-9da6-96f1bad11429',
-                redirectUri: 'https://syaga-consulting.github.io/SYAGA-ATLAS-DASHBOARD/'
+                clientId: "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+                authority: "https://login.microsoftonline.com/common",
+                redirectUri: window.location.origin + window.location.pathname
             },
             cache: {
-                cacheLocation: 'localStorage',
-                storeAuthStateInCookie: false
+                cacheLocation: "localStorage",
+                storeAuthStateInCookie: true
             }
         };
+
+        const loginRequest = {
+            scopes: ["User.Read"]
+        };
+
+        // Configuration - Utilisation du proxy Azure sécurisé
+        const PROXY_URL = 'https://syaga-atlas-proxy.azurewebsites.net/api/github-proxy';
+        const GITHUB_REPO = 'SYAGA-CONSULTING/SYAGA-ATLAS-DATA';
+        const REFRESH_INTERVAL = 30000; // 30 secondes
         
+        // Fonction pour appeler GitHub via le proxy sécurisé
+        async function callGitHubAPI(path) {
+            const response = await fetch(PROXY_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${account ? 'authenticated' : 'anonymous'}`
+                },
+                body: JSON.stringify({
+                    githubPath: path
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Proxy error: ${response.status}`);
+            }
+            
+            return await response.json();
+        }
+
+        // Initialisation MSAL
         const msalInstance = new msal.PublicClientApplication(msalConfig);
-        
-        // GitHub Configuration
-        const GITHUB_OWNER = 'SYAGA-CONSULTING';
-        const GITHUB_REPO = 'SYAGA-ATLAS-DATA';
-        const GITHUB_TOKEN = null; // Sera défini après auth
-        
-        // État global
-        let currentUser = null;
-        let serversData = null;
-        let refreshInterval = null;
-        
-        // Authentification
-        async function signIn() {
+        let account = null;
+        let servers = [];
+        let lastUpdateTime = null;
+
+        // Conversion GMT vers GMT+2
+        function convertToLocalTime(gmtString) {
+            if (!gmtString) return 'Jamais';
+            
             try {
-                const loginRequest = {
-                    scopes: ['User.Read']
-                };
-                
-                const loginResponse = await msalInstance.loginPopup(loginRequest);
-                currentUser = loginResponse.account;
-                
-                showMainApp();
-                loadUserInfo();
-                startDataRefresh();
-                
+                const date = new Date(gmtString);
+                // Ajouter 2 heures pour GMT+2
+                date.setHours(date.getHours() + 2);
+                return date.toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch (error) {
+                return gmtString;
+            }
+        }
+
+        // Affichage heure locale temps réel
+        function updateLocalTime() {
+            const now = new Date();
+            document.getElementById('localTime').textContent = 
+                now.toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+        }
+
+        // Initialisation
+        async function init() {
+            // Vérifier si déjà connecté
+            const currentAccounts = msalInstance.getAllAccounts();
+            if (currentAccounts && currentAccounts.length > 0) {
+                account = currentAccounts[0];
+                showDashboard();
+            } else {
+                showLogin();
+            }
+
+            // Mettre à jour l'heure toutes les secondes
+            setInterval(updateLocalTime, 1000);
+            updateLocalTime();
+        }
+
+        // Afficher écran de connexion
+        function showLogin() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+        }
+
+        // Afficher dashboard
+        function showDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            
+            // Afficher infos utilisateur
+            document.getElementById('userName').textContent = account.name;
+            document.getElementById('userAvatar').textContent = account.name.charAt(0).toUpperCase();
+            
+            // Charger données
+            loadData();
+            setInterval(loadData, REFRESH_INTERVAL);
+        }
+
+        // Connexion
+        document.getElementById('loginButton').addEventListener('click', async () => {
+            try {
+                const response = await msalInstance.loginPopup(loginRequest);
+                account = response.account;
+                showDashboard();
             } catch (error) {
                 console.error('Erreur connexion:', error);
-                addLog('error', 'Erreur de connexion: ' + error.message);
+                alert('Erreur de connexion. Vérifiez votre compte SYAGA.');
             }
-        }
-        
-        async function signOut() {
-            await msalInstance.logoutPopup();
-            currentUser = null;
-            hideMainApp();
-        }
-        
-        function showMainApp() {
-            document.getElementById('authScreen').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
-        }
-        
-        function hideMainApp() {
-            document.getElementById('authScreen').style.display = 'flex';
-            document.getElementById('mainApp').style.display = 'none';
-            if (refreshInterval) clearInterval(refreshInterval);
-        }
-        
-        function loadUserInfo() {
-            if (currentUser) {
-                document.getElementById('userName').textContent = currentUser.name;
-                document.getElementById('userAvatar').textContent = 
-                    currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase();
-            }
-        }
-        
-        // Données GitHub avec authentification utilisateur
-        async function fetchGitHubData() {
+        });
+
+        // Déconnexion
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            msalInstance.logoutPopup();
+            account = null;
+            showLogin();
+        });
+
+        // Charger données via proxy sécurisé
+        async function loadData() {
             try {
-                // Demander le token à l'utilisateur la première fois
-                let token = localStorage.getItem('github_token');
-                if (!token) {
-                    token = prompt('Pour accéder aux données temps réel, entrez votre GitHub Token (ghp_xxx):');
-                    if (token) {
-                        localStorage.setItem('github_token', token);
-                    }
-                }
+                document.getElementById('refreshIndicator').style.color = '#ffc107';
+                document.getElementById('refreshIndicator2').style.color = '#ffc107';
                 
-                if (!token) {
-                    throw new Error('Token GitHub requis pour accéder aux données temps réel');
-                }
+                // Charger servers.json via proxy
+                const data = await callGitHubAPI(`/repos/${GITHUB_REPO}/contents/servers.json`);
                 
-                const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/servers.json`, {
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
+                // Décoder avec UTF-8 explicite
+                const content = decodeURIComponent(escape(atob(data.content)));
+                const serversData = JSON.parse(content);
+                servers = serversData.servers;
+                lastUpdateTime = serversData.lastUpdate;
                 
-                if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        // Token invalide, le supprimer et redemander
-                        localStorage.removeItem('github_token');
-                        throw new Error('Token GitHub invalide ou expiré');
-                    }
-                    throw new Error(`Erreur GitHub API: ${response.status}`);
-                }
+                updateDashboard();
+                await loadLogs();
                 
-                const data = await response.json();
-                const content = atob(data.content);
-                serversData = JSON.parse(content);
-                
-                // Afficher le banner de mode réel
-                const banner = document.getElementById('demoMode');
-                if (banner) {
-                    banner.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
-                    banner.style.color = 'white';
-                    banner.style.fontWeight = 'bold';
-                    banner.textContent = '✅ MODE TEMPS RÉEL - Données directes depuis GitHub API (30s)';
-                    banner.style.display = 'block';
-                }
-                
-                // Ajouter timestamp de dernière mise à jour
-                const lastUpdate = new Date(serversData.lastUpdate || new Date()).toLocaleString('fr-FR');
-                console.log(`📅 Dernière mise à jour des données: ${lastUpdate}`);
-                
-                console.log('📈 Données temps réel chargées depuis GitHub API:', {
-                    servers: serversData.servers.length,
-                    lastUpdate: serversData.lastUpdate,
-                    timestamp: new Date().toLocaleTimeString('fr-FR')
-                });
-                updateUI();
+                document.getElementById('refreshIndicator').style.color = '#28a745';
+                document.getElementById('refreshIndicator2').style.color = '#28a745';
+                document.getElementById('lastUpdate').textContent = 
+                    `Dernière MAJ: ${convertToLocalTime(new Date().toISOString())}`;
                 
             } catch (error) {
-                console.error('Impossible de charger les données GitHub:', error);
-                alert('Impossible d\'accéder aux données GitHub. Bascule en mode simulation.');
-                usesDemoData();
+                console.error('Erreur chargement:', error);
+                document.getElementById('refreshIndicator').style.color = '#dc3545';
+                document.getElementById('refreshIndicator2').style.color = '#dc3545';
+                document.getElementById('lastUpdate').textContent = 
+                    `Erreur: ${error.message}`;
             }
         }
-        
-        function usesDemoData() {
-            console.error('ERREUR FATALE: Accès aux données GitHub impossible');
-            
-            // Affichage d'erreur - PAS de données de démo
-            const errorDiv = document.createElement('div');
-            errorDiv.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: #f44336;
-                color: white;
-                padding: 2rem;
-                border-radius: 10px;
-                text-align: center;
-                z-index: 10000;
-                max-width: 500px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            `;
-            
-            errorDiv.innerHTML = `
-                <h2>❌ CONNEXION GITHUB REQUISE</h2>
-                <p>Le dashboard ATLAS ne fonctionne qu'avec les données temps réel.</p>
-                <p><strong>Solutions :</strong></p>
-                <ul style="text-align: left; margin: 1rem 0;">
-                    <li>Vérifiez votre token GitHub</li>
-                    <li>Vérifiez votre connexion internet</li>
-                    <li>Vérifiez l'accès au repo SYAGA-ATLAS-DATA</li>
-                </ul>
-                <div style="margin-top: 1.5rem;">
-                    <button onclick="localStorage.removeItem('github_token'); location.reload()" 
-                            style="padding: 0.75rem 1.5rem; background: white; color: #f44336; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 1rem;">
-                        Nouveau Token
-                    </button>
-                    <button onclick="location.reload()" 
-                            style="padding: 0.75rem 1.5rem; background: #ff7961; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                        Ressayer
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(errorDiv);
-            
-            // Dashboard vide - aucune donnée de démo
-            serversData = { servers: [] };
-            updateUI();
-        }
-        
-        function updateUI() {
-            if (!serversData) return;
-            
-            // Stats
-            const totalServers = serversData.servers.length;
-            const onlineServers = serversData.servers.filter(s => s.state !== 'Offline').length;
-            const totalPending = serversData.servers.reduce((sum, s) => sum + (s.pendingUpdates || 0), 0);
-            const alerts = serversData.servers.filter(s => s.state === 'Error' || s.state === 'Warning').length;
-            
-            document.getElementById('totalServers').textContent = totalServers;
-            document.getElementById('onlineServers').textContent = onlineServers;
-            document.getElementById('pendingUpdates').textContent = totalPending;
-            document.getElementById('activeAlerts').textContent = alerts;
-            
-            // Servers Grid
-            const grid = document.getElementById('serversGrid');
-            grid.innerHTML = '';
-            
-            serversData.servers.forEach(server => {
-                const statusClass = getStatusClass(server.state);
-                const statusBadge = getStatusBadge(server.state);
+
+        // Mettre à jour dashboard
+        function updateDashboard() {
+            // Stats principales (RÉELLES)
+            document.getElementById('totalServers').textContent = servers.length;
+            document.getElementById('onlineServers').textContent = 
+                servers.filter(s => s.state === 'OK').length;
+            document.getElementById('totalPendingUpdates').textContent = 
+                servers.reduce((sum, s) => sum + (s.pendingUpdates || 0), 0);
+            document.getElementById('agentsRunning').textContent = 
+                servers.filter(s => s.agentInstalled && s.lastContact).length;
+
+            // Table des serveurs (RÉELLES avec conversion GMT+2)
+            const tbody = document.getElementById('serversTable');
+            tbody.innerHTML = servers.map(server => {
+                const lastContact = convertToLocalTime(server.lastContact);
+                const statusColor = server.state === 'OK' ? 'status-online' : 'status-offline';
                 
-                const card = document.createElement('div');
-                card.className = `server-card ${statusClass}`;
-                
-                card.innerHTML = `
-                    <div class="server-header">
-                        <span class="server-name">${server.hostname}</span>
-                        <span class="server-status ${statusBadge}">${server.state}</span>
-                    </div>
-                    <div class="server-info">
-                        📍 ${server.ip} | ${server.role}<br>
-                        ${server.agentInstalled ? `✅ Agent v${server.agentVersion || 'inconnu'}` : '⚠️ Agent requis'}
-                        ${server.lastContact ? `<br>📡 Contact: ${new Date(server.lastContact).toLocaleString('fr-FR')}` : ''}
-                    </div>
-                    <div class="server-metrics">
-                        <div class="metric">
-                            <div class="metric-value">${server.cpuUsage || 0}%</div>
-                            <div class="metric-label">CPU</div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-value">${server.memoryUsage || 0}%</div>
-                            <div class="metric-label">RAM</div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-value">${server.diskSpaceGB || 0}GB</div>
-                            <div class="metric-label">Disque</div>
-                        </div>
-                    </div>
-                    ${server.pendingUpdates > 0 ? 
-                        `<div style="margin: 1rem 0; padding: 0.5rem; background: #FFF3E0; border-radius: 8px; color: #E65100;">
-                            ⚠️ ${server.pendingUpdates} mise(s) à jour en attente
-                        </div>` : ''}
-                    <div class="server-actions">
-                        ${!server.agentInstalled ? `
-                        <button class="action-btn btn-success" onclick="deployAgent('${server.hostname}', '${server.ip}')" style="width: 100%;">
-                            🚀 Déployer Agent
-                        </button>
-                        ` : `
-                        <button class="action-btn btn-primary" onclick="updateServer('${server.hostname}')">
-                            🚀 MAJ
-                        </button>
-                        <button class="action-btn btn-warning" onclick="rebootServer('${server.hostname}')">
-                            🔄 Reboot
-                        </button>
-                        <button class="action-btn btn-success" onclick="backupServer('${server.hostname}')">
-                            💾 Backup
-                        </button>
-                        `}
-                    </div>
+                return `
+                    <tr>
+                        <td>
+                            <strong>${server.hostname}</strong><br>
+                            <small style="color: #666;">${server.role || 'N/A'}</small>
+                        </td>
+                        <td>
+                            <span class="status-indicator ${statusColor}"></span>
+                            ${server.state || 'Inconnu'}
+                        </td>
+                        <td>
+                            ${server.agentInstalled ? 
+                                `<strong>v${server.agentVersion || '?'}</strong>` : 
+                                '<span style="color: #dc3545;">Non installé</span>'}
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>${server.cpuUsage || 0}%</span>
+                                <div class="progress-bar" style="width: 60px;">
+                                    <div class="progress-fill" style="width: ${server.cpuUsage || 0}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>${server.memoryUsage || 0}%</span>
+                                <div class="progress-bar" style="width: 60px;">
+                                    <div class="progress-fill" style="width: ${server.memoryUsage || 0}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><strong>${server.diskSpaceGB || 0}</strong> GB</td>
+                        <td>
+                            <strong style="color: ${server.pendingUpdates > 0 ? '#dc3545' : '#28a745'}">
+                                ${server.pendingUpdates || 0}
+                            </strong>
+                        </td>
+                        <td>
+                            <small style="font-family: monospace;">${lastContact}</small>
+                        </td>
+                    </tr>
                 `;
-                
-                grid.appendChild(card);
-            });
-        }
-        
-        function getStatusClass(state) {
-            switch(state) {
-                case 'OK': return 'online';
-                case 'Warning': return 'warning';
-                case 'Error': return 'error';
-                case 'Installing': return 'installing';
-                default: return '';
-            }
-        }
-        
-        function getStatusBadge(state) {
-            switch(state) {
-                case 'OK': return 'status-ok';
-                case 'Warning': return 'status-warning';
-                case 'Error': return 'status-error';
-                case 'Installing': return 'status-installing';
-                default: return '';
-            }
-        }
-        
-        // Actions
-        async function startOrchestration() {
-            if (!confirm('Démarrer l\'orchestration des mises à jour ?')) return;
-            
-            addLog('info', '🚀 Démarrage orchestration...');
-            
-            // TODO: Créer commande dans GitHub
-            await createCommand('START_ORCHESTRATION', null);
-        }
-        
-        async function deployAgent(hostname, ip) {
-            if (!confirm(`Déployer l'agent ATLAS sur ${hostname} (${ip}) ?`)) return;
-            
-            addLog('info', `🚀 Préparation du déploiement sur ${hostname}...`);
-            
-            // Demander le token GitHub
-            const githubToken = prompt('Entrez votre GitHub Token (ghp_xxx):');
-            if (!githubToken) {
-                addLog('error', 'Déploiement annulé - Token requis');
-                return;
-            }
-            
-            // Créer modal avec instructions
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: white;
-                padding: 2rem;
-                border-radius: 10px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                z-index: 10000;
-                max-width: 900px;
-                width: 90%;
-            `;
-            
-            const installCmd = `Invoke-WebRequest -Uri "https://raw.githubusercontent.com/SYAGA-CONSULTING/syaga-infrastructure/main/monitoring/atlas/agents/Install-ATLAS-Agent.ps1" -OutFile "C:\\Install-ATLAS.ps1"; C:\\Install-ATLAS.ps1 -GitHubToken "${githubToken}" -Mode PRODUCTION`;
-            
-            modal.innerHTML = `
-                <h3 style="color: #667eea; margin-bottom: 1rem;">📦 Déploiement Agent ATLAS</h3>
-                <div style="background: #E8F5E9; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                    <strong style="color: #2E7D32;">🏢 Serveur :</strong> ${hostname} (${ip})
-                </div>
-                
-                <p style="color: #666; margin-bottom: 1rem;">Copiez et exécutez cette commande <strong>en tant qu'administrateur</strong> sur le serveur :</p>
-                
-                <div style="background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 5px; font-family: 'Consolas', monospace; font-size: 13px; position: relative;">
-                    <button onclick="navigator.clipboard.writeText('${installCmd}'); this.textContent='✅ Copié !'" 
-                            style="position: absolute; top: 10px; right: 10px; background: #667eea; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 12px;">
-                        📋 Copier
-                    </button>
-                    <div style="color: #d4d4d4; user-select: all; padding-right: 80px; word-break: break-all;">${installCmd}</div>
-                </div>
-                
-                <details style="margin-top: 1rem;">
-                    <summary style="color: #667eea; cursor: pointer; font-weight: 500;">▶ Déploiement à distance (option)</summary>
-                    <div style="background: #f5f5f5; padding: 1rem; border-radius: 5px; margin-top: 0.5rem;">
-                        <p style="color: #666; margin: 0 0 0.5rem 0; font-size: 14px;">Depuis votre poste administrateur Windows :</p>
-                        <div style="background: #1e1e1e; color: #d4d4d4; padding: 0.5rem; border-radius: 3px; font-family: monospace; font-size: 12px;">
-                            Invoke-Command -ComputerName ${hostname} -ScriptBlock { ${installCmd} }
-                        </div>
+            }).join('');
+
+            // Montrer card Hyper-V si applicable
+            const hvServers = servers.filter(s => s.role === 'Hyper-V Host');
+            if (hvServers.length > 0) {
+                document.getElementById('hypervCard').style.display = 'block';
+                document.getElementById('hypervDetails').innerHTML = hvServers.map(server => `
+                    <div style="margin: 0.5rem 0; padding: 0.75rem; background: #f8f9fa; border-radius: 8px;">
+                        <strong>${server.hostname}</strong>: ${server.hypervStatus || 'État inconnu'}
                     </div>
-                </details>
-                
-                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                    <button onclick="this.parentElement.parentElement.remove(); addLog('success', '✅ Agent déployé sur ${hostname}. Actualisation dans ~15 minutes...')" 
-                            style="flex: 1; padding: 0.75rem; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
-                        ✅ C'est fait
-                    </button>
-                    <button onclick="this.parentElement.parentElement.remove()" 
-                            style="padding: 0.75rem 2rem; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
-                        Fermer
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-        }
-        
-        function showDeploymentGuide() {
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.5);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-            `;
-            
-            const content = document.createElement('div');
-            content.style.cssText = `
-                background: white;
-                padding: 2rem;
-                border-radius: 10px;
-                max-width: 900px;
-                width: 90%;
-                max-height: 80vh;
-                overflow-y: auto;
-            `;
-            
-            content.innerHTML = `
-                <h2 style="color: #4CAF50; margin-bottom: 1rem;">🚀 Déploiement des agents ATLAS v3.0</h2>
-                
-                <div style="background: #FFF3E0; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                    <strong style="color: #E65100;">⚠️ L'installation va automatiquement :</strong>
-                    <ul style="margin: 0.5rem 0 0 1rem; color: #666;">
-                        <li>❌ Nettoyer les anciennes tâches PWU</li>
-                        <li>📦 Installer l'agent ATLAS v3.0</li>
-                        <li>🔄 Synchroniser avec GitHub</li>
-                        <li>⏰ Créer une tâche toutes les 15 min</li>
-                    </ul>
-                </div>
-                
-                <h3 style="color: #333; margin: 1rem 0;">🖥️ Sélectionnez un serveur pour déployer :</h3>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
-                    <button onclick="deployAgent('SYAGA-HOST01', '192.168.10.11'); this.parentElement.parentElement.parentElement.parentElement.remove()" 
-                            style="padding: 1rem; background: linear-gradient(135deg, #667eea, #5a67d8); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: transform 0.2s;"
-                            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                        🖥️ SYAGA-HOST01<br>
-                        <small style="opacity: 0.9;">192.168.10.11 - Hyper-V</small>
-                    </button>
-                    <button onclick="deployAgent('SYAGA-HOST02', '192.168.10.12'); this.parentElement.parentElement.parentElement.parentElement.remove()" 
-                            style="padding: 1rem; background: linear-gradient(135deg, #667eea, #5a67d8); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: transform 0.2s;"
-                            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                        🖥️ SYAGA-HOST02<br>
-                        <small style="opacity: 0.9;">192.168.10.12 - Hyper-V</small>
-                    </button>
-                    <button onclick="deployAgent('SYAGA-HOST04', '192.168.10.14'); this.parentElement.parentElement.parentElement.parentElement.remove()" 
-                            style="padding: 1rem; background: linear-gradient(135deg, #667eea, #5a67d8); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: transform 0.2s;"
-                            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                        🖥️ SYAGA-HOST04<br>
-                        <small style="opacity: 0.9;">192.168.10.14 - Hyper-V</small>
-                    </button>
-                    <button onclick="deployAgent('SYAGA-VEEAM01', '192.168.10.20'); this.parentElement.parentElement.parentElement.parentElement.remove()" 
-                            style="padding: 1rem; background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: transform 0.2s;"
-                            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                        💾 SYAGA-VEEAM01<br>
-                        <small style="opacity: 0.9;">192.168.10.20 - Backup</small>
-                    </button>
-                </div>
-                
-                <button onclick="this.parentElement.parentElement.remove()" 
-                        style="width: 100%; padding: 0.75rem; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
-                    Fermer
-                </button>
-            `;
-            
-            modal.appendChild(content);
-            document.body.appendChild(modal);
-            
-            // Fermer en cliquant sur le fond
-            modal.onclick = function(e) {
-                if (e.target === modal) modal.remove();
-            };
-        }
-        
-        async function emergencyStop() {
-            if (!confirm('⚠️ ARRÊT D\'URGENCE - Confirmer ?')) return;
-            
-            addLog('error', '🛑 ARRÊT D\'URGENCE ACTIVÉ');
-            
-            // TODO: Créer commande d'arrêt
-            await createCommand('EMERGENCY_STOP', null);
-        }
-        
-        async function updateServer(hostname) {
-            console.log('updateServer appelé pour', hostname);
-            
-            // Confirmation utilisateur
-            if (!confirm(`⚠️ LANCER LES MISES À JOUR WINDOWS ?\n\nServeur: ${hostname}\n\nCette action va :\n• Télécharger les mises à jour Windows\n• Installer les mises à jour\n• Peut nécessiter un redémarrage\n\n⏱️ Durée estimée : 15-45 minutes\n\nContinuer ?`)) {
-                addLog('info', `❌ MAJ annulée pour ${hostname}`);
-                return;
-            }
-            
-            addLog('warning', `🚀 DÉMARRAGE MAJ sur ${hostname}`);
-            addLog('info', `⏳ Création de la commande...`);
-            
-            const success = await createCommand('UPDATE_SERVER', hostname);
-            
-            if (success) {
-                addLog('success', `✅ Commande MAJ envoyée à ${hostname}`);
-                addLog('info', `⏱️ L'agent exécutera la commande dans max 15 minutes`);
-            } else {
-                addLog('error', `❌ Échec envoi commande à ${hostname}`);
+                `).join('');
             }
         }
-        
-        async function rebootServer(hostname) {
-            console.log('rebootServer appelé pour', hostname);
-            
-            if (!confirm(`⚠️ REDÉMARRER LE SERVEUR ?\n\nServeur: ${hostname}\n\n⚠️ ATTENTION :\n• Arrêt de tous les services\n• VMs Hyper-V arrêtées\n• Indisponibilité 5-10 minutes\n• Redémarrage dans 60 secondes\n\nÊtes-vous SÛR ?`)) {
-                addLog('info', `❌ Reboot annulé pour ${hostname}`);
-                return;
-            }
-            
-            // Double confirmation pour reboot
-            if (!confirm(`🔴 DERNIÈRE CONFIRMATION\n\n${hostname} va redémarrer dans 60 secondes !\n\nCONFIRMER LE REBOOT ?`)) {
-                return;
-            }
-            
-            addLog('error', `🔄 REBOOT COMMANDÉ pour ${hostname}`);
-            
-            const success = await createCommand('REBOOT_SERVER', hostname);
-            
-            if (success) {
-                addLog('warning', `⚠️ ${hostname} redémarre dans 60 secondes !`);
-            }
-        }
-        
-        async function backupServer(hostname) {
-            console.log('backupServer appelé pour', hostname);
-            addLog('info', `💾 Lancement backup sur ${hostname}`);
-            await createCommand('BACKUP_SERVER', hostname);
-        }
-        
-        async function createCommand(action, target, parameters = {}) {
-            console.log('createCommand appelé:', action, target);
+
+        // Charger logs via proxy avec UTF-8 et conversion horaire
+        async function loadLogs() {
             try {
-                const token = localStorage.getItem('github_token');
-                if (!token) {
-                    console.error('Token GitHub manquant dans localStorage');
-                    alert('Token GitHub manquant. Rafraîchissez la page et entrez votre token.');
-                    throw new Error('Token GitHub manquant');
-                }
+                const data = await callGitHubAPI(`/repos/${GITHUB_REPO}/contents/logs/SYAGA-HOST01.log`);
                 
-                // Générer ID unique
-                const commandId = `cmd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                // Décoder avec UTF-8 explicite
+                const content = decodeURIComponent(escape(atob(data.content)));
+                const lines = content.split('\n').slice(-25).filter(line => line.trim()); // 25 dernières lignes non vides
                 
-                // Créer la commande
-                const command = {
-                    id: commandId,
-                    timestamp: new Date().toISOString(),
-                    target: target,
-                    action: action,
-                    parameters: parameters,
-                    status: "PENDING",
-                    result: null
-                };
-                
-                // Récupérer commands.json existant
-                const commandsResponse = await fetch('https://api.github.com/repos/SYAGA-CONSULTING/SYAGA-ATLAS-DATA/contents/commands.json', {
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
-                
-                if (!commandsResponse.ok) {
-                    throw new Error(`Erreur GitHub API: ${commandsResponse.status}`);
-                }
-                
-                const commandsData = await commandsResponse.json();
-                const currentCommands = JSON.parse(atob(commandsData.content));
-                
-                // Ajouter la nouvelle commande
-                currentCommands.commands.push(command);
-                
-                // Mettre à jour le fichier
-                const updateResponse = await fetch('https://api.github.com/repos/SYAGA-CONSULTING/SYAGA-ATLAS-DATA/contents/commands.json', {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: `Add command ${action} for ${target}`,
-                        content: btoa(JSON.stringify(currentCommands, null, 2)),
-                        sha: commandsData.sha
-                    })
-                });
-                
-                if (!updateResponse.ok) {
-                    throw new Error(`Erreur commit: ${updateResponse.status}`);
-                }
-                
-                addLog('success', `✅ Commande ${action} envoyée à ${target} (${commandId})`);
-                
-                // Afficher notification flottante
-                showCommandNotification(commandId, action, target);
-                return true;
-                
+                document.getElementById('logsContainer').innerHTML = 
+                    lines.map(line => {
+                        // Colorer selon le contenu
+                        let style = 'color: #d4d4d4;';
+                        if (line.includes('Error') || line.includes('error') || line.includes('❌')) {
+                            style = 'color: #f48771;';
+                        } else if (line.includes('Warning') || line.includes('warning') || line.includes('⚠️')) {
+                            style = 'color: #ce9178;';
+                        } else if (line.includes('✅') || line.includes('Success') || line.includes('OK')) {
+                            style = 'color: #4ec9b0;';
+                        } else if (line.match(/^\d{4}-\d{2}-\d{2}/)) {
+                            style = 'color: #569cd6;';
+                        }
+                        
+                        return `<div style="${style}; padding: 0.1rem 0; word-break: break-all;">${line}</div>`;
+                    }).join('');
+                    
             } catch (error) {
-                addLog('error', `❌ Erreur commande ${action}: ${error.message}`);
-                console.error('Erreur création commande:', error);
-                return false;
+                document.getElementById('logsContainer').innerHTML = 
+                    `<div style="color: #dc3545;">❌ Erreur chargement logs: ${error.message}</div>`;
             }
         }
-        
-        function showCommandNotification(commandId, action, target) {
-            // Créer une notification flottante
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: linear-gradient(135deg, #4CAF50, #45a049);
-                color: white;
-                padding: 20px;
-                border-radius: 10px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-                z-index: 10000;
-                max-width: 400px;
-                animation: slideIn 0.3s ease;
-            `;
-            
-            const actionText = {
-                'UPDATE_SERVER': '🚀 Mises à jour Windows',
-                'REBOOT_SERVER': '🔄 Redémarrage serveur',
-                'BACKUP_SERVER': '💾 Sauvegarde Veeam'
-            }[action] || action;
-            
-            notification.innerHTML = `
-                <h3 style="margin: 0 0 10px 0;">✅ Commande envoyée !</h3>
-                <div><strong>Action :</strong> ${actionText}</div>
-                <div><strong>Serveur :</strong> ${target}</div>
-                <div><strong>ID :</strong> ${commandId.substr(-12)}</div>
-                <div style="margin-top: 10px; font-size: 0.9em; opacity: 0.9;">
-                    ⏱️ Exécution dans les 15 prochaines minutes
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Retirer après 10 secondes
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }, 10000);
+
+        // Actions mises à jour (FICTIVES pour l'instant)
+        async function scanForUpdates() {
+            alert('🔍 Scan des mises à jour... (Fonction à implémenter dans l\'agent ATLAS)');
         }
-        
-        function checkAllUpdates() {
-            addLog('info', '🔍 Vérification des mises à jour...');
-            fetchGitHubData();
-        }
-        
-        function refreshData() {
-            addLog('info', '🔄 Actualisation des données...');
-            fetchGitHubData();
-        }
-        
-        // Logs
-        function addLog(type, message) {
-            const container = document.getElementById('logsContainer');
-            const entry = document.createElement('div');
-            entry.className = `log-entry log-${type}`;
-            
-            const timestamp = new Date().toLocaleTimeString();
-            entry.textContent = `[${timestamp}] ${message}`;
-            
-            container.appendChild(entry);
-            container.scrollTop = container.scrollHeight;
-        }
-        
-        // Auto-refresh
-        function startDataRefresh() {
-            console.log('🚀 Démarrage du mode temps réel ATLAS');
-            
-            // Créer l'indicateur temps réel
-            const statusDiv = document.createElement('div');
-            statusDiv.id = 'realTimeStatus';
-            statusDiv.style.cssText = `
-                position: fixed;
-                top: 15px;
-                right: 15px;
-                background: linear-gradient(135deg, #4CAF50, #45a049);
-                color: white;
-                padding: 0.75rem 1rem;
-                border-radius: 25px;
-                font-size: 13px;
-                font-weight: 600;
-                z-index: 10000;
-                box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
-                border: 2px solid rgba(255,255,255,0.2);
-                backdrop-filter: blur(10px);
-                transition: all 0.3s ease;
-            `;
-            statusDiv.innerHTML = '🔄 TEMPS RÉEL - Initialisation...';
-            document.body.appendChild(statusDiv);
-            
-            let lastSyncTime = Date.now();
-            
-            // Fonction de mise à jour du statut
-            const updateStatus = () => {
-                const elapsed = Math.floor((Date.now() - lastSyncTime) / 1000);
-                const nextSync = Math.max(0, 30 - elapsed);
-                
-                if (elapsed < 3) {
-                    statusDiv.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
-                    statusDiv.innerHTML = '✅ SYNC OK - Données à jour';
-                } else {
-                    statusDiv.style.background = 'linear-gradient(135deg, #2196F3, #1976D2)';
-                    statusDiv.innerHTML = `🔄 TEMPS RÉEL - Prochaine sync: ${nextSync}s`;
-                }
-            };
-            
-            // Première synchronisation
-            fetchGitHubData().then(() => {
-                lastSyncTime = Date.now();
-                updateStatus();
-            });
-            
-            // Synchronisation toutes les 30 secondes
-            refreshInterval = setInterval(async () => {
-                statusDiv.style.background = 'linear-gradient(135deg, #FF9800, #F57C00)';
-                statusDiv.innerHTML = '🔄 SYNCHRONISATION...';
-                
-                try {
-                    await fetchGitHubData();
-                    lastSyncTime = Date.now();
-                    console.log('✅ Synchronisation temps réel réussie');
-                } catch (error) {
-                    console.error('❌ Erreur synchronisation:', error);
-                    statusDiv.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
-                    statusDiv.innerHTML = '❌ ERREUR SYNC';
-                }
-                
-                updateStatus();
-            }, 30000);
-            
-            // Mise à jour du compteur chaque seconde
-            setInterval(updateStatus, 1000);
-            
-            console.log('✅ Mode temps réel activé - Synchronisation toutes les 30 secondes');
-        }
-        
-        // Init
-        window.onload = async () => {
-            // Vérifier auth existante
-            const accounts = msalInstance.getAllAccounts();
-            if (accounts.length > 0) {
-                currentUser = accounts[0];
-                showMainApp();
-                loadUserInfo();
-                startDataRefresh();
+
+        async function installUpdate(updateId) {
+            if (confirm(`Installer la mise à jour ${updateId} ?`)) {
+                alert(`📥 Installation de ${updateId}... (À implémenter dans l'agent)`);
             }
-            
-            addLog('info', '🚀 ATLAS Control Center v3.0 - MODE TEMPS RÉEL');
-            addLog('success', '✅ Synchronisation automatique toutes les 30 secondes');
-        };
+        }
+
+        async function installAllUpdates() {
+            if (confirm('Installer TOUTES les mises à jour en attente ?')) {
+                alert('📥 Installation de toutes les MAJ... (À implémenter dans l\'agent)');
+            }
+        }
+
+        async function scheduleUpdates() {
+            const time = prompt('Heure pour installer les MAJ (format HH:MM):');
+            if (time) {
+                alert(`⏰ MAJ planifiées à ${time} (À implémenter dans l'agent)`);
+            }
+        }
+
+        async function downloadOnly() {
+            alert('⬇️ Téléchargement des MAJ... (À implémenter dans l\'agent)');
+        }
+
+        async function rebootServer() {
+            if (confirm('Redémarrer le serveur SYAGA-HOST01 ?')) {
+                alert('🔄 Redémarrage programmé... (À implémenter dans l\'agent)');
+            }
+        }
+
+        // Initialiser au chargement
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>

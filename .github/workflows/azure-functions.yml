@@ -1,0 +1,59 @@
+name: Deploy Azure Functions
+
+on:
+  push:
+    branches: [gh-pages]
+    paths: 
+      - 'api/**'
+      - 'host.json'
+      - '.github/workflows/azure-functions.yml'
+  workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_NAME: syaga-atlas-proxy
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'
+  NODE_VERSION: '18.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        if [ -f package.json ]; then npm ci; fi
+
+    - name: Deploy to Azure Functions
+      uses: Azure/functions-action@v1
+      id: deploy-to-function
+      with:
+        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+        package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+
+    - name: Test Azure Function
+      run: |
+        echo "🧪 Test de l'Azure Function..."
+        sleep 30
+        
+        # Test basic health check
+        response=$(curl -s -o /dev/null -w "%{http_code}" \
+          "https://${{ env.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net/api/github-proxy" \
+          -X OPTIONS)
+        
+        if [ "$response" = "200" ]; then
+          echo "✅ Azure Function déployée et accessible"
+        else
+          echo "❌ Erreur: Azure Function non accessible (HTTP $response)"
+          exit 1
+        fi
+        
+        echo "🎉 Déploiement terminé avec succès !"
+        echo "URL: https://${{ env.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net/api/github-proxy"
