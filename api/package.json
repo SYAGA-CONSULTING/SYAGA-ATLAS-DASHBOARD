@@ -1,0 +1,16 @@
+{
+  "name": "atlas-dashboard-api",
+  "version": "1.0.0",
+  "description": "Azure Functions for ATLAS Dashboard",
+  "main": "index.js",
+  "dependencies": {
+    "@azure/identity": "^4.0.1",
+    "@microsoft/microsoft-graph-client": "^3.0.7"
+  },
+  "devDependencies": {
+    "@azure/functions": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
