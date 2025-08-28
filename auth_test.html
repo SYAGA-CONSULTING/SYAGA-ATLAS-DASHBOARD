@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Test Authentification M365 - SYAGA ATLAS</title>
+    
+    <!-- MSAL.js pour Azure AD -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; padding: 20px; 
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+            min-height: 100vh; color: white;
+        }
+        .container { 
+            max-width: 800px; margin: 0 auto; 
+            background: rgba(255,255,255,0.95); 
+            padding: 30px; border-radius: 15px; color: #333; 
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+        }
+        .auth-status { 
+            padding: 20px; margin: 20px 0; border-radius: 10px; text-align: center;
+            font-size: 18px; font-weight: bold;
+        }
+        .auth-success { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+        .auth-pending { background: #fff3cd; color: #856404; border: 2px solid #ffeaa7; }
+        .auth-error { background: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+        .auth-button { 
+            background: #0078d4; color: white; border: none; 
+            padding: 15px 30px; border-radius: 8px; cursor: pointer; 
+            font-size: 16px; margin: 10px 5px;
+        }
+        .auth-button:hover { background: #106ebe; }
+        .user-info { 
+            background: #e7f3ff; padding: 20px; border-radius: 10px; 
+            margin: 20px 0; border-left: 4px solid #0078d4;
+        }
+        .gmt2-time { font-family: monospace; font-weight: bold; color: #0078d4; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Test Authentification Microsoft 365</h1>
+        <p><strong>Heure GMT+2:</strong> <span id="gmt2-time" class="gmt2-time"></span></p>
+        
+        <div id="auth-status" class="auth-status auth-pending">
+            🔄 Initialisation du système d'authentification...
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <button id="loginBtn" class="auth-button" onclick="loginM365()" style="display: none;">
+                🏢 Se connecter avec Microsoft 365
+            </button>
+            <button id="logoutBtn" class="auth-button" onclick="logoutM365()" style="display: none;">
+                🚪 Se déconnecter
+            </button>
+            <button class="auth-button" onclick="testAuth()">
+                🧪 Tester Configuration
+            </button>
+        </div>
+        
+        <div id="user-info" class="user-info" style="display: none;">
+            <h3>👤 Informations Utilisateur</h3>
+            <p><strong>Nom:</strong> <span id="user-name"></span></p>
+            <p><strong>Email:</strong> <span id="user-email"></span></p>
+            <p><strong>Tenant:</strong> <span id="user-tenant"></span></p>
+        </div>
+        
+        <div id="test-results" style="margin-top: 30px;"></div>
+    </div>
+
+    <script>
+        // Configuration MSAL pour SYAGA tenant
+        const msalConfig = {
+            auth: {
+                clientId: "4c4b0f81-88ab-4a7c-ab06-4708f2f60978",
+                authority: "https://login.microsoftonline.com/6027d81c-ad9b-48f5-9da6-96f1bad11429",
+                redirectUri: window.location.origin + window.location.pathname
+            },
+            cache: {
+                cacheLocation: "localStorage",
+                storeAuthStateInCookie: true
+            }
+        };
+
+        const loginRequest = {
+            scopes: ["User.Read"]
+        };
+
+        // Instance MSAL
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        let currentAccount = null;
+        
+        // Mise à jour GMT+2 selon consigne permanente
+        function updateGMT2Time() {
+            const now = new Date();
+            const gmt2 = new Date(now.getTime() + (2 * 60 * 60 * 1000) + (now.getTimezoneOffset() * 60 * 1000));
+            const formatted = gmt2.toLocaleString('fr-FR', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+            document.getElementById('gmt2-time').textContent = formatted + ' (GMT+2)';
+        }
+        
+        // Initialisation
+        async function initAuth() {
+            try {
+                await msalInstance.initialize();
+                
+                // Vérifier si déjà connecté
+                const accounts = msalInstance.getAllAccounts();
+                if (accounts.length > 0) {
+                    currentAccount = accounts[0];
+                    updateUILoggedIn();
+                } else {
+                    updateUILoggedOut();
+                }
+                
+                document.getElementById('auth-status').innerHTML = '✅ Système d\'authentification initialisé';
+                document.getElementById('auth-status').className = 'auth-status auth-success';
+                
+            } catch (error) {
+                console.error('Erreur init MSAL:', error);
+                document.getElementById('auth-status').innerHTML = '❌ Erreur d\'initialisation: ' + error.message;
+                document.getElementById('auth-status').className = 'auth-status auth-error';
+            }
+        }
+        
+        // Connexion M365
+        async function loginM365() {
+            try {
+                document.getElementById('auth-status').innerHTML = '🔄 Connexion en cours...';
+                document.getElementById('auth-status').className = 'auth-status auth-pending';
+                
+                const loginResponse = await msalInstance.loginPopup(loginRequest);
+                currentAccount = loginResponse.account;
+                updateUILoggedIn();
+                
+                document.getElementById('auth-status').innerHTML = '✅ Connexion réussie !';
+                document.getElementById('auth-status').className = 'auth-status auth-success';
+                
+            } catch (error) {
+                console.error('Erreur connexion:', error);
+                document.getElementById('auth-status').innerHTML = '❌ Erreur de connexion: ' + error.message;
+                document.getElementById('auth-status').className = 'auth-status auth-error';
+            }
+        }
+        
+        // Déconnexion
+        function logoutM365() {
+            msalInstance.logoutPopup();
+            currentAccount = null;
+            updateUILoggedOut();
+            
+            document.getElementById('auth-status').innerHTML = '🚪 Déconnecté';
+            document.getElementById('auth-status').className = 'auth-status auth-pending';
+        }
+        
+        // Mise à jour UI connecté
+        function updateUILoggedIn() {
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'inline-block';
+            document.getElementById('user-info').style.display = 'block';
+            
+            document.getElementById('user-name').textContent = currentAccount.name || 'N/A';
+            document.getElementById('user-email').textContent = currentAccount.username || 'N/A';
+            document.getElementById('user-tenant').textContent = currentAccount.tenantId || 'N/A';
+        }
+        
+        // Mise à jour UI déconnecté
+        function updateUILoggedOut() {
+            document.getElementById('loginBtn').style.display = 'inline-block';
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('user-info').style.display = 'none';
+        }
+        
+        // Test configuration
+        function testAuth() {
+            const results = document.getElementById('test-results');
+            
+            const tests = {
+                'Client ID configuré': msalConfig.auth.clientId === '4c4b0f81-88ab-4a7c-ab06-4708f2f60978',
+                'Authority correcte': msalConfig.auth.authority.includes('6027d81c-ad9b-48f5-9da6-96f1bad11429'),
+                'Redirect URI configuré': msalConfig.auth.redirectUri === window.location.href,
+                'MSAL initialisé': typeof msalInstance !== 'undefined',
+                'Utilisateur connecté': currentAccount !== null
+            };
+            
+            let html = '<h3>🧪 Résultats Tests Configuration:</h3><ul>';
+            let allGood = true;
+            
+            for (const [test, result] of Object.entries(tests)) {
+                const icon = result ? '✅' : '❌';
+                html += `<li>${icon} ${test}</li>`;
+                if (!result) allGood = false;
+            }
+            html += '</ul>';
+            
+            if (allGood) {
+                html += '<p style="color: #28a745; font-weight: bold;">🎉 Configuration parfaite !</p>';
+            } else {
+                html += '<p style="color: #dc3545; font-weight: bold;">⚠️ Problèmes détectés</p>';
+            }
+            
+            results.innerHTML = html;
+        }
+        
+        // Initialisation
+        setInterval(updateGMT2Time, 1000);
+        updateGMT2Time();
+        initAuth();
+    </script>
+</body>
+</html>
