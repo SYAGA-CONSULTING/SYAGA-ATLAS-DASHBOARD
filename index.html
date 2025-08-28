@@ -15,9 +15,9 @@
     
     <!-- VERSION TIMESTAMP ANTI-CACHE -->
     <script>
-        console.log('🔄 VERSION: v21h25 - Build:', new Date().toISOString());
+        console.log('🔄 VERSION: v21h33 - Build:', new Date().toISOString());
         // Forcer reload si version ancienne
-        const currentVersion = 'v21h25';
+        const currentVersion = 'v21h33';
         if (localStorage.getItem('dashboardVersion') !== currentVersion) {
             localStorage.setItem('dashboardVersion', currentVersion);
             console.log('🆕 Nouvelle version détectée - Clear cache');
@@ -321,7 +321,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo">🚀 ATLAS Dashboard v21h25 - AUTH FIXÉE</div>
+        <div class="logo">🚀 ATLAS Dashboard v21h33 - GRAPH DIRECT</div>
         <div class="realtime-indicator">
             <span class="pulse-dot"></span>
             ⚡ TEMPS RÉEL - SharePoint Autonome
@@ -540,21 +540,23 @@
                     throw new Error('Connexion Microsoft 365 requise');
                 }
                 
-                console.log('🔐 Proxy API sécurisé avec vérification auth utilisateur');
+                console.log('📡 Appel direct Microsoft Graph API');
                 
-                // Appel au proxy avec token utilisateur pour vérification
-                const proxyUrl = '/api/sharepoint-data';
+                // Appel DIRECT à Microsoft Graph (pas de proxy)
+                const graphUrl = `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items?$expand=fields&$top=100`;
                 
-                const response = await fetch(proxyUrl, {
+                const response = await fetch(graphUrl, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
-                        'Authorization': `Bearer ${accessToken}` // Token pour vérification sécurité
+                        'Authorization': `Bearer ${accessToken}` // Token pour Microsoft Graph
                     }
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Erreur API Proxy: ${response.status} ${response.statusText}`);
+                    const errorText = await response.text();
+                    console.error('Erreur Graph API:', errorText);
+                    throw new Error(`Erreur Graph API: ${response.status}`);
                 }
                 
                 const data = await response.json();
