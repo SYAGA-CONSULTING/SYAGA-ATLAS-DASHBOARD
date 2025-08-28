@@ -5,8 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📊 ATLAS Dashboard - SharePoint UNIQUEMENT</title>
     
+    <!-- ANTI-CACHE TOTAL POUR TESTS -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <!-- MSAL pour Azure AD Auth -->
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <!-- VERSION TIMESTAMP ANTI-CACHE -->
+    <script>
+        console.log('🔄 VERSION: v21h02 - Build:', new Date().toISOString());
+        // Forcer reload si version ancienne
+        const currentVersion = 'v21h02';
+        if (localStorage.getItem('dashboardVersion') !== currentVersion) {
+            localStorage.setItem('dashboardVersion', currentVersion);
+            console.log('🆕 Nouvelle version détectée - Clear cache');
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+        }
+    </script>
     
     <style>
         * {
@@ -300,7 +321,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo">🚀 ATLAS Dashboard v20h54 - BON CLIENT ID</div>
+        <div class="logo">🚀 ATLAS Dashboard v21h02 - NO CACHE</div>
         <div class="realtime-indicator">
             <span class="pulse-dot"></span>
             ⚡ TEMPS RÉEL - SharePoint Autonome
