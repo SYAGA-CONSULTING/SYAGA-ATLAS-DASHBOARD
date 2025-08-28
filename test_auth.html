@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Auth SYAGA</title>
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+</head>
+<body>
+    <h1>Test Authentication SYAGA</h1>
+    <button id="loginBtn">Se connecter</button>
+    <div id="result"></div>
+
+    <script>
+        const msalConfig = {
+            auth: {
+                clientId: "4c4b0f81-88ab-4a7c-ab06-4708f2f60978",
+                authority: "https://login.microsoftonline.com/6027d81c-ad9b-48f5-9da6-96f1bad11429",
+                redirectUri: window.location.origin + window.location.pathname
+            }
+        };
+
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        
+        document.getElementById('loginBtn').onclick = async () => {
+            try {
+                const result = document.getElementById('result');
+                result.innerHTML = "Tentative de connexion...";
+                
+                const response = await msalInstance.loginPopup({
+                    scopes: ["User.Read"]
+                });
+                
+                result.innerHTML = `✅ Connecté: ${response.account.name} (${response.account.username})`;
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = `❌ Erreur: ${error.message}`;
+                console.error(error);
+            }
+        };
+    </script>
+</body>
+</html>
