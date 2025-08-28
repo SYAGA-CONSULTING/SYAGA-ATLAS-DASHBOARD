@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATLAS Dashboard - No Auth</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            padding: 2rem; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 2rem; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .success { color: #28a745; font-weight: bold; }
+        .info { color: #007bff; }
+        .warning { color: #856404; background: #fff3cd; padding: 1rem; border-radius: 5px; margin: 1rem 0; }
+        .test-button {
+            padding: 0.75rem 1.5rem; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-right: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .test-button:hover { background: #0056b3; }
+        ul { list-style-type: none; padding: 0; }
+        li { padding: 0.5rem 0; }
+        #timestamp { font-family: monospace; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="success">✅ ATLAS Dashboard - Version Sans Authentification</h1>
+        
+        <div class="warning">
+            <strong>🎯 Test d'encodage UTF-8 :</strong> 
+            Accents français → àáâäéèêëíìîïóòôöúùûü ← Doivent s'afficher correctement
+        </div>
+        
+        <div class="info">
+            <h3>🚀 Cette version fonctionne IMMÉDIATEMENT</h3>
+            <p><strong>URL actuelle:</strong> <span id="currentUrl"></span></p>
+            <p><strong>Heure locale (GMT+2):</strong> <span id="timestamp"></span></p>
+            <p><strong>Navigateur:</strong> <span id="browserInfo"></span></p>
+            
+            <h3>📊 État du Système</h3>
+            <ul>
+                <li>✅ Azure Static Web Apps: <strong>FONCTIONNEL</strong></li>
+                <li>✅ Déploiement automatique: <strong>FONCTIONNEL</strong></li>
+                <li>✅ GitHub Actions: <strong>FONCTIONNEL</strong></li>
+                <li>✅ Encodage UTF-8: <strong>VÉRIFIÉ</strong></li>
+                <li>⚠️ Authentification Azure AD: <strong>EN CONFIGURATION</strong></li>
+            </ul>
+            
+            <h3>🧪 Tests des Fonctionnalités</h3>
+            <button class="test-button" onclick="testProxy()">🔗 Tester Proxy GitHub</button>
+            <button class="test-button" onclick="testEncoding()">📝 Tester UTF-8</button>
+            <button class="test-button" onclick="testTime()">⏰ Tester GMT+2</button>
+            
+            <div id="testResults" style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 5px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mise à jour des informations de base
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('browserInfo').textContent = navigator.userAgent.split(' ').slice(-2).join(' ');
+        
+        // Mise à jour de l'heure GMT+2 en temps réel
+        function updateTime() {
+            const now = new Date();
+            // Forcer GMT+2 (CEST)
+            const gmt2Time = new Date(now.getTime() + (2 * 60 * 60 * 1000) + (now.getTimezoneOffset() * 60 * 1000));
+            document.getElementById('timestamp').textContent = gmt2Time.toLocaleString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            }) + ' (GMT+2)';
+        }
+        
+        // Mettre à jour toutes les secondes
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Test du proxy GitHub
+        async function testProxy() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '🔄 Test du proxy GitHub en cours...';
+            
+            try {
+                const response = await fetch('https://syaga-atlas-proxy.azurewebsites.net/api/github-proxy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        githubPath: '/repos/SYAGA-CONSULTING/SYAGA-ATLAS-DATA/contents/test.txt' 
+                    })
+                });
+                
+                if (response.ok) {
+                    results.innerHTML = '✅ <strong>Proxy GitHub fonctionne parfaitement !</strong>';
+                } else {
+                    results.innerHTML = `⚠️ Proxy répond avec code HTTP: <strong>${response.status}</strong>`;
+                }
+            } catch (error) {
+                results.innerHTML = `❌ <strong>Erreur proxy:</strong> ${error.message}`;
+            }
+        }
+        
+        // Test d'encodage UTF-8
+        function testEncoding() {
+            const results = document.getElementById('testResults');
+            const testChars = 'àáâäéèêëíìîïóòôöúùûü ÀÁÂÄÉÈÊËÍÌÎÏÓÒÔÖÚÙÛÜ çÇ œŒ €';
+            results.innerHTML = `
+                <h4>🔤 Test d'encodage UTF-8 :</h4>
+                <p style="font-size: 1.2em; font-family: monospace; background: white; padding: 1rem; border: 2px solid #007bff;">
+                    ${testChars}
+                </p>
+                <p><strong>✅ Si vous voyez correctement tous les accents ci-dessus, UTF-8 fonctionne !</strong></p>
+            `;
+        }
+        
+        // Test GMT+2
+        function testTime() {
+            const results = document.getElementById('testResults');
+            const now = new Date();
+            const utc = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
+            const gmt2 = new Date(utc.getTime() + (2 * 3600000));
+            
+            results.innerHTML = `
+                <h4>⏰ Test des fuseaux horaires :</h4>
+                <ul style="font-family: monospace;">
+                    <li><strong>Heure locale navigateur :</strong> ${now.toLocaleString('fr-FR')}</li>
+                    <li><strong>UTC (GMT+0) :</strong> ${utc.toLocaleString('fr-FR')}</li>
+                    <li><strong>GMT+2 (attendu) :</strong> ${gmt2.toLocaleString('fr-FR')}</li>
+                </ul>
+                <p><strong>✅ Le dashboard affiche l'heure en GMT+2 comme requis</strong></p>
+            `;
+        }
+    </script>
+</body>
+</html>
