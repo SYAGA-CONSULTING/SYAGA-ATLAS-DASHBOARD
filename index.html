@@ -532,7 +532,7 @@
             servers.forEach(server => {
                 if (server.fields && server.fields.AgentVersion) {
                     const lastContact = server.fields.LastContact ? new Date(server.fields.LastContact) : null;
-                    const secondsAgo = lastContact ? Math.floor((now - lastContact) / 1000) : null;
+                    const secondsAgo = lastContact ? Math.abs(Math.floor((now - lastContact) / 1000)) : null;
                     
                     if (secondsAgo !== null) {
                         if (secondsAgo < 60) {
@@ -572,7 +572,7 @@
             const activeAgents = servers.filter(s => {
                 if (!s.fields?.AgentVersion || !s.fields?.LastContact) return false;
                 const lastContact = new Date(s.fields.LastContact);
-                const secondsAgo = Math.floor((now - lastContact) / 1000);
+                const secondsAgo = Math.abs(Math.floor((now - lastContact) / 1000));
                 return secondsAgo < 120; // Agent actif si contact < 2min
             }).length;
             
@@ -682,7 +682,7 @@
                                         if (!fields.LastContact) return 'Jamais';
                                         const lastContact = new Date(fields.LastContact);
                                         const now = new Date();
-                                        const secondsAgo = Math.floor((now - lastContact) / 1000);
+                                        const secondsAgo = Math.abs(Math.floor((now - lastContact) / 1000));
                                         
                                         let timeText = lastContact.toLocaleString('fr-FR');
                                         let indicator = '';
