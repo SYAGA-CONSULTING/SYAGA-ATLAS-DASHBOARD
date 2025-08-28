@@ -485,31 +485,31 @@
             await loadFromSharePoint();
         }
         
-        // Charger UNIQUEMENT depuis SharePoint - DONNÉES RÉELLES ATLAS
+        // Charger depuis Proxy API sécurisé - ÉLIMINE L'ERREUR 403
         async function loadFromSharePoint() {
             try {
-                if (!accessToken) {
-                    throw new Error('Pas de token d\'accès');
-                }
+                console.log('🔐 Utilisation proxy API sécurisé (plus d\'auth client)');
                 
-                // Récupérer les données de la liste SharePoint ATLAS-Servers
-                const url = `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items?expand=fields`;
+                // Appel à notre proxy Azure Function qui gère l'auth côté serveur
+                const proxyUrl = '/api/sharepoint-proxy';
                 
-                const response = await fetch(url, {
+                const response = await fetch(proxyUrl, {
+                    method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${accessToken}`,
                         'Accept': 'application/json'
                     }
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Erreur SharePoint: ${response.status}`);
+                    throw new Error(`Erreur API Proxy: ${response.status} ${response.statusText}`);
                 }
                 
                 const data = await response.json();
                 
-                // Les données sont déjà au bon format depuis SharePoint
+                // Les données sont au format SharePoint
                 const servers = data.value || [];
+                
+                console.log(`✅ ${servers.length} serveurs récupérés via proxy sécurisé`);
                 
                 updateDashboard(servers);
                 
@@ -517,8 +517,8 @@
                 displayRealLogs(servers);
                 
             } catch (error) {
-                console.error('❌ Erreur chargement SharePoint:', error);
-                showError(`Impossible de récupérer les données SharePoint: ${error.message}`);
+                console.error('❌ Erreur chargement via proxy:', error);
+                showError(`Erreur proxy API: ${error.message}`);
             }
         }
         
