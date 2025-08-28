@@ -300,7 +300,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo">🚀 ATLAS Dashboard v20h20 - AUTH FORCÉE</div>
+        <div class="logo">🚀 ATLAS Dashboard v20h51 - DEBUG MODE</div>
         <div class="realtime-indicator">
             <span class="pulse-dot"></span>
             ⚡ TEMPS RÉEL - SharePoint Autonome
@@ -416,8 +416,18 @@
                 startMonitoring();
             } else {
                 console.log('❌ PAS CONNECTÉ - Forcer login...');
-                document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#667eea;"><h1 style="color:white;">Connexion Microsoft 365 requise...</h1></div>';
-                await signIn();
+                document.body.innerHTML = `
+                    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-family:Arial;">
+                        <h1>🔐 Authentification Requise</h1>
+                        <p style="margin:20px;">Dashboard v20h51</p>
+                        <button onclick="signIn()" style="padding:15px 30px;font-size:18px;background:white;color:#667eea;border:none;border-radius:5px;cursor:pointer;">
+                            Se connecter avec Microsoft 365
+                        </button>
+                        <p style="margin-top:20px;opacity:0.8;">Si le popup est bloqué, autorisez les popups pour ce site</p>
+                    </div>
+                `;
+                // Attendre que l'utilisateur clique
+                window.signIn = signIn;
             }
         });
         
