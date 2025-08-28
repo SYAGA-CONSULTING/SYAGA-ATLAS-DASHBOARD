@@ -6,7 +6,71 @@ const { Client } = require('@microsoft/microsoft-graph-client');
 const { TokenCredentialAuthenticationProvider } = require('@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials');
 
 module.exports = async function (context, req) {
-    context.log('🔐 Proxy SharePoint - Authentification côté serveur');
+    context.log('🔐 Proxy SharePoint - Authentification côté serveur avec vérification utilisateur');
+    
+    // SÉCURITÉ : Vérifier que l'utilisateur est authentifié M365
+    const userToken = req.headers.authorization?.replace('Bearer ', '');
+    if (!userToken) {
+        context.log.error('❌ Accès refusé - Authentification M365 requise');
+        context.res = {
+            status: 401,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: {
+                error: 'Authentification Microsoft 365 requise',
+                message: 'Connectez-vous avec votre compte Microsoft 365'
+            }
+        };
+        return;
+    }
+
+    // SÉCURITÉ : Valider le token utilisateur Microsoft 365
+    try {
+        const tokenValidation = await fetch('https://graph.microsoft.com/v1.0/me', {
+            headers: { 'Authorization': `Bearer ${userToken}` }
+        });
+        
+        if (!tokenValidation.ok) {
+            throw new Error('Token invalide');
+        }
+        
+        const userInfo = await tokenValidation.json();
+        context.log(`✅ Utilisateur authentifié: ${userInfo.userPrincipalName}`);
+        
+        // Vérifier domaine autorisé
+        if (!userInfo.userPrincipalName?.endsWith('@syaga.fr')) {
+            context.log.error(`❌ Domaine non autorisé: ${userInfo.userPrincipalName}`);
+            context.res = {
+                status: 403,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: {
+                    error: 'Domaine non autorisé',
+                    message: 'Seuls les utilisateurs @syaga.fr peuvent accéder au dashboard ATLAS'
+                }
+            };
+            return;
+        }
+        
+    } catch (error) {
+        context.log.error('❌ Validation token échouée:', error.message);
+        context.res = {
+            status: 401,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: {
+                error: 'Token invalide',
+                message: 'Reconnectez-vous à Microsoft 365'
+            }
+        };
+        return;
+    }
 
     // Configuration Service Principal - Variables d'environnement pour sécurité
     const tenantId = process.env.AZURE_TENANT_ID || '6027d81c-ad9b-48f5-9da6-96f1bad11429';

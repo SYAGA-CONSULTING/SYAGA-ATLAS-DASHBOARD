@@ -485,18 +485,23 @@
             await loadFromSharePoint();
         }
         
-        // Charger depuis Proxy API sécurisé - ÉLIMINE L'ERREUR 403
+        // Charger depuis Proxy API sécurisé - AVEC AUTH M365 OBLIGATOIRE
         async function loadFromSharePoint() {
             try {
-                console.log('🔐 Utilisation proxy API sécurisé (plus d\'auth client)');
+                if (!accessToken) {
+                    throw new Error('Connexion Microsoft 365 requise');
+                }
                 
-                // Appel à notre proxy Azure Function qui gère l'auth côté serveur
+                console.log('🔐 Proxy API sécurisé avec vérification auth utilisateur');
+                
+                // Appel au proxy avec token utilisateur pour vérification
                 const proxyUrl = '/api/sharepoint-proxy';
                 
                 const response = await fetch(proxyUrl, {
                     method: 'GET',
                     headers: {
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${accessToken}` // Token pour vérification sécurité
                     }
                 });
                 
@@ -509,7 +514,7 @@
                 // Les données sont au format SharePoint
                 const servers = data.value || [];
                 
-                console.log(`✅ ${servers.length} serveurs récupérés via proxy sécurisé`);
+                console.log(`✅ ${servers.length} serveurs récupérés via proxy sécurisé authentifié`);
                 
                 updateDashboard(servers);
                 
