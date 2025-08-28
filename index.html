@@ -300,7 +300,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo">🚀 ATLAS Dashboard v20h15 - VISIBLE ENFIN</div>
+        <div class="logo">🚀 ATLAS Dashboard v20h20 - AUTH FORCÉE</div>
         <div class="realtime-indicator">
             <span class="pulse-dot"></span>
             ⚡ TEMPS RÉEL - SharePoint Autonome
@@ -405,14 +405,18 @@
         
         // Initialisation
         window.addEventListener('load', async () => {
+            console.log('🔐 Initialisation AUTH OBLIGATOIRE...');
             await msalInstance.initialize();
             
             const accounts = msalInstance.getAllAccounts();
             if (accounts.length > 0) {
+                console.log('✅ Utilisateur déjà connecté:', accounts[0].username);
                 account = accounts[0];
                 await getAccessToken();
                 startMonitoring();
             } else {
+                console.log('❌ PAS CONNECTÉ - Forcer login...');
+                document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#667eea;"><h1 style="color:white;">Connexion Microsoft 365 requise...</h1></div>';
                 await signIn();
             }
         });
