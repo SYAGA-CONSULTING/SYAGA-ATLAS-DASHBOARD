@@ -1,5 +1,5 @@
 module.exports = async function (context, req) {
-    context.log('SharePoint data function called');
+    context.log('SharePoint data function v2 - WITH AUTH CHECK');
     
     // Vérifier auth
     const authHeader = req.headers.authorization;
