@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 ATLAS Dashboard - SYAGA Consulting</title>
+    
+    <!-- MSAL pour Azure AD Auth -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        /* Data Badge System */
+        .data-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+        
+        .real-data {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .fake-data {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .estimated-data {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .card-header {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: transform 0.3s;
+        }
+        
+        .stat-item:hover {
+            transform: translateY(-3px);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        /* Server Table */
+        .server-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .server-table th,
+        .server-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .server-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .server-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Updates Section */
+        .update-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s;
+        }
+        
+        .update-item:hover {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .update-critical {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .update-important {
+            border-left: 4px solid #fd7e14;
+        }
+        
+        .update-recommended {
+            border-left: 4px solid #28a745;
+        }
+        
+        .update-info {
+            flex: 1;
+        }
+        
+        .update-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        
+        .update-kb {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .update-size {
+            font-size: 0.85rem;
+            color: #666;
+            margin-right: 1rem;
+        }
+        
+        /* Action Buttons */
+        .action-btn {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+        
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .action-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Status Indicators */
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        
+        .status-online {
+            background: #28a745;
+        }
+        
+        .status-offline {
+            background: #dc3545;
+        }
+        
+        .status-warning {
+            background: #ffc107;
+        }
+        
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+        }
+        
+        /* Refresh indicator */
+        .refresh-indicator {
+            color: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .last-update {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Login */
+        .login-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .login-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.2);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .login-card h1 {
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        #loginButton {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+        
+        #loginButton:hover {
+            transform: scale(1.05);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* Time Display */
+        .time-display {
+            font-size: 0.85rem;
+            color: #666;
+            font-family: monospace;
+        }
+        
+        .timezone-info {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <h1>🚀 ATLAS Dashboard</h1>
+            <p style="margin-bottom: 2rem; color: #666;">
+                Connectez-vous avec votre compte Microsoft 365 SYAGA
+            </p>
+            <button id="loginButton">
+                📧 Se connecter avec Microsoft
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="mainContent" class="hidden">
+        <div class="header">
+            <div class="logo">📊 ATLAS Dashboard - SYAGA Consulting</div>
+            <div class="user-info">
+                <span class="last-update" id="lastUpdate">Chargement...</span>
+                <span class="refresh-indicator" id="refreshIndicator">●</span>
+                <div class="user-avatar" id="userAvatar"></div>
+                <span id="userName"></span>
+                <button class="action-btn" id="logoutButton">Déconnexion</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Légende des données -->
+            <div class="card">
+                <div class="card-header">
+                    🏷️ Légende des Données
+                    <div class="time-display">
+                        Heure locale (GMT+2) : <span id="localTime"></span>
+                        <div class="timezone-info">Les logs agents sont en GMT+2, GitHub API en GMT</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                    <div><span class="data-badge real-data">✅ RÉEL</span> Données live depuis l'agent ATLAS</div>
+                    <div><span class="data-badge estimated-data">⚠️ ESTIMÉ</span> Calculé ou dérivé</div>
+                    <div><span class="data-badge fake-data">🔴 FICTIF</span> Exemple/template à implémenter</div>
+                </div>
+            </div>
+
+            <!-- Stats Principales -->
+            <div class="card">
+                <div class="card-header">
+                    📈 Vue d'Ensemble
+                    <span class="refresh-indicator" id="refreshIndicator2">●</span>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalServers">0</div>
+                        <div class="stat-label">Serveurs <span class="data-badge real-data">✅ RÉEL</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="onlineServers">0</div>
+                        <div class="stat-label">En Ligne <span class="data-badge real-data">✅ RÉEL</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalPendingUpdates">0</div>
+                        <div class="stat-label">MAJ en Attente <span class="data-badge real-data">✅ RÉEL</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="agentsRunning">0</div>
+                        <div class="stat-label">Agents Actifs <span class="data-badge real-data">✅ RÉEL</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Serveurs -->
+            <div class="card">
+                <div class="card-header">
+                    🖥️ État des Serveurs
+                    <span class="data-badge real-data">✅ Données Temps Réel</span>
+                </div>
+                <table class="server-table">
+                    <thead>
+                        <tr>
+                            <th>Serveur</th>
+                            <th>État</th>
+                            <th>Agent</th>
+                            <th>CPU</th>
+                            <th>RAM</th>
+                            <th>Disque Libre</th>
+                            <th>MAJ Pending</th>
+                            <th>Dernier Contact (GMT+2)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="serversTable">
+                        <tr>
+                            <td colspan="8" class="loading">
+                                <span class="spinner"></span> Chargement des données...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mises à jour détaillées -->
+            <div class="card">
+                <div class="card-header">
+                    🔄 Mises à jour Windows en Détail
+                    <div>
+                        <span class="data-badge fake-data">🔴 FICTIF - En Développement</span>
+                        <button class="action-btn" onclick="scanForUpdates()">🔍 Scanner MAJ</button>
+                    </div>
+                </div>
+                <div id="updatesDetail">
+                    <div class="update-item update-critical">
+                        <div class="update-info">
+                            <div class="update-title">Mise à jour cumulative pour Windows Server 2022 (KB5029921)</div>
+                            <div class="update-kb">KB5029921 • Critique • Sécurité</div>
+                        </div>
+                        <div class="update-size">342 MB</div>
+                        <button class="action-btn" onclick="installUpdate('KB5029921')">Installer</button>
+                    </div>
+                    
+                    <div class="update-item update-important">
+                        <div class="update-info">
+                            <div class="update-title">Définitions Windows Defender</div>
+                            <div class="update-kb">Automatique • Important • Antivirus</div>
+                        </div>
+                        <div class="update-size">18 MB</div>
+                        <button class="action-btn" onclick="installUpdate('DefenderDef')">Installer</button>
+                    </div>
+                    
+                    <div class="update-item update-recommended">
+                        <div class="update-info">
+                            <div class="update-title">Mise à jour .NET Framework 4.8.1</div>
+                            <div class="update-kb">KB5028851 • Recommandé • Framework</div>
+                        </div>
+                        <div class="update-size">124 MB</div>
+                        <button class="action-btn" onclick="installUpdate('KB5028851')">Installer</button>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #dee2e6;">
+                    <h4>Actions Groupées</h4>
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                        <button class="action-btn" onclick="installAllUpdates()">📥 Installer Toutes MAJ</button>
+                        <button class="action-btn" onclick="scheduleUpdates()">⏰ Planifier Installation</button>
+                        <button class="action-btn" onclick="downloadOnly()">⬇️ Télécharger Seulement</button>
+                        <button class="action-btn" onclick="rebootServer()">🔄 Redémarrer Serveur</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hyper-V (si applicable) -->
+            <div class="card" id="hypervCard" style="display: none;">
+                <div class="card-header">
+                    💻 Hyper-V
+                    <span class="data-badge real-data">✅ Status Réel</span>
+                    <span class="data-badge fake-data">🔴 Détails Fictifs</span>
+                </div>
+                <div id="hypervDetails">
+                    <!-- Sera rempli par JavaScript -->
+                </div>
+            </div>
+
+            <!-- Logs en Temps Réel -->
+            <div class="card">
+                <div class="card-header">
+                    📋 Logs Agents (Temps Réel UTF-8)
+                    <span class="data-badge real-data">✅ Live depuis GitHub</span>
+                </div>
+                <div style="background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 0.9rem; max-height: 300px; overflow-y: auto;" id="logsContainer">
+                    <div class="loading" style="color: #d4d4d4;">
+                        <span class="spinner"></span> Chargement des logs...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration MSAL
+        const msalConfig = {
+            auth: {
+                clientId: "4c4b0f81-88ab-4a7c-ab06-4708f2f60978",
+                authority: "https://login.microsoftonline.com/6027d81c-ad9b-48f5-9da6-96f1bad11429",
+                redirectUri: window.location.origin + window.location.pathname
+            },
+            cache: {
+                cacheLocation: "localStorage",
+                storeAuthStateInCookie: true
+            }
+        };
+
+        const loginRequest = {
+            scopes: ["User.Read"]
+        };
+
+        // Configuration - Utilisation du proxy Azure sécurisé
+        const PROXY_URL = 'https://syaga-atlas-proxy.azurewebsites.net/api/github-proxy';
+        const GITHUB_REPO = 'SYAGA-CONSULTING/SYAGA-ATLAS-DATA';
+        const REFRESH_INTERVAL = 30000; // 30 secondes
+        
+        // Fonction pour appeler GitHub via le proxy sécurisé
+        async function callGitHubAPI(path) {
+            const response = await fetch(PROXY_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${account ? 'authenticated' : 'anonymous'}`
+                },
+                body: JSON.stringify({
+                    githubPath: path
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Proxy error: ${response.status}`);
+            }
+            
+            return await response.json();
+        }
+
+        // Initialisation MSAL
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        let account = null;
+        let servers = [];
+        let lastUpdateTime = null;
+
+        // Conversion GMT vers GMT+2
+        function convertToLocalTime(gmtString) {
+            if (!gmtString) return 'Jamais';
+            
+            try {
+                const date = new Date(gmtString);
+                // Ajouter 2 heures pour GMT+2
+                date.setHours(date.getHours() + 2);
+                return date.toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch (error) {
+                return gmtString;
+            }
+        }
+
+        // Affichage heure locale temps réel
+        function updateLocalTime() {
+            const now = new Date();
+            document.getElementById('localTime').textContent = 
+                now.toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+        }
+
+        // Initialisation
+        async function init() {
+            // Vérifier si déjà connecté
+            const currentAccounts = msalInstance.getAllAccounts();
+            if (currentAccounts && currentAccounts.length > 0) {
+                account = currentAccounts[0];
+                showDashboard();
+            } else {
+                showLogin();
+            }
+
+            // Mettre à jour l'heure toutes les secondes
+            setInterval(updateLocalTime, 1000);
+            updateLocalTime();
+        }
+
+        // Afficher écran de connexion
+        function showLogin() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+        }
+
+        // Afficher dashboard
+        function showDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            
+            // Afficher infos utilisateur
+            document.getElementById('userName').textContent = account.name;
+            document.getElementById('userAvatar').textContent = account.name.charAt(0).toUpperCase();
+            
+            // Charger données
+            loadData();
+            setInterval(loadData, REFRESH_INTERVAL);
+        }
+
+        // Connexion
+        document.getElementById('loginButton').addEventListener('click', async () => {
+            try {
+                const response = await msalInstance.loginPopup(loginRequest);
+                account = response.account;
+                showDashboard();
+            } catch (error) {
+                console.error('Erreur connexion:', error);
+                alert('Erreur de connexion. Vérifiez votre compte SYAGA.');
+            }
+        });
+
+        // Déconnexion
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            msalInstance.logoutPopup();
+            account = null;
+            showLogin();
+        });
+
+        // Charger données via proxy sécurisé
+        async function loadData() {
+            try {
+                document.getElementById('refreshIndicator').style.color = '#ffc107';
+                document.getElementById('refreshIndicator2').style.color = '#ffc107';
+                
+                // Charger servers.json via proxy
+                const data = await callGitHubAPI(`/repos/${GITHUB_REPO}/contents/servers.json`);
+                
+                // Décoder avec UTF-8 explicite
+                const content = decodeURIComponent(escape(atob(data.content)));
+                const serversData = JSON.parse(content);
+                servers = serversData.servers;
+                lastUpdateTime = serversData.lastUpdate;
+                
+                updateDashboard();
+                await loadLogs();
+                
+                document.getElementById('refreshIndicator').style.color = '#28a745';
+                document.getElementById('refreshIndicator2').style.color = '#28a745';
+                document.getElementById('lastUpdate').textContent = 
+                    `Dernière MAJ: ${convertToLocalTime(new Date().toISOString())}`;
+                
+            } catch (error) {
+                console.error('Erreur chargement:', error);
+                document.getElementById('refreshIndicator').style.color = '#dc3545';
+                document.getElementById('refreshIndicator2').style.color = '#dc3545';
+                document.getElementById('lastUpdate').textContent = 
+                    `Erreur: ${error.message}`;
+            }
+        }
+
+        // Mettre à jour dashboard
+        function updateDashboard() {
+            // Stats principales (RÉELLES)
+            document.getElementById('totalServers').textContent = servers.length;
+            document.getElementById('onlineServers').textContent = 
+                servers.filter(s => s.state === 'OK').length;
+            document.getElementById('totalPendingUpdates').textContent = 
+                servers.reduce((sum, s) => sum + (s.pendingUpdates || 0), 0);
+            document.getElementById('agentsRunning').textContent = 
+                servers.filter(s => s.agentInstalled && s.lastContact).length;
+
+            // Table des serveurs (RÉELLES avec conversion GMT+2)
+            const tbody = document.getElementById('serversTable');
+            tbody.innerHTML = servers.map(server => {
+                const lastContact = convertToLocalTime(server.lastContact);
+                const statusColor = server.state === 'OK' ? 'status-online' : 'status-offline';
+                
+                return `
+                    <tr>
+                        <td>
+                            <strong>${server.hostname}</strong><br>
+                            <small style="color: #666;">${server.role || 'N/A'}</small>
+                        </td>
+                        <td>
+                            <span class="status-indicator ${statusColor}"></span>
+                            ${server.state || 'Inconnu'}
+                        </td>
+                        <td>
+                            ${server.agentInstalled ? 
+                                `<strong>v${server.agentVersion || '?'}</strong>` : 
+                                '<span style="color: #dc3545;">Non installé</span>'}
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>${server.cpuUsage || 0}%</span>
+                                <div class="progress-bar" style="width: 60px;">
+                                    <div class="progress-fill" style="width: ${server.cpuUsage || 0}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>${server.memoryUsage || 0}%</span>
+                                <div class="progress-bar" style="width: 60px;">
+                                    <div class="progress-fill" style="width: ${server.memoryUsage || 0}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><strong>${server.diskSpaceGB || 0}</strong> GB</td>
+                        <td>
+                            <strong style="color: ${server.pendingUpdates > 0 ? '#dc3545' : '#28a745'}">
+                                ${server.pendingUpdates || 0}
+                            </strong>
+                        </td>
+                        <td>
+                            <small style="font-family: monospace;">${lastContact}</small>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Montrer card Hyper-V si applicable
+            const hvServers = servers.filter(s => s.role === 'Hyper-V Host');
+            if (hvServers.length > 0) {
+                document.getElementById('hypervCard').style.display = 'block';
+                document.getElementById('hypervDetails').innerHTML = hvServers.map(server => `
+                    <div style="margin: 0.5rem 0; padding: 0.75rem; background: #f8f9fa; border-radius: 8px;">
+                        <strong>${server.hostname}</strong>: ${server.hypervStatus || 'État inconnu'}
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Charger logs via proxy avec UTF-8 et conversion horaire
+        async function loadLogs() {
+            try {
+                const data = await callGitHubAPI(`/repos/${GITHUB_REPO}/contents/logs/SYAGA-HOST01.log`);
+                
+                // Décoder avec UTF-8 explicite
+                const content = decodeURIComponent(escape(atob(data.content)));
+                const lines = content.split('\n').slice(-25).filter(line => line.trim()); // 25 dernières lignes non vides
+                
+                document.getElementById('logsContainer').innerHTML = 
+                    lines.map(line => {
+                        // Colorer selon le contenu
+                        let style = 'color: #d4d4d4;';
+                        if (line.includes('Error') || line.includes('error') || line.includes('❌')) {
+                            style = 'color: #f48771;';
+                        } else if (line.includes('Warning') || line.includes('warning') || line.includes('⚠️')) {
+                            style = 'color: #ce9178;';
+                        } else if (line.includes('✅') || line.includes('Success') || line.includes('OK')) {
+                            style = 'color: #4ec9b0;';
+                        } else if (line.match(/^\d{4}-\d{2}-\d{2}/)) {
+                            style = 'color: #569cd6;';
+                        }
+                        
+                        return `<div style="${style}; padding: 0.1rem 0; word-break: break-all;">${line}</div>`;
+                    }).join('');
+                    
+            } catch (error) {
+                document.getElementById('logsContainer').innerHTML = 
+                    `<div style="color: #dc3545;">❌ Erreur chargement logs: ${error.message}</div>`;
+            }
+        }
+
+        // Actions mises à jour (FICTIVES pour l'instant)
+        async function scanForUpdates() {
+            alert('🔍 Scan des mises à jour... (Fonction à implémenter dans l\'agent ATLAS)');
+        }
+
+        async function installUpdate(updateId) {
+            if (confirm(`Installer la mise à jour ${updateId} ?`)) {
+                alert(`📥 Installation de ${updateId}... (À implémenter dans l'agent)`);
+            }
+        }
+
+        async function installAllUpdates() {
+            if (confirm('Installer TOUTES les mises à jour en attente ?')) {
+                alert('📥 Installation de toutes les MAJ... (À implémenter dans l\'agent)');
+            }
+        }
+
+        async function scheduleUpdates() {
+            const time = prompt('Heure pour installer les MAJ (format HH:MM):');
+            if (time) {
+                alert(`⏰ MAJ planifiées à ${time} (À implémenter dans l'agent)`);
+            }
+        }
+
+        async function downloadOnly() {
+            alert('⬇️ Téléchargement des MAJ... (À implémenter dans l\'agent)');
+        }
+
+        async function rebootServer() {
+            if (confirm('Redémarrer le serveur SYAGA-HOST01 ?')) {
+                alert('🔄 Redémarrage programmé... (À implémenter dans l\'agent)');
+            }
+        }
+
+        // Initialiser au chargement
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
