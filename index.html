@@ -15,9 +15,9 @@
     
     <!-- VERSION TIMESTAMP ANTI-CACHE -->
     <script>
-        console.log('🔄 VERSION: v21h33 - Build:', new Date().toISOString());
+        console.log('🔄 VERSION: v21h41 - Build:', new Date().toISOString());
         // Forcer reload si version ancienne
-        const currentVersion = 'v21h33';
+        const currentVersion = 'v21h41';
         if (localStorage.getItem('dashboardVersion') !== currentVersion) {
             localStorage.setItem('dashboardVersion', currentVersion);
             console.log('🆕 Nouvelle version détectée - Clear cache');
@@ -321,7 +321,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo">🚀 ATLAS Dashboard v21h33 - GRAPH DIRECT</div>
+        <div class="logo">🚀 ATLAS Dashboard v21h41 - TEMPS LISIBLE</div>
         <div class="realtime-indicator">
             <span class="pulse-dot"></span>
             ⚡ TEMPS RÉEL - SharePoint Autonome
@@ -744,13 +744,22 @@
                                         
                                         if (secondsAgo < 60) {
                                             indicator = '🟢';
-                                            timeText += ` (${secondsAgo}s)`;
+                                            timeText += ` (il y a ${secondsAgo}s)`;
                                         } else if (secondsAgo < 300) {
                                             indicator = '🟡';
-                                            timeText += ` (${Math.floor(secondsAgo/60)}min)`;
+                                            timeText += ` (il y a ${Math.floor(secondsAgo/60)} min)`;
+                                        } else if (secondsAgo < 3600) {
+                                            indicator = '🔴';
+                                            timeText += ` (il y a ${Math.floor(secondsAgo/60)} min)`;
+                                        } else if (secondsAgo < 86400) {
+                                            indicator = '🔴';
+                                            const hours = Math.floor(secondsAgo/3600);
+                                            const mins = Math.floor((secondsAgo % 3600)/60);
+                                            timeText += ` (il y a ${hours}h${mins > 0 ? mins + 'min' : ''})`;
                                         } else {
                                             indicator = '🔴';
-                                            timeText += ` (${Math.floor(secondsAgo/60)}min)`;
+                                            const days = Math.floor(secondsAgo/86400);
+                                            timeText += ` (il y a ${days} jour${days > 1 ? 's' : ''})`;
                                         }
                                         
                                         return `${indicator} ${timeText}`;
