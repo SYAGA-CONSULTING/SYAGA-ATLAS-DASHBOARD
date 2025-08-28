@@ -15,9 +15,9 @@
     
     <!-- VERSION TIMESTAMP ANTI-CACHE -->
     <script>
-        console.log('🔄 VERSION: v21h18 - Build:', new Date().toISOString());
+        console.log('🔄 VERSION: v21h25 - Build:', new Date().toISOString());
         // Forcer reload si version ancienne
-        const currentVersion = 'v21h18';
+        const currentVersion = 'v21h25';
         if (localStorage.getItem('dashboardVersion') !== currentVersion) {
             localStorage.setItem('dashboardVersion', currentVersion);
             console.log('🆕 Nouvelle version détectée - Clear cache');
@@ -321,7 +321,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo">🚀 ATLAS Dashboard v21h18 - FINAL</div>
+        <div class="logo">🚀 ATLAS Dashboard v21h25 - AUTH FIXÉE</div>
         <div class="realtime-indicator">
             <span class="pulse-dot"></span>
             ⚡ TEMPS RÉEL - SharePoint Autonome
@@ -429,10 +429,23 @@
             console.log('🔐 Initialisation AUTH OBLIGATOIRE...');
             await msalInstance.initialize();
             
+            // IMPORTANT: Gérer le retour après connexion
+            try {
+                const response = await msalInstance.handleRedirectPromise();
+                if (response) {
+                    console.log('✅ Connexion réussie via redirect:', response.account.username);
+                    account = response.account;
+                    msalInstance.setActiveAccount(account);
+                }
+            } catch (error) {
+                console.error('❌ Erreur handleRedirect:', error);
+            }
+            
             const accounts = msalInstance.getAllAccounts();
             if (accounts.length > 0) {
-                console.log('✅ Utilisateur déjà connecté:', accounts[0].username);
+                console.log('✅ Utilisateur connecté:', accounts[0].username);
                 account = accounts[0];
+                msalInstance.setActiveAccount(account);
                 await getAccessToken();
                 startMonitoring();
             } else {
