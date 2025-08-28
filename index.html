@@ -312,10 +312,13 @@
         <!-- Stats Overview -->
         <div class="card">
             <div class="card-header">
-                📊 Vue d'Ensemble
+                📊 Vue d'Ensemble - ATLAS Temps Réel
                 <span style="font-size: 0.85rem; color: #6b7280;">
-                    Dernière mise à jour: <span id="lastUpdate">-</span>
+                    Dernière sync: <span id="lastUpdate">-</span>
                 </span>
+                <div id="agentStatus" style="float: right; font-size: 0.85rem; padding: 0.25rem 0.5rem; border-radius: 12px; background: #dcfce7; color: #16a34a;">
+                    ⚡ Agent ATLAS Actif
+                </div>
             </div>
             <div class="stats-grid">
                 <div class="stat-item">
@@ -333,6 +336,10 @@
                 <div class="stat-item">
                     <div class="stat-value" id="criticalAlerts">0</div>
                     <div class="stat-label">Alertes Critiques</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="activeAgents">0</div>
+                    <div class="stat-label">Agents Actifs</div>
                 </div>
             </div>
         </div>
@@ -450,11 +457,26 @@
             msalInstance.logoutPopup();
         }
         
-        // Démarrer le monitoring
+        // Démarrer le monitoring avec auto-refresh
         function startMonitoring() {
             refreshData();
-            // Rafraîchir toutes les 10 secondes pour du vrai temps réel
-            setInterval(refreshData, 10000);
+            // Rafraîchir toutes les 30 secondes (sync avec l'agent)
+            setInterval(refreshData, 30000);
+            
+            // Indicateur visuel de dernière actualisation
+            setInterval(() => {
+                const lastUpdateElement = document.getElementById('lastUpdate');
+                if (lastUpdateElement) {
+                    const now = new Date();
+                    lastUpdateElement.textContent = now.toLocaleString('fr-FR');
+                    
+                    // Flash visuel pour indiquer l'actualisation
+                    lastUpdateElement.style.color = '#10b981';
+                    setTimeout(() => {
+                        lastUpdateElement.style.color = '#6b7280';
+                    }, 1000);
+                }
+            }, 30000);
         }
         
         // Récupérer les données RÉELLES depuis SharePoint UNIQUEMENT
@@ -491,8 +513,8 @@
                 
                 updateDashboard(servers);
                 
-                // Logs simulés (en attendant que l'agent les envoie dans SharePoint)
-                displaySimulatedLogs();
+                // Logs réels basés sur les données SharePoint
+                displayRealLogs(servers);
                 
             } catch (error) {
                 console.error('❌ Erreur chargement SharePoint:', error);
@@ -500,21 +522,42 @@
             }
         }
         
-        // Afficher logs simulés en attendant intégration agent
-        function displaySimulatedLogs() {
+        // Afficher logs réels basés sur les données SharePoint
+        function displayRealLogs(servers) {
+            const logs = [];
             const now = new Date();
             const timestamp = now.toISOString().replace('T', ' ').substring(0, 19);
             
-            const simulatedLogs = [
-                `[${timestamp}] [INFO] Agent ATLAS v6.1-AUTOFIX démarré`,
-                `[${timestamp}] [SUCCESS] Connexion SharePoint établie`,
-                `[${timestamp}] [INFO] Monitoring 4 serveurs SYAGA`,
-                `[${timestamp}] [SUCCESS] Données envoyées vers SharePoint`,
-                `[${timestamp}] [INFO] Cycle de monitoring terminé`,
-                `[${timestamp}] [INFO] Prochaine vérification dans 30 secondes`
-            ];
+            // Générer logs basés sur les vraies données SharePoint
+            servers.forEach(server => {
+                if (server.fields && server.fields.AgentVersion) {
+                    const lastContact = server.fields.LastContact ? new Date(server.fields.LastContact) : null;
+                    const secondsAgo = lastContact ? Math.floor((now - lastContact) / 1000) : null;
+                    
+                    if (secondsAgo !== null) {
+                        if (secondsAgo < 60) {
+                            logs.push(`[${timestamp}] [SUCCESS] ${server.fields.Hostname} - Agent ${server.fields.AgentVersion} actif (${secondsAgo}s)`);
+                        } else if (secondsAgo < 300) {
+                            logs.push(`[${timestamp}] [WARNING] ${server.fields.Hostname} - Dernière donnée il y a ${Math.floor(secondsAgo/60)}min`);
+                        } else {
+                            logs.push(`[${timestamp}] [ERROR] ${server.fields.Hostname} - Agent inactif depuis ${Math.floor(secondsAgo/60)}min`);
+                        }
+                    }
+                    
+                    // Log des métriques réelles
+                    if (server.fields.MemoryUsage > 0) {
+                        logs.push(`[${timestamp}] [INFO] ${server.fields.Hostname} - RAM: ${server.fields.MemoryUsage}%, Disque: ${server.fields.DiskSpaceGB}GB`);
+                    }
+                } else {
+                    logs.push(`[${timestamp}] [WARNING] ${server.fields?.Hostname || 'Serveur'} - Agent non installé`);
+                }
+            });
             
-            document.getElementById('logsContainer').innerHTML = simulatedLogs.map(line => {
+            // Ajouter log de synchronisation
+            logs.push(`[${timestamp}] [SUCCESS] Synchronisation SharePoint terminée - ${servers.length} serveurs`);
+            logs.push(`[${timestamp}] [INFO] Prochaine actualisation dans 30 secondes`);
+            
+            document.getElementById('logsContainer').innerHTML = logs.map(line => {
                 if (line.includes('SUCCESS')) return `<div style="color: #00ff00;">${line}</div>`;
                 if (line.includes('ERROR')) return `<div style="color: #ff4444;">${line}</div>`;
                 if (line.includes('WARNING')) return `<div style="color: #ffaa00;">${line}</div>`;
@@ -524,7 +567,15 @@
         
         // Mettre à jour le dashboard
         function updateDashboard(servers) {
-            // Stats
+            // Stats avec calculs d'agents actifs
+            const now = new Date();
+            const activeAgents = servers.filter(s => {
+                if (!s.fields?.AgentVersion || !s.fields?.LastContact) return false;
+                const lastContact = new Date(s.fields.LastContact);
+                const secondsAgo = Math.floor((now - lastContact) / 1000);
+                return secondsAgo < 120; // Agent actif si contact < 2min
+            }).length;
+            
             document.getElementById('totalServers').textContent = servers.length;
             document.getElementById('onlineServers').textContent = 
                 servers.filter(s => s.fields?.State === 'OK').length;
@@ -532,6 +583,19 @@
                 servers.reduce((sum, s) => sum + (s.fields?.PendingUpdates || 0), 0);
             document.getElementById('criticalAlerts').textContent = 
                 servers.filter(s => s.fields?.State === 'ERROR').length;
+            document.getElementById('activeAgents').textContent = activeAgents;
+            
+            // Mettre à jour le statut agent global
+            const agentStatusElement = document.getElementById('agentStatus');
+            if (activeAgents > 0) {
+                agentStatusElement.innerHTML = `⚡ ${activeAgents} Agent(s) Actif(s)`;
+                agentStatusElement.style.background = '#dcfce7';
+                agentStatusElement.style.color = '#16a34a';
+            } else {
+                agentStatusElement.innerHTML = '⚠️ Aucun Agent Actif';
+                agentStatusElement.style.background = '#fef3c7';
+                agentStatusElement.style.color = '#d97706';
+            }
             
             // Heure de mise à jour
             document.getElementById('lastUpdate').textContent = 
@@ -605,8 +669,8 @@
                             <div class="detail-row">
                                 <span class="detail-label">Agent ATLAS</span>
                                 <span class="detail-value">
-                                    ${fields.AgentInstalled ? 
-                                        `✅ v${fields.AgentVersion || '?'}` : 
+                                    ${fields.AgentVersion ? 
+                                        `✅ v${fields.AgentVersion}` : 
                                         '❌ Non installé'}
                                 </span>
                             </div>
@@ -614,9 +678,29 @@
                             <div class="detail-row">
                                 <span class="detail-label">Dernier contact</span>
                                 <span class="detail-value">
-                                    ${fields.LastContact ? 
-                                        new Date(fields.LastContact).toLocaleString('fr-FR') : 
-                                        'Jamais'}
+                                    ${(() => {
+                                        if (!fields.LastContact) return 'Jamais';
+                                        const lastContact = new Date(fields.LastContact);
+                                        const now = new Date();
+                                        const secondsAgo = Math.floor((now - lastContact) / 1000);
+                                        
+                                        let timeText = lastContact.toLocaleString('fr-FR');
+                                        let indicator = '';
+                                        
+                                        if (secondsAgo < 60) {
+                                            indicator = '🟢';
+                                            timeText += ` (${secondsAgo}s)`;
+                                        } else if (secondsAgo < 300) {
+                                            indicator = '🟡';
+                                            timeText += ` (${Math.floor(secondsAgo/60)}min)`;
+                                        } else {
+                                            indicator = '🔴';
+                                            timeText += ` (${Math.floor(secondsAgo/60)}min)`;
+                                        }
+                                        
+                                        return `${indicator} ${timeText}`;
+                                    })()
+                                }
                                 </span>
                             </div>
                         </div>
