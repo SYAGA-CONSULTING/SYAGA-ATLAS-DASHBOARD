@@ -28,15 +28,30 @@ module.exports = async function (context, req) {
 
     // SÉCURITÉ : Valider le token utilisateur Microsoft 365
     try {
-        const tokenValidation = await fetch('https://graph.microsoft.com/v1.0/me', {
-            headers: { 'Authorization': `Bearer ${userToken}` }
+        const https = require('https');
+        const userInfo = await new Promise((resolve, reject) => {
+            const options = {
+                hostname: 'graph.microsoft.com',
+                path: '/v1.0/me',
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Accept': 'application/json'
+                }
+            };
+            
+            https.get(options, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => {
+                    if (res.statusCode === 200) {
+                        resolve(JSON.parse(data));
+                    } else {
+                        reject(new Error('Token invalide'));
+                    }
+                });
+            }).on('error', reject);
         });
-        
-        if (!tokenValidation.ok) {
-            throw new Error('Token invalide');
-        }
-        
-        const userInfo = await tokenValidation.json();
         context.log(`✅ Utilisateur authentifié: ${userInfo.userPrincipalName}`);
         
         // Vérifier domaine autorisé
