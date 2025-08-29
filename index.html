@@ -487,10 +487,10 @@
                 
                 <div id="deployResult" style="display: none;">
                     <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #0078d4;">
-                        <h4 style="margin: 0 0 15px 0; color: #0078d4;">✅ URL Temporaire Générée</h4>
+                        <h4 style="margin: 0 0 15px 0; color: #0078d4;">✅ Commande de Déploiement</h4>
                         <p style="margin: 10px 0; color: #666;">Exécutez cette commande en PowerShell Admin sur le serveur cible:</p>
                         <div style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; position: relative;">
-                            <code id="deployCommand" style="font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 14px;">
+                            <code id="deployCommand" style="font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 14px; display: block; word-break: break-all;">
                                 Génération en cours...
                             </code>
                             <button onclick="copyCommand()" style="
@@ -504,13 +504,19 @@
                                 border-radius: 4px;
                                 cursor: pointer;
                                 font-size: 13px;
+                                transition: all 0.3s;
                             ">📋 Copier</button>
                         </div>
-                        <div style="margin-top: 15px; padding: 10px; background: #fef3c7; border-radius: 6px;">
-                            <p style="color: #92400e; font-size: 13px; margin: 5px 0;">
-                                ⏱️ <strong>Expire à:</strong> <span id="expireTime" style="font-weight: bold;"></span><br>
-                                🔐 <strong>Sécurité:</strong> Authentification Microsoft 365 avec MFA requise<br>
-                                📌 <strong>Token:</strong> <span id="deployToken" style="font-family: monospace;"></span>
+                        <div style="margin-top: 15px; padding: 10px; background: #e0f2fe; border-radius: 6px;">
+                            <p style="color: #075985; font-size: 13px; margin: 5px 0;">
+                                🖥️ <strong>Serveur cible:</strong> <span id="expireTime" style="font-weight: bold;"></span><br>
+                                🔐 <strong>Authentification:</strong> Microsoft 365 avec MFA obligatoire<br>
+                                ⚡ <strong>Version agent:</strong> v0.18 (dernière version)
+                            </p>
+                        </div>
+                        <div style="margin-top: 10px; padding: 10px; background: #dcfce7; border-radius: 6px;">
+                            <p style="color: #166534; font-size: 12px; margin: 0;">
+                                💡 <strong>Astuce:</strong> Le technicien doit simplement coller cette commande et s'authentifier avec son compte @syaga.fr
                             </p>
                         </div>
                     </div>
@@ -1268,95 +1274,96 @@
         window.lastServersData = [];
 
         // ========== FONCTIONS DÉPLOIEMENT NOUVEL AGENT ==========
-        async function generateDeployUrl() {
+        function generateDeployUrl() {
             const hostname = document.getElementById('newHostname').value.trim();
-            if (!hostname) {
-                alert('⚠️ Veuillez entrer un nom de serveur');
-                return;
+            
+            // Commande simple, toujours la même
+            const deployCommand = 'iwr https://raw.githubusercontent.com/SYAGA-CONSULTING/SYAGA-ATLAS-DASHBOARD/main/deploy-atlas.ps1 -UseBasicParsing | iex';
+            
+            // Si hostname spécifié, ajouter en paramètre
+            const fullCommand = hostname 
+                ? `${deployCommand} -Hostname "${hostname}"`
+                : deployCommand;
+            
+            // Afficher immédiatement
+            document.getElementById('deployCommand').textContent = fullCommand;
+            document.getElementById('deployResult').style.display = 'block';
+            
+            // Mise à jour info
+            if (hostname) {
+                document.getElementById('expireTime').textContent = hostname;
+                document.getElementById('deployToken').textContent = 'Hostname personnalisé';
+            } else {
+                document.getElementById('expireTime').textContent = 'Détection automatique';
+                document.getElementById('deployToken').textContent = 'Hostname du serveur';
             }
 
-            try {
-                // Générer token unique
-                const token = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-                const expireTime = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+            // Animation d'apparition
+            document.getElementById('deployResult').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('deployResult').style.transition = 'opacity 0.5s';
+                document.getElementById('deployResult').style.opacity = '1';
+            }, 100);
 
-                // Créer entrée de déploiement dans SharePoint
-                const deployData = {
-                    fields: {
-                        Title: 'DEPLOY_TOKEN',
-                        Hostname: hostname,
-                        State: token,
-                        AgentVersion: 'v0.18',
-                        LastContact: expireTime.toISOString(),
-                        CPUUsage: 0,
-                        MemoryUsage: 0,
-                        DiskSpaceGB: 0
-                    }
-                };
-
-                // Sauvegarder dans SharePoint (liste ATLAS-Servers temporairement)
-                const response = await fetch(
-                    `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(deployData)
-                    }
-                );
-
-                if (response.ok) {
-                    // Afficher l'URL générée
-                    const deployUrl = `https://deploy.syaga.fr/${token}`;
-                    const deployCommand = `irm ${deployUrl} | iex`;
-                    
-                    document.getElementById('deployCommand').textContent = deployCommand;
-                    document.getElementById('expireTime').textContent = expireTime.toLocaleTimeString('fr-FR');
-                    document.getElementById('deployToken').textContent = token;
-                    document.getElementById('deployResult').style.display = 'block';
-
-                    // Animation d'apparition
-                    document.getElementById('deployResult').style.opacity = '0';
-                    setTimeout(() => {
-                        document.getElementById('deployResult').style.transition = 'opacity 0.5s';
-                        document.getElementById('deployResult').style.opacity = '1';
-                    }, 100);
-
-                    // Auto-masquer après expiration
-                    setTimeout(() => {
-                        document.getElementById('deployResult').style.display = 'none';
-                        // Supprimer le token expiré de SharePoint
-                        cleanupExpiredToken(token);
-                    }, 15 * 60 * 1000);
-
-                    console.log(`✅ URL de déploiement générée pour ${hostname}: ${deployUrl}`);
-                } else {
-                    throw new Error('Erreur création token dans SharePoint');
-                }
-            } catch (error) {
-                console.error('❌ Erreur génération URL:', error);
-                alert(`❌ Erreur: ${error.message}`);
-            }
+            console.log(`✅ Commande de déploiement générée${hostname ? ' pour ' + hostname : ''}`);
         }
 
         function copyCommand() {
             const command = document.getElementById('deployCommand').textContent;
-            navigator.clipboard.writeText(command).then(() => {
-                // Feedback visuel
-                const btn = event.target;
+            
+            // Méthode alternative pour copier (compatible avec plus de navigateurs)
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(command).then(() => {
+                    showCopySuccess();
+                }).catch(() => {
+                    fallbackCopy(command);
+                });
+            } else {
+                fallbackCopy(command);
+            }
+        }
+        
+        function fallbackCopy(text) {
+            // Méthode fallback pour copier
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopySuccess();
+            } catch (err) {
+                alert('Erreur copie. Sélectionnez et copiez manuellement: Ctrl+C');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showCopySuccess() {
+            // Trouver le bouton qui a été cliqué
+            const buttons = document.querySelectorAll('button');
+            let btn = null;
+            buttons.forEach(b => {
+                if (b.textContent.includes('Copier')) {
+                    btn = b;
+                }
+            });
+            
+            if (btn) {
                 const originalText = btn.textContent;
+                const originalBg = btn.style.background;
                 btn.textContent = '✅ Copié!';
                 btn.style.background = '#10b981';
                 
                 setTimeout(() => {
                     btn.textContent = originalText;
-                    btn.style.background = '#0078d4';
+                    btn.style.background = originalBg;
                 }, 2000);
-            }).catch(err => {
-                alert('Erreur copie: ' + err);
-            });
+            }
         }
 
         async function cleanupExpiredToken(token) {
