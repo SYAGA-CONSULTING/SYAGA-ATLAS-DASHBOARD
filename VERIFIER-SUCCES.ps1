@@ -60,7 +60,7 @@ $count = 0
 foreach ($item in $items.value) {
     if ($item.fields.Title -eq $env:COMPUTERNAME -or $item.fields.Hostname -eq $env:COMPUTERNAME) {
         $count++
-        Write-Host "  Entree $count: ID=$($item.id), Version=$($item.fields.AgentVersion), Contact=$($item.fields.LastContact)" -ForegroundColor $(if($item.fields.AgentVersion -eq "5.6-FINAL"){"Green"}else{"Yellow"})
+        Write-Host "  Entree $count - ID=$($item.id), Version=$($item.fields.AgentVersion), Contact=$($item.fields.LastContact)" -ForegroundColor $(if($item.fields.AgentVersion -eq "5.6-FINAL"){"Green"}else{"Yellow"})
     }
 }
 
