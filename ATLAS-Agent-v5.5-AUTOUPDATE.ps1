@@ -163,17 +163,27 @@ function Verifier-MiseAJour {
         if ($configItem -and $configItem.fields.State -eq "UPDATE_AVAILABLE") {
             $nouvelleVersion = $configItem.fields.AgentVersion
             
-            if ($nouvelleVersion -and $nouvelleVersion -ne $Script:Version) {
+            # Nettoyer les versions pour comparaison
+            $currentClean = $Script:Version -replace '^v', ''
+            $newClean = $nouvelleVersion -replace '^v', ''
+            
+            if ($nouvelleVersion -and $newClean -ne $currentClean) {
                 Ecrire-Log "NOUVELLE VERSION DISPONIBLE: $nouvelleVersion (actuelle: $Script:Version)" "UPDATE"
                 
-                # Télécharger et installer la nouvelle version
-                if (Telecharger-NouvelleVersion -Version $nouvelleVersion -Token $Token) {
-                    Ecrire-Log "Mise a jour reussie vers v$nouvelleVersion" "SUCCES"
+                # Ne pas downgrader vers une version plus ancienne
+                if ($newClean -eq "5.4-ENRICHED" -and $currentClean -eq "5.5-AUTOUPDATE") {
+                    Ecrire-Log "Version actuelle plus recente, pas de downgrade" "INFO"
+                }
+                else {
+                    # Télécharger et installer la nouvelle version
+                    if (Telecharger-NouvelleVersion -Version $newClean -Token $Token) {
+                        Ecrire-Log "Mise a jour reussie vers v$nouvelleVersion" "SUCCES"
                     
-                    # Redémarrer avec la nouvelle version
-                    Ecrire-Log "Redemarrage avec la nouvelle version..." "UPDATE"
-                    Start-Process powershell.exe -ArgumentList "-ExecutionPolicy Bypass -File `"$Script:FichierAgentActuel`" -Action Executer" -NoNewWindow
-                    exit 0
+                        # Redémarrer avec la nouvelle version
+                        Ecrire-Log "Redemarrage avec la nouvelle version..." "UPDATE"
+                        Start-Process powershell.exe -ArgumentList "-ExecutionPolicy Bypass -File `"$Script:FichierAgentActuel`" -Action Executer" -NoNewWindow
+                        exit 0
+                    }
                 }
             }
             else {
@@ -198,11 +208,14 @@ function Telecharger-NouvelleVersion {
     try {
         Ecrire-Log "Telechargement de la version $Version..." "UPDATE"
         
+        # Nettoyer la version (enlever le v si present)
+        $cleanVersion = $Version -replace '^v', ''
+        
         # URL du nouveau script sur GitHub
-        $githubUrl = "https://raw.githubusercontent.com/SYAGA-CONSULTING/SYAGA-ATLAS-DASHBOARD/gh-pages/ATLAS-Agent-v$Version.ps1"
+        $githubUrl = "https://raw.githubusercontent.com/SYAGA-CONSULTING/SYAGA-ATLAS-DASHBOARD/gh-pages/ATLAS-Agent-v$cleanVersion.ps1"
         
         # Télécharger le nouveau script
-        $tempFile = "$env:TEMP\ATLAS-Agent-v$Version.ps1"
+        $tempFile = "$env:TEMP\ATLAS-Agent-v$cleanVersion.ps1"
         Invoke-WebRequest -Uri $githubUrl -OutFile $tempFile -ErrorAction Stop
         
         # Vérifier que le fichier a été téléchargé
@@ -543,7 +556,7 @@ function Envoyer-MetriquesSharePoint {
                 "fields" = $fields
             }
             
-            Invoke-RestMethod -Uri $updateUrl -Headers $headers -Method Post -Body $body -ErrorAction Stop
+            Invoke-RestMethod -Uri $updateUrl -Headers $headers -Method PATCH -Body $body -ErrorAction Stop
             Ecrire-Log "Metriques mises a jour dans SharePoint (ID: $itemId)" "SUCCES"
         }
         else {
