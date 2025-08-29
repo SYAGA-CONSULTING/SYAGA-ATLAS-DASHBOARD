@@ -502,19 +502,45 @@
                 account = accounts[0];
                 msalInstance.setActiveAccount(account);
                 await getAccessToken();
+                
+                // S'assurer que le dashboard est visible et pas l'écran de connexion
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) {
+                    loginScreen.style.display = 'none';
+                }
+                const mainContainer = document.querySelector('.container');
+                if (mainContainer) {
+                    mainContainer.style.display = 'block';
+                }
+                
                 startMonitoring();
             } else {
-                console.log('❌ PAS CONNECTÉ - Forcer login...');
-                document.body.innerHTML = `
-                    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-family:Arial;">
-                        <h1>🔐 Authentification Requise</h1>
-                        <p style="margin:20px;">Dashboard ${currentVersion}</p>
-                        <button onclick="signIn()" style="padding:15px 30px;font-size:18px;background:white;color:#667eea;border:none;border-radius:5px;cursor:pointer;">
-                            Se connecter avec Microsoft 365
-                        </button>
-                        <p style="margin-top:20px;opacity:0.8;">Si le popup est bloqué, autorisez les popups pour ce site</p>
-                    </div>
-                `;
+                console.log('❌ PAS CONNECTÉ - Affichage écran de connexion...');
+                // NE PAS toucher au body, juste masquer le contenu et afficher le bouton
+                const mainContainer = document.querySelector('.container');
+                if (mainContainer) {
+                    mainContainer.style.display = 'none';
+                }
+                
+                // Créer ou afficher l'écran de connexion
+                let loginScreen = document.getElementById('loginScreen');
+                if (!loginScreen) {
+                    loginScreen = document.createElement('div');
+                    loginScreen.id = 'loginScreen';
+                    loginScreen.innerHTML = `
+                        <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-family:Arial;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;">
+                            <h1>🔐 Authentification Requise</h1>
+                            <p style="margin:20px;">Dashboard ${currentVersion}</p>
+                            <button id="signInButton" onclick="signIn()" style="padding:15px 30px;font-size:18px;background:white;color:#667eea;border:none;border-radius:5px;cursor:pointer;">
+                                Se connecter avec Microsoft 365
+                            </button>
+                            <p style="margin-top:20px;opacity:0.8;">Si le popup est bloqué, autorisez les popups pour ce site</p>
+                        </div>
+                    `;
+                    document.body.appendChild(loginScreen);
+                }
+                loginScreen.style.display = 'block';
+                
                 // Attendre que l'utilisateur clique
                 window.signIn = signIn;
             }
@@ -526,10 +552,21 @@
                 const response = await msalInstance.loginPopup(loginRequest);
                 account = response.account;
                 await getAccessToken();
+                
+                // Masquer l'écran de connexion et afficher le dashboard
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) {
+                    loginScreen.style.display = 'none';
+                }
+                const mainContainer = document.querySelector('.container');
+                if (mainContainer) {
+                    mainContainer.style.display = 'block';
+                }
+                
                 startMonitoring();
             } catch (error) {
                 console.error('Erreur de connexion:', error);
-                showError('Erreur de connexion. Veuillez réessayer.');
+                alert('Erreur de connexion. Veuillez réessayer.');
             }
         }
         
