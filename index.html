@@ -522,7 +522,7 @@ $Script:SiteUrl = "https://syagaconsulting.sharepoint.com/sites/SYAGA-Atlas"
 
         async function login() {
             const loginRequest = {
-                scopes: ["https://graph.microsoft.com/.default"]
+                scopes: ["Sites.Read.All", "Sites.ReadWrite.All"]
             };
             
             try {
@@ -537,7 +537,7 @@ $Script:SiteUrl = "https://syagaconsulting.sharepoint.com/sites/SYAGA-Atlas"
         async function silentAuth() {
             const account = msalInstance.getAllAccounts()[0];
             const silentRequest = {
-                scopes: ["https://graph.microsoft.com/.default"],
+                scopes: ["Sites.Read.All", "Sites.ReadWrite.All"],
                 account: account
             };
             
