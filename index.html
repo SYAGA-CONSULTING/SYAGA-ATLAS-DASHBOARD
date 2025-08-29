@@ -1314,13 +1314,13 @@ if ($Action -eq "Install") {
         /tr "powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File $ATLAS_PATH\\agent.ps1" \`
         /sc minute /mo 2 /ru SYSTEM /rl HIGHEST /f
     
-    Write-Host "Service installé - Configuration auth requise au premier lancement"
+    Write-Host "Service installed - Auth configuration required at first run"
     schtasks /run /tn "SYAGA-ATLAS-Agent"
     exit
 }
 
 # ============ EXECUTION NORMALE ============
-Write-Host "[$Hostname] Agent v0.19 démarré"
+Write-Host "[$Hostname] Agent v0.19 started"
 `;
                 
                 // Upload vers OneDrive
@@ -1331,7 +1331,7 @@ Write-Host "[$Hostname] Agent v0.19 démarré"
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'text/plain'
+                        'Content-Type': 'text/plain; charset=utf-8'
                     },
                     body: agentScript  // Script déjà configuré avec hostname
                 });
