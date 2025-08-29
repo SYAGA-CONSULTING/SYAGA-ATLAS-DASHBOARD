@@ -1274,38 +1274,94 @@
         window.lastServersData = [];
 
         // ========== FONCTIONS DÉPLOIEMENT NOUVEL AGENT ==========
-        function generateDeployUrl() {
-            const hostname = document.getElementById('newHostname').value.trim();
+        async function generateDeployUrl() {
+            const hostname = document.getElementById('newHostname').value.trim() || 'AUTO-DETECT';
             
-            // Commande simple, toujours la même
-            const deployCommand = 'iwr https://raw.githubusercontent.com/SYAGA-CONSULTING/SYAGA-ATLAS-DASHBOARD/main/deploy-atlas.ps1 -UseBasicParsing | iex';
-            
-            // Si hostname spécifié, ajouter en paramètre
-            const fullCommand = hostname 
-                ? `${deployCommand} -Hostname "${hostname}"`
-                : deployCommand;
-            
-            // Afficher immédiatement
-            document.getElementById('deployCommand').textContent = fullCommand;
-            document.getElementById('deployResult').style.display = 'block';
-            
-            // Mise à jour info
-            if (hostname) {
+            try {
+                // Afficher loading
+                document.getElementById('deployCommand').textContent = 'Génération du lien OneDrive...';
+                document.getElementById('deployResult').style.display = 'block';
+                
+                // Créer agent avec hostname
+                const agentScript = await fetch('/mnt/c/temp/AGENT-V0.19-AUTH-ONCE.ps1')
+                    .then(r => r.text())
+                    .catch(() => {
+                        // Agent minimal si fichier pas accessible
+                        return `# ATLAS Agent v0.19\n$HOSTNAME='${hostname}'\nWrite-Host "Agent v0.19 - $HOSTNAME"`;
+                    });
+                
+                // Upload vers OneDrive
+                const fileName = `atlas-agent-${Date.now()}.ps1`;
+                const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/root:/ATLAS-Deploy/${fileName}:/content`;
+                
+                const uploadResponse = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'text/plain'
+                    },
+                    body: agentScript.replace('$env:COMPUTERNAME', `'${hostname}'`)
+                });
+                
+                if (!uploadResponse.ok) throw new Error('Erreur upload OneDrive');
+                
+                const fileData = await uploadResponse.json();
+                
+                // Créer lien de partage anonyme (15 min)
+                const expireTime = new Date(Date.now() + 15 * 60 * 1000);
+                const shareUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${fileData.id}/createLink`;
+                
+                const shareResponse = await fetch(shareUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'view',
+                        scope: 'anonymous',
+                        expirationDateTime: expireTime.toISOString()
+                    })
+                });
+                
+                if (!shareResponse.ok) throw new Error('Erreur création lien');
+                
+                const shareData = await shareResponse.json();
+                const downloadUrl = shareData.link.webUrl.replace('/view', '/download');
+                
+                // Commande finale
+                const deployCommand = `iwr "${downloadUrl}" -OutFile C:\\agent.ps1; powershell -ExecutionPolicy Bypass -File C:\\agent.ps1 -Action Install -Hostname "${hostname}"`;
+                
+                // Afficher
+                document.getElementById('deployCommand').textContent = deployCommand;
                 document.getElementById('expireTime').textContent = hostname;
-                document.getElementById('deployToken').textContent = 'Hostname personnalisé';
-            } else {
-                document.getElementById('expireTime').textContent = 'Détection automatique';
-                document.getElementById('deployToken').textContent = 'Hostname du serveur';
+                
+                // Auto-supprimer après expiration
+                setTimeout(async () => {
+                    // Supprimer fichier OneDrive
+                    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileData.id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    document.getElementById('deployResult').style.display = 'none';
+                }, 15 * 60 * 1000);
+                
+                console.log(`✅ Lien OneDrive généré pour ${hostname}: ${downloadUrl}`);
+                
+            } catch (error) {
+                console.error('Erreur:', error);
+                // Fallback vers méthode GitHub
+                const fallbackCommand = `iwr https://raw.githubusercontent.com/SYAGA-CONSULTING/SYAGA-ATLAS-DASHBOARD/main/deploy-atlas.ps1 -UseBasicParsing | iex`;
+                document.getElementById('deployCommand').textContent = fallbackCommand;
+                document.getElementById('expireTime').textContent = 'Méthode alternative (GitHub)';
             }
 
-            // Animation d'apparition
+            // Animation
             document.getElementById('deployResult').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('deployResult').style.transition = 'opacity 0.5s';
                 document.getElementById('deployResult').style.opacity = '1';
             }, 100);
-
-            console.log(`✅ Commande de déploiement générée${hostname ? ' pour ' + hostname : ''}`);
         }
 
         function copyCommand() {
