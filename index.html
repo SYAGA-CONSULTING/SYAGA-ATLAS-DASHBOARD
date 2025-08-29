@@ -436,6 +436,17 @@
             </div>
         </div>
         
+        <!-- Métriques Détaillées -->
+        <div class="card">
+            <div class="card-header">
+                📊 Métriques Détaillées - Temps Réel
+                <span style="font-size: 0.85rem; color: #3b82f6;">🔥 v0.17 Hyper-V + Logs</span>
+            </div>
+            <div id="detailedMetricsContainer">
+                <div class="loading">Chargement métriques détaillées...</div>
+            </div>
+        </div>
+        
         <!-- Logs Agent -->
         <div class="card">
             <div class="card-header">
@@ -915,6 +926,9 @@
             
             // Mettre à jour les statistiques de déploiement auto-update
             updateDeploymentStats();
+            
+            // Charger métriques détaillées
+            await loadDetailedMetrics();
         }
         
         // Actions
@@ -932,6 +946,148 @@
         function showError(message) {
             const container = document.getElementById('serversContainer');
             container.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+        
+        // ========== MÉTRIQUES DÉTAILLÉES ==========
+        
+        async function loadDetailedMetrics() {
+            if (!accessToken) return;
+            
+            try {
+                console.log('🔍 Chargement métriques détaillées...');
+                
+                // Récupérer serveurs (déjà disponible)
+                const servers = window.lastServersData || [];
+                
+                // Récupérer logs ATLAS_LOGS
+                const logsUrl = `https://graph.microsoft.com/v1.0/sites/syagacons.sharepoint.com,4cce268e-9cb7-4829-8c1c-3c85faa1810d,8cb3611e-c4aa-4105-b55d-2247e4fac8c8/lists/bd8d22c0-a9dc-4116-9a29-a590b429826e/items?$expand=fields&$top=50`;
+                
+                const logsResponse = await fetch(logsUrl, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                
+                const logsData = await logsResponse.json();
+                const logs = logsData.value || [];
+                
+                // Générer HTML métriques détaillées
+                let html = '';
+                
+                servers.forEach(server => {
+                    if (!server.fields) return;
+                    
+                    const hostname = server.fields.Hostname || 'N/A';
+                    const version = server.fields.AgentVersion || 'N/A';
+                    const cpu = server.fields.CPUUsage || 0;
+                    const ram = server.fields.MemoryUsage || 0;
+                    const disk = server.fields.DiskSpaceGB || 0;
+                    const hyperv = server.fields.HyperVStatus || 'N/A';
+                    const lastContact = server.fields.LastContact || '';
+                    
+                    // Calculer uptime depuis LastContact
+                    let uptimeStr = 'N/A';
+                    if (lastContact) {
+                        try {
+                            const contactTime = new Date(lastContact);
+                            const now = new Date();
+                            const diffMinutes = Math.round((now - contactTime) / (1000 * 60));
+                            uptimeStr = diffMinutes < 60 ? `${diffMinutes}m` : `${Math.round(diffMinutes/60)}h`;
+                        } catch(e) {}
+                    }
+                    
+                    // Récupérer logs récents pour ce serveur
+                    const serverLogs = logs.filter(log => 
+                        log.fields && log.fields.Hostname === hostname
+                    ).slice(0, 3);
+                    
+                    // Analyser Hyper-V
+                    let vmDetails = '';
+                    const vmLogs = logs.filter(log => 
+                        log.fields && 
+                        log.fields.Hostname === hostname && 
+                        log.fields.Source === 'VMDetail'
+                    );
+                    
+                    if (vmLogs.length > 0) {
+                        vmDetails = `<div style="margin-top: 1rem;"><strong>VMs (${vmLogs.length}):</strong><br>`;
+                        vmLogs.slice(0, 5).forEach(vmLog => {
+                            const message = vmLog.fields.Message || '';
+                            const vmMatch = message.match(/VM (.*?): (.*?) \|/);
+                            if (vmMatch) {
+                                const vmName = vmMatch[1];
+                                const vmState = vmMatch[2];
+                                const stateColor = vmState === 'Running' ? '#10b981' : '#6b7280';
+                                vmDetails += `<span style="color: ${stateColor}; margin-right: 1rem;">• ${vmName} (${vmState})</span><br>`;
+                            }
+                        });
+                        vmDetails += '</div>';
+                    }
+                    
+                    // Couleurs selon état
+                    const cpuColor = cpu > 80 ? '#ef4444' : cpu > 50 ? '#f59e0b' : '#10b981';
+                    const ramColor = ram > 90 ? '#ef4444' : ram > 70 ? '#f59e0b' : '#10b981';
+                    const versionColor = version.includes('v0.17') ? '#10b981' : '#f59e0b';
+                    
+                    html += `
+                        <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: white;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 style="margin: 0; color: #1f2937;">🖥️ ${hostname}</h3>
+                                <span style="background: ${versionColor}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">${version}</span>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <span style="font-size: 0.8rem; color: #6b7280;">CPU</span><br>
+                                    <span style="font-weight: bold; color: ${cpuColor};">${cpu}%</span>
+                                </div>
+                                <div>
+                                    <span style="font-size: 0.8rem; color: #6b7280;">RAM</span><br>
+                                    <span style="font-weight: bold; color: ${ramColor};">${ram}%</span>
+                                </div>
+                                <div>
+                                    <span style="font-size: 0.8rem; color: #6b7280;">Disk Free</span><br>
+                                    <span style="font-weight: bold; color: #3b82f6;">${disk} GB</span>
+                                </div>
+                                <div>
+                                    <span style="font-size: 0.8rem; color: #6b7280;">Contact</span><br>
+                                    <span style="font-weight: bold; color: #10b981;">${uptimeStr} ago</span>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 1rem;">
+                                <span style="font-size: 0.8rem; color: #6b7280;">Hyper-V:</span>
+                                <span style="font-weight: bold; color: #3b82f6;">${hyperv}</span>
+                            </div>
+                            
+                            ${vmDetails}
+                            
+                            <details style="margin-top: 1rem;">
+                                <summary style="cursor: pointer; color: #3b82f6; font-size: 0.9rem;">📜 Logs récents (${serverLogs.length})</summary>
+                                <div style="margin-top: 0.5rem; font-family: monospace; font-size: 0.8rem; background: #f8fafc; padding: 0.5rem; border-radius: 4px;">
+                                    ${serverLogs.map(log => {
+                                        const time = log.fields.Timestamp ? new Date(log.fields.Timestamp).toLocaleTimeString() : '';
+                                        const level = log.fields.Level || 'INFO';
+                                        const message = (log.fields.Message || '').substring(0, 100);
+                                        const levelColor = level === 'ERROR' ? '#ef4444' : level === 'WARN' ? '#f59e0b' : '#10b981';
+                                        return `<div style="margin-bottom: 0.25rem;"><span style="color: ${levelColor}">[${level}]</span> ${time} - ${message}</div>`;
+                                    }).join('')}
+                                </div>
+                            </details>
+                        </div>
+                    `;
+                });
+                
+                if (html === '') {
+                    html = '<div style="text-align: center; color: #6b7280; padding: 2rem;">Aucune métrique détaillée disponible</div>';
+                }
+                
+                document.getElementById('detailedMetricsContainer').innerHTML = html;
+                console.log('✅ Métriques détaillées chargées');
+                
+            } catch (error) {
+                console.error('Erreur métriques détaillées:', error);
+                document.getElementById('detailedMetricsContainer').innerHTML = 
+                    `<div style="color: #ef4444; padding: 1rem;">Erreur chargement métriques: ${error.message}</div>`;
+            }
         }
         
         // ========== AUTO-UPDATE FUNCTIONS ==========
@@ -1040,7 +1196,38 @@
             let updating = 0;
             let outdated = 0;
             
-            const latestVersion = document.getElementById('latestVersion').textContent;
+            // 🚀 AUTO-DETECT VERSION LA PLUS RÉCENTE depuis SharePoint
+            let detectedLatestVersion = 'v0.16'; // fallback
+            const versions = [];
+            
+            servers.forEach(server => {
+                if (server.fields && server.fields.AgentVersion) {
+                    const version = server.fields.AgentVersion.startsWith('v') ? 
+                        server.fields.AgentVersion : 'v' + server.fields.AgentVersion;
+                    if (!versions.includes(version)) {
+                        versions.push(version);
+                    }
+                }
+            });
+            
+            // Trier les versions pour trouver la plus récente
+            if (versions.length > 0) {
+                versions.sort((a, b) => {
+                    const numA = parseFloat(a.replace('v', ''));
+                    const numB = parseFloat(b.replace('v', ''));
+                    return numB - numA; // Ordre décroissant
+                });
+                detectedLatestVersion = versions[0];
+                
+                // Mettre à jour le bandeau automatiquement
+                const latestVersionElement = document.getElementById('latestVersion');
+                if (latestVersionElement.textContent !== detectedLatestVersion) {
+                    latestVersionElement.textContent = detectedLatestVersion;
+                    console.log(`🚀 Version auto-détectée: ${detectedLatestVersion}`);
+                }
+            }
+            
+            const latestVersion = detectedLatestVersion;
             
             servers.forEach(server => {
                 if (server.fields && server.fields.AgentVersion) {
