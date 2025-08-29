@@ -15,9 +15,9 @@
     
     <!-- VERSION TIMESTAMP ANTI-CACHE -->
     <script>
-        console.log('🔄 VERSION: v21h41 - Build:', new Date().toISOString());
+        console.log('🔄 VERSION: v0.15 - Production Build:', new Date().toISOString());
         // Forcer reload si version ancienne
-        const currentVersion = 'v21h41';
+        const currentVersion = 'v0.15';
         if (localStorage.getItem('dashboardVersion') !== currentVersion) {
             localStorage.setItem('dashboardVersion', currentVersion);
             console.log('🆕 Nouvelle version détectée - Clear cache');
