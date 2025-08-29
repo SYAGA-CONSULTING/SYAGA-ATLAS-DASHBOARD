@@ -15,9 +15,9 @@
     
     <!-- VERSION TIMESTAMP ANTI-CACHE -->
     <script>
-        console.log('🔄 VERSION: v0.16 - Real Metrics Build:', new Date().toISOString());
+        console.log('🔄 VERSION: v0.20 - Complete Auto-Update Build:', new Date().toISOString());
         // Forcer reload si version ancienne
-        const currentVersion = 'v0.16';
+        const currentVersion = 'v0.20';
         if (localStorage.getItem('dashboardVersion') !== currentVersion) {
             localStorage.setItem('dashboardVersion', currentVersion);
             console.log('🆕 Nouvelle version détectée - Clear cache');
@@ -321,7 +321,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo">🚀 ATLAS Dashboard v0.16 - Production</div>
+        <div class="logo">🚀 ATLAS Dashboard v0.20 - Production</div>
         <div class="realtime-indicator">
             <span class="pulse-dot"></span>
             ⚡ TEMPS RÉEL - SharePoint Autonome
@@ -377,10 +377,10 @@
                 <div>
                     <h4 style="margin-bottom: 1rem; color: #4b5563;">📦 Version Agent Disponible</h4>
                     <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px;">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;" id="latestVersion">v0.16</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;" id="latestVersion">v0.20</div>
                         <div style="color: #6b7280; margin-top: 0.5rem;">Dernière version disponible</div>
                         <div style="margin-top: 1rem;">
-                            <button class="btn btn-primary" onclick="deployUpdate('v0.16')" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;">
+                            <button class="btn btn-primary" onclick="deployUpdate('v0.20')" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;">
                                 📤 Déployer vers tous les agents
                             </button>
                         </div>
@@ -440,7 +440,7 @@
         <div class="card">
             <div class="card-header">
                 📊 Métriques Détaillées - Temps Réel
-                <span style="font-size: 0.85rem; color: #3b82f6;">🔥 v0.18 Veeam + IP + Hyper-V</span>
+                <span style="font-size: 0.85rem; color: #3b82f6;">🔥 v0.20 Complete + Auto-Install</span>
             </div>
             <div id="detailedMetricsContainer">
                 <div class="loading">Chargement métriques détaillées...</div>
@@ -511,7 +511,7 @@
                             <p style="color: #075985; font-size: 13px; margin: 5px 0;">
                                 🖥️ <strong>Serveur cible:</strong> <span id="expireTime" style="font-weight: bold;"></span><br>
                                 🔐 <strong>Authentification:</strong> Microsoft 365 avec MFA obligatoire<br>
-                                ⚡ <strong>Version agent:</strong> v0.18 (dernière version)
+                                ⚡ <strong>Version agent:</strong> v0.20 (dernière version)
                             </p>
                         </div>
                         <div style="margin-top: 10px; padding: 10px; background: #dcfce7; border-radius: 6px;">
@@ -1056,7 +1056,7 @@
                     const veeam = server.fields.VeeamStatus || 'N/A';
                     
                     // Couleur selon version
-                    const versionColor = version.includes('v0.18') ? '#10b981' : '#f59e0b';
+                    const versionColor = version.includes('v0.20') ? '#10b981' : '#f59e0b';
                     
                     html += `
                         <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: white;">
@@ -1195,7 +1195,7 @@
             let outdated = 0;
             
             // 🚀 AUTO-DETECT VERSION LA PLUS RÉCENTE depuis SharePoint
-            let detectedLatestVersion = 'v0.16'; // fallback
+            let detectedLatestVersion = 'v0.20'; // fallback
             const versions = [];
             
             servers.forEach(server => {
@@ -1294,8 +1294,8 @@
                 // TODO: Implémenter device code flow complet
                 const refreshToken = accessToken; // Temporaire - utilise le token du dashboard
                 
-                // Script agent v0.19 avec auth pré-configurée
-                const agentScript = `# SYAGA ATLAS AGENT v0.19 - Pre-configured Auth
+                // Script agent v0.20 avec auth pré-configurée
+                const agentScript = `# SYAGA ATLAS AGENT v0.20 - Pre-configured Auth
 # Auto-deployed from dashboard with embedded auth
 
 param(
@@ -1303,7 +1303,7 @@ param(
     [string]$Hostname = "${hostname}"
 )
 
-$VERSION = "v0.19"
+$VERSION = "v0.20"
 $ATLAS_PATH = "C:\\SYAGA-ATLAS"
 $AUTH_FILE = "$ATLAS_PATH\\auth.secure"
 
@@ -1314,7 +1314,7 @@ if (!(Test-Path $ATLAS_PATH)) {
 
 # ============ INSTALLATION ============
 if ($Action -eq "Install") {
-    Write-Host "SYAGA ATLAS AGENT v0.19 - INSTALLATION"
+    Write-Host "SYAGA ATLAS AGENT v0.20 - INSTALLATION"
     Write-Host "Hostname: $Hostname"
     
     # Sauvegarder auth pré-configurée
