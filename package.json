@@ -1,0 +1,26 @@
+{
+  "name": "syaga-atlas-dashboard",
+  "version": "1.0.0",
+  "description": "ATLAS Dashboard avec proxy sécurisé vers GitHub API",
+  "main": "index.html",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SYAGA-CONSULTING/SYAGA-ATLAS-DASHBOARD.git"
+  },
+  "author": "SYAGA Consulting",
+  "license": "MIT",
+  "dependencies": {
+    "@azure/identity": "^4.0.1",
+    "@microsoft/microsoft-graph-client": "^3.0.7"
+  },
+  "devDependencies": {
+    "@azure/functions": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

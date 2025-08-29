@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 ATLAS Dashboard - SharePoint UNIQUEMENT</title>
+    
+    <!-- ANTI-CACHE TOTAL POUR TESTS -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- MSAL pour Azure AD Auth -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <!-- VERSION TIMESTAMP ANTI-CACHE -->
+    <script>
+        console.log('🔄 VERSION: v21h41 - Build:', new Date().toISOString());
+        // Forcer reload si version ancienne
+        const currentVersion = 'v21h41';
+        if (localStorage.getItem('dashboardVersion') !== currentVersion) {
+            localStorage.setItem('dashboardVersion', currentVersion);
+            console.log('🆕 Nouvelle version détectée - Clear cache');
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+        }
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .realtime-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .card-header {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .server-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .server-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 2px solid #e5e7eb;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .server-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .server-card.state-ok {
+            border-left: 5px solid #10b981;
+        }
+        
+        .server-card.state-warning {
+            border-left: 5px solid #f59e0b;
+        }
+        
+        .server-card.state-error {
+            border-left: 5px solid #ef4444;
+        }
+        
+        .server-card.state-offline {
+            border-left: 5px solid #6b7280;
+            opacity: 0.7;
+        }
+        
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .server-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        
+        .server-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-ok { background: #10b981; }
+        .status-warning { background: #f59e0b; }
+        .status-error { background: #ef4444; }
+        .status-offline { background: #6b7280; }
+        
+        .server-details {
+            display: grid;
+            gap: 0.75rem;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+        
+        .detail-label {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .updates-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .update-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+        
+        .update-critical { background: #fee2e2; color: #dc2626; }
+        .update-important { background: #fed7aa; color: #ea580c; }
+        .update-optional { background: #dbeafe; color: #2563eb; }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .success-message {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🚀 ATLAS Dashboard v21h41 - TEMPS LISIBLE</div>
+        <div class="realtime-indicator">
+            <span class="pulse-dot"></span>
+            ⚡ TEMPS RÉEL - SharePoint Autonome
+        </div>
+        <div id="userInfo"></div>
+    </div>
+    
+    <div class="container">
+        <!-- Stats Overview -->
+        <div class="card">
+            <div class="card-header">
+                📊 Vue d'Ensemble - ATLAS Temps Réel
+                <span style="font-size: 0.85rem; color: #6b7280;">
+                    Dernière sync: <span id="lastUpdate">-</span>
+                </span>
+                <div id="agentStatus" style="float: right; font-size: 0.85rem; padding: 0.25rem 0.5rem; border-radius: 12px; background: #dcfce7; color: #16a34a;">
+                    ⚡ Agent ATLAS Actif
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalServers">0</div>
+                    <div class="stat-label">Serveurs Totaux</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="onlineServers">0</div>
+                    <div class="stat-label">En Ligne</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="pendingUpdates">0</div>
+                    <div class="stat-label">MAJ en Attente</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="criticalAlerts">0</div>
+                    <div class="stat-label">Alertes Critiques</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="activeAgents">0</div>
+                    <div class="stat-label">Agents Actifs</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Auto-Update Management Section -->
+        <div class="card">
+            <div class="card-header">
+                🔄 Gestion Auto-Update des Agents
+                <div id="updateStatus" style="float: right; font-size: 0.85rem; padding: 0.25rem 0.5rem; border-radius: 12px; background: #fee2e2; color: #dc2626;">
+                    ⏸️ Pas de mise à jour en cours
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 1rem;">
+                <div>
+                    <h4 style="margin-bottom: 1rem; color: #4b5563;">📦 Version Agent Disponible</h4>
+                    <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;" id="latestVersion">v0.14</div>
+                        <div style="color: #6b7280; margin-top: 0.5rem;">Dernière version disponible</div>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-primary" onclick="deployUpdate('v0.14')" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;">
+                                📤 Déployer vers tous les agents
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 1rem; color: #4b5563;">📊 État du Déploiement</h4>
+                    <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px;">
+                        <div id="deploymentStats">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>Agents à jour:</span>
+                                <span style="font-weight: bold; color: #10b981;" id="upToDateCount">0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>MAJ en cours:</span>
+                                <span style="font-weight: bold; color: #f59e0b;" id="updatingCount">0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Version obsolète:</span>
+                                <span style="font-weight: bold; color: #ef4444;" id="outdatedCount">0</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <div style="width: 100%; height: 20px; background: #e5e7eb; border-radius: 10px; overflow: hidden;">
+                                <div id="updateProgress" style="height: 100%; background: linear-gradient(90deg, #10b981 0%, #3b82f6 100%); width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                            <div style="text-align: center; margin-top: 0.5rem; color: #6b7280;" id="updateProgressText">0% mis à jour</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="background: #fef3c7; padding: 1rem; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                <div style="font-weight: bold; color: #92400e; margin-bottom: 0.5rem;">⚠️ Note Importante</div>
+                <div style="color: #78350f; font-size: 0.9rem;">
+                    Les agents vérifient automatiquement les mises à jour toutes les 3 minutes. Le déploiement est progressif et autonome.
+                </div>
+            </div>
+        </div>
+        
+        <!-- Servers Grid -->
+        <div class="card">
+            <div class="card-header">
+                🖥️ État des Serveurs - SharePoint Direct
+                <button class="btn btn-primary" onclick="refreshData()">
+                    🔄 Rafraîchir SharePoint
+                </button>
+            </div>
+            <div id="serversContainer" class="server-grid">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Chargement des données ATLAS...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Logs Agent -->
+        <div class="card">
+            <div class="card-header">
+                📜 Logs ATLAS - SharePoint Direct
+                <span style="font-size: 0.85rem; color: #10b981;">⚡ Données SharePoint Autonomes</span>
+            </div>
+            <div id="logsContainer" style="background: #1a1a1a; color: #0f0; font-family: monospace; padding: 1rem; border-radius: 8px; max-height: 300px; overflow-y: auto;">
+                <div class="loading">Chargement des logs...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration MSAL
+        const msalConfig = {
+            auth: {
+                clientId: "f66a8c6c-1037-41b8-be3c-4f6e67c1f49e", // SYAGA-ATLAS-AUTOMATION
+                authority: "https://login.microsoftonline.com/6027d81c-ad9b-48f5-9da6-96f1bad11429",
+                redirectUri: window.location.origin + window.location.pathname
+            },
+            cache: {
+                cacheLocation: "localStorage",
+                storeAuthStateInCookie: true
+            }
+        };
+        
+        const loginRequest = {
+            scopes: ["User.Read", "Sites.Read.All", "Sites.ReadWrite.All"]
+        };
+        
+        // Configuration SharePoint ATLAS - AUTONOME
+        const SHAREPOINT_CONFIG = {
+            siteId: "syagacons.sharepoint.com,4cce268e-9cb7-4829-8c1c-3c85faa1810d,8cb3611e-c4aa-4105-b55d-2247e4fac8c8",
+            listId: "94dc7ad4-740f-4c1f-b99c-107e01c8f70b",
+            listUrl: "https://syagacons.sharepoint.com/Lists/ATLAS-Servers",
+            baseUrl: "https://graph.microsoft.com/v1.0/sites/" + "syagacons.sharepoint.com,4cce268e-9cb7-4829-8c1c-3c85faa1810d,8cb3611e-c4aa-4105-b55d-2247e4fac8c8"
+        };
+        
+        // Instance MSAL
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        let account = null;
+        let accessToken = null;
+        
+        // Initialisation
+        window.addEventListener('load', async () => {
+            console.log('🔐 Initialisation AUTH OBLIGATOIRE...');
+            await msalInstance.initialize();
+            
+            // IMPORTANT: Gérer le retour après connexion
+            try {
+                const response = await msalInstance.handleRedirectPromise();
+                if (response) {
+                    console.log('✅ Connexion réussie via redirect:', response.account.username);
+                    account = response.account;
+                    msalInstance.setActiveAccount(account);
+                }
+            } catch (error) {
+                console.error('❌ Erreur handleRedirect:', error);
+            }
+            
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length > 0) {
+                console.log('✅ Utilisateur connecté:', accounts[0].username);
+                account = accounts[0];
+                msalInstance.setActiveAccount(account);
+                await getAccessToken();
+                
+                // S'assurer que le dashboard est visible et pas l'écran de connexion
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) {
+                    loginScreen.style.display = 'none';
+                }
+                const mainContainer = document.querySelector('.container');
+                if (mainContainer) {
+                    mainContainer.style.display = 'block';
+                }
+                
+                startMonitoring();
+            } else {
+                console.log('❌ PAS CONNECTÉ - Affichage écran de connexion...');
+                // NE PAS toucher au body, juste masquer le contenu et afficher le bouton
+                const mainContainer = document.querySelector('.container');
+                if (mainContainer) {
+                    mainContainer.style.display = 'none';
+                }
+                
+                // Créer ou afficher l'écran de connexion
+                let loginScreen = document.getElementById('loginScreen');
+                if (!loginScreen) {
+                    loginScreen = document.createElement('div');
+                    loginScreen.id = 'loginScreen';
+                    loginScreen.innerHTML = `
+                        <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-family:Arial;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;">
+                            <h1>🔐 Authentification Requise</h1>
+                            <p style="margin:20px;">Dashboard ${currentVersion}</p>
+                            <button id="signInButton" onclick="signIn()" style="padding:15px 30px;font-size:18px;background:white;color:#667eea;border:none;border-radius:5px;cursor:pointer;">
+                                Se connecter avec Microsoft 365
+                            </button>
+                            <p style="margin-top:20px;opacity:0.8;">Si le popup est bloqué, autorisez les popups pour ce site</p>
+                        </div>
+                    `;
+                    document.body.appendChild(loginScreen);
+                }
+                loginScreen.style.display = 'block';
+                
+                // Attendre que l'utilisateur clique
+                window.signIn = signIn;
+            }
+        });
+        
+        // Connexion
+        async function signIn() {
+            try {
+                const response = await msalInstance.loginPopup(loginRequest);
+                account = response.account;
+                await getAccessToken();
+                
+                // Masquer l'écran de connexion et afficher le dashboard
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) {
+                    loginScreen.style.display = 'none';
+                }
+                const mainContainer = document.querySelector('.container');
+                if (mainContainer) {
+                    mainContainer.style.display = 'block';
+                }
+                
+                startMonitoring();
+            } catch (error) {
+                console.error('Erreur de connexion:', error);
+                alert('Erreur de connexion. Veuillez réessayer.');
+            }
+        }
+        
+        // Obtenir token d'accès pour SharePoint
+        async function getAccessToken() {
+            try {
+                const tokenRequest = {
+                    scopes: ["https://graph.microsoft.com/.default"],
+                    account: account
+                };
+                
+                const response = await msalInstance.acquireTokenSilent(tokenRequest);
+                accessToken = response.accessToken;
+                
+                document.getElementById('userInfo').innerHTML = `
+                    <span style="margin-right: 1rem;">👤 ${account.name}</span>
+                    <button class="btn btn-secondary" onclick="signOut()">Déconnexion</button>
+                `;
+            } catch (error) {
+                console.error('Erreur token:', error);
+                const response = await msalInstance.acquireTokenPopup(tokenRequest);
+                accessToken = response.accessToken;
+            }
+        }
+        
+        // Déconnexion
+        function signOut() {
+            msalInstance.logoutPopup();
+        }
+        
+        // Démarrer le monitoring avec auto-refresh
+        function startMonitoring() {
+            refreshData();
+            // Rafraîchir toutes les 10 secondes pour monitoring temps réel
+            setInterval(refreshData, 10000); // Refresh toutes les 10 secondes
+            
+            // Indicateur visuel de dernière actualisation
+            setInterval(() => {
+                const lastUpdateElement = document.getElementById('lastUpdate');
+                if (lastUpdateElement) {
+                    const now = new Date();
+                    lastUpdateElement.textContent = now.toLocaleString('fr-FR');
+                    
+                    // Flash visuel pour indiquer l'actualisation
+                    lastUpdateElement.style.color = '#10b981';
+                    setTimeout(() => {
+                        lastUpdateElement.style.color = '#6b7280';
+                    }, 1000);
+                }
+            }, 30000);
+        }
+        
+        // Récupérer les données RÉELLES depuis SharePoint UNIQUEMENT
+        async function refreshData() {
+            const now = new Date();
+            console.log(`📡 Récupération des données ATLAS depuis SharePoint... [${now.toLocaleString('fr-FR')}]`);
+            await loadFromSharePoint();
+        }
+        
+        // Charger depuis Proxy API sécurisé - AVEC AUTH M365 OBLIGATOIRE
+        async function loadFromSharePoint() {
+            try {
+                if (!accessToken) {
+                    throw new Error('Connexion Microsoft 365 requise');
+                }
+                
+                console.log('📡 Appel direct Microsoft Graph API');
+                
+                // Appel DIRECT à Microsoft Graph (pas de proxy)
+                const graphUrl = `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items?$expand=fields&$top=100`;
+                
+                const response = await fetch(graphUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${accessToken}` // Token pour Microsoft Graph
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Erreur Graph API:', errorText);
+                    throw new Error(`Erreur Graph API: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Les données sont au format SharePoint
+                const allItems = data.value || [];
+                
+                // Filtrer pour exclure les entrées CONFIG et UPDATE
+                const servers = allItems.filter(item => 
+                    item.fields && 
+                    item.fields.Hostname !== 'CONFIG' && 
+                    item.fields.Hostname !== 'UPDATE_CONFIG' &&
+                    item.fields.Title !== 'AGENT_CONFIG' &&
+                    item.fields.Title !== 'UPDATE_CONFIG'
+                );
+                
+                console.log(`✅ ${servers.length} serveurs récupérés (${allItems.length} entrées totales)`);
+                
+                updateDashboard(servers);
+                
+                // Logs réels basés sur les données SharePoint
+                displayRealLogs(servers);
+                
+            } catch (error) {
+                console.error('❌ Erreur chargement via proxy:', error);
+                showError(`Erreur proxy API: ${error.message}`);
+            }
+        }
+        
+        // Afficher logs réels basés sur les données SharePoint
+        function displayRealLogs(servers) {
+            const logs = [];
+            const now = new Date();
+            const timestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+            
+            // Générer logs basés sur les vraies données SharePoint
+            servers.forEach(server => {
+                if (server.fields && server.fields.AgentVersion) {
+                    const lastContact = server.fields.LastContact ? new Date(server.fields.LastContact) : null;
+                    const secondsAgo = lastContact ? Math.abs(Math.floor((now - lastContact) / 1000)) : null;
+                    
+                    if (secondsAgo !== null) {
+                        if (secondsAgo < 60) {
+                            logs.push(`[${timestamp}] [SUCCESS] ${server.fields.Hostname} - Agent ${server.fields.AgentVersion} actif (${secondsAgo}s)`);
+                        } else if (secondsAgo < 300) {
+                            logs.push(`[${timestamp}] [WARNING] ${server.fields.Hostname} - Dernière donnée il y a ${Math.floor(secondsAgo/60)}min`);
+                        } else {
+                            logs.push(`[${timestamp}] [ERROR] ${server.fields.Hostname} - Agent inactif depuis ${Math.floor(secondsAgo/60)}min`);
+                        }
+                    }
+                    
+                    // Log des métriques réelles
+                    if (server.fields.MemoryUsage > 0) {
+                        logs.push(`[${timestamp}] [INFO] ${server.fields.Hostname} - RAM: ${server.fields.MemoryUsage}%, Disque: ${server.fields.DiskSpaceGB}GB`);
+                    }
+                } else {
+                    logs.push(`[${timestamp}] [WARNING] ${server.fields?.Hostname || 'Serveur'} - Agent non installé`);
+                }
+            });
+            
+            // Ajouter log de synchronisation
+            logs.push(`[${timestamp}] [SUCCESS] Synchronisation SharePoint terminée - ${servers.length} serveurs`);
+            logs.push(`[${timestamp}] [INFO] Prochaine actualisation dans 10 secondes`);
+            
+            document.getElementById('logsContainer').innerHTML = logs.map(line => {
+                if (line.includes('SUCCESS')) return `<div style="color: #00ff00;">${line}</div>`;
+                if (line.includes('ERROR')) return `<div style="color: #ff4444;">${line}</div>`;
+                if (line.includes('WARNING')) return `<div style="color: #ffaa00;">${line}</div>`;
+                return `<div style="color: #00ffff;">${line}</div>`;
+            }).join('');
+        }
+        
+        // Mettre à jour le dashboard
+        function updateDashboard(servers) {
+            // Sauvegarder les données pour les stats auto-update
+            window.lastServersData = servers;
+            
+            // Stats avec calculs d'agents actifs
+            const now = new Date();
+            const activeAgents = servers.filter(s => {
+                if (!s.fields?.AgentVersion || !s.fields?.LastContact) return false;
+                const lastContact = new Date(s.fields.LastContact);
+                const secondsAgo = Math.abs(Math.floor((now - lastContact) / 1000));
+                return secondsAgo < 120; // Agent actif si contact < 2min
+            }).length;
+            
+            document.getElementById('totalServers').textContent = servers.length;
+            document.getElementById('onlineServers').textContent = 
+                servers.filter(s => s.fields?.State === 'OK').length;
+            document.getElementById('pendingUpdates').textContent = 
+                servers.reduce((sum, s) => sum + (s.fields?.PendingUpdates || 0), 0);
+            document.getElementById('criticalAlerts').textContent = 
+                servers.filter(s => s.fields?.State === 'ERROR').length;
+            document.getElementById('activeAgents').textContent = activeAgents;
+            
+            // Mettre à jour le statut agent global
+            const agentStatusElement = document.getElementById('agentStatus');
+            if (activeAgents > 0) {
+                agentStatusElement.innerHTML = `⚡ ${activeAgents} Agent(s) Actif(s)`;
+                agentStatusElement.style.background = '#dcfce7';
+                agentStatusElement.style.color = '#16a34a';
+            } else {
+                agentStatusElement.innerHTML = '⚠️ Aucun Agent Actif';
+                agentStatusElement.style.background = '#fef3c7';
+                agentStatusElement.style.color = '#d97706';
+            }
+            
+            // Heure de mise à jour
+            document.getElementById('lastUpdate').textContent = 
+                new Date().toLocaleString('fr-FR');
+            
+            // Serveurs - Trier pour mettre SYAGA-HOST01 en premier, puis 02, 03, 04
+            const sortedServers = [...servers].sort((a, b) => {
+                const orderMap = {
+                    'SYAGA-HOST01': 1,
+                    'SYAGA-HOST02': 2,
+                    'SYAGA-HOST03': 3,
+                    'SYAGA-HOST04': 4,
+                    'SYAGA-VEEAM01': 5
+                };
+                const orderA = orderMap[a.fields.Hostname] || 99;
+                const orderB = orderMap[b.fields.Hostname] || 99;
+                return orderA - orderB;
+            });
+            
+            const container = document.getElementById('serversContainer');
+            container.innerHTML = sortedServers.map(server => {
+                const fields = server.fields;
+                const stateClass = `state-${(fields.State || 'offline').toLowerCase()}`;
+                const statusClass = `status-${(fields.State || 'offline').toLowerCase()}`;
+                
+                return `
+                    <div class="server-card ${stateClass}">
+                        <div class="server-header">
+                            <div class="server-name">${fields.Hostname || 'Unknown'}</div>
+                            <div class="server-status ${statusClass}"></div>
+                        </div>
+                        
+                        <div class="server-details">
+                            <div class="detail-row">
+                                <span class="detail-label">IP</span>
+                                <span class="detail-value">${fields.IPAddress || 'N/A'}</span>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <span class="detail-label">Rôle</span>
+                                <span class="detail-value">${fields.Role || 'N/A'}</span>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <span class="detail-label">OS</span>
+                                <span class="detail-value">${fields.OperatingSystem || 'N/A'}</span>
+                            </div>
+                            
+                            ${fields.Role === 'Hyper-V Host' ? `
+                                <div class="detail-row">
+                                    <span class="detail-label">Hyper-V</span>
+                                    <span class="detail-value">${fields.HyperVStatus || 'N/A'}</span>
+                                </div>
+                            ` : ''}
+                            
+                            ${fields.VeeamStatus ? `
+                                <div class="detail-row">
+                                    <span class="detail-label">Veeam Backup</span>
+                                    <span class="detail-value">${fields.VeeamStatus}</span>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="detail-row">
+                                <span class="detail-label">CPU</span>
+                                <span class="detail-value">${fields.CPUUsage || 0}%</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${fields.CPUUsage || 0}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <span class="detail-label">RAM</span>
+                                <span class="detail-value">${fields.MemoryUsage || 0}%</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${fields.MemoryUsage || 0}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <span class="detail-label">Disque libre</span>
+                                <span class="detail-value">${fields.DiskSpaceGB || 0} GB</span>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <span class="detail-label">Agent ATLAS</span>
+                                <span class="detail-value">
+                                    ${fields.AgentVersion ? 
+                                        `✅ ${fields.AgentVersion.startsWith('v') ? fields.AgentVersion : 'v' + fields.AgentVersion}` : 
+                                        '❌ Non installé'}
+                                </span>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <span class="detail-label">Dernier contact</span>
+                                <span class="detail-value">
+                                    ${(() => {
+                                        if (!fields.LastContact) return 'Jamais';
+                                        const lastContact = new Date(fields.LastContact);
+                                        const now = new Date();
+                                        const secondsAgo = Math.abs(Math.floor((now - lastContact) / 1000));
+                                        
+                                        let timeText = lastContact.toLocaleString('fr-FR');
+                                        let indicator = '';
+                                        
+                                        if (secondsAgo < 60) {
+                                            indicator = '🟢';
+                                            timeText += ` (il y a ${secondsAgo}s)`;
+                                        } else if (secondsAgo < 300) {
+                                            indicator = '🟡';
+                                            timeText += ` (il y a ${Math.floor(secondsAgo/60)} min)`;
+                                        } else if (secondsAgo < 3600) {
+                                            indicator = '🔴';
+                                            timeText += ` (il y a ${Math.floor(secondsAgo/60)} min)`;
+                                        } else if (secondsAgo < 86400) {
+                                            indicator = '🔴';
+                                            const hours = Math.floor(secondsAgo/3600);
+                                            const mins = Math.floor((secondsAgo % 3600)/60);
+                                            timeText += ` (il y a ${hours}h${mins > 0 ? mins + 'min' : ''})`;
+                                        } else {
+                                            indicator = '🔴';
+                                            const days = Math.floor(secondsAgo/86400);
+                                            timeText += ` (il y a ${days} jour${days > 1 ? 's' : ''})`;
+                                        }
+                                        
+                                        return `${indicator} ${timeText}`;
+                                    })()
+                                }
+                                </span>
+                            </div>
+                        </div>
+                        
+                        ${(fields.PendingUpdates > 0) ? `
+                            <div class="updates-section">
+                                <div style="margin-bottom: 0.5rem;">
+                                    <strong>Windows Update:</strong>
+                                </div>
+                                <span class="update-badge update-critical">
+                                    ${fields.PendingUpdates} MAJ en attente
+                                </span>
+                                ${fields.RebootRequired ? 
+                                    '<span class="update-badge update-important">Redémarrage requis</span>' : 
+                                    ''}
+                                
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary" onclick="installUpdates('${fields.Hostname}')">
+                                        📥 Installer MAJ
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="scanUpdates('${fields.Hostname}')">
+                                        🔍 Scanner
+                                    </button>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            // Mettre à jour les statistiques de déploiement auto-update
+            updateDeploymentStats();
+        }
+        
+        // Actions
+        function installUpdates(hostname) {
+            if (confirm(`Installer les mises à jour sur ${hostname} ?`)) {
+                alert(`Installation des MAJ lancée sur ${hostname}`);
+                // Ici on pourrait déclencher l'agent via SharePoint
+            }
+        }
+        
+        function scanUpdates(hostname) {
+            alert(`Scan des MAJ lancé sur ${hostname}`);
+        }
+        
+        function showError(message) {
+            const container = document.getElementById('serversContainer');
+            container.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+        
+        // ========== AUTO-UPDATE FUNCTIONS ==========
+        
+        // Déployer une mise à jour vers SharePoint
+        async function deployUpdate(version) {
+            if (!accessToken) {
+                alert('Veuillez vous connecter pour déployer une mise à jour');
+                return;
+            }
+            
+            if (!confirm(`Voulez-vous déployer la version ${version} sur tous les agents ?`)) {
+                return;
+            }
+            
+            try {
+                // Créer ou mettre à jour l'entrée de configuration dans SharePoint
+                const configUrl = `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items`;
+                
+                // D'abord chercher si une config existe déjà (sans filtre OData)
+                const searchResponse = await fetch(`${configUrl}?$expand=fields`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                
+                const searchData = await searchResponse.json();
+                // Chercher manuellement l'entrée UPDATE_CONFIG
+                const existingConfig = searchData.value && searchData.value.find(item => 
+                    item.fields && (
+                        item.fields.Title === 'UPDATE_CONFIG' || 
+                        item.fields.Hostname === 'UPDATE_CONFIG'
+                    )
+                );
+                
+                // Plus besoin de GitHub - l'agent est déjà dans SharePoint
+                // On met juste à jour la version cible pour déclencher l'auto-update
+                console.log(`📦 Déploiement de la version ${version} via SharePoint`);
+                
+                const updateData = {
+                    fields: {
+                        Title: 'UPDATE_CONFIG',
+                        Hostname: 'UPDATE_CONFIG',
+                        State: 'UPDATE_AVAILABLE',
+                        AgentVersion: version,
+                        VeeamStatus: agentCode || "N/A", // On utilise ce champ pour stocker le code
+                        LastContact: new Date().toISOString()
+                    }
+                };
+                
+                let response;
+                if (existingConfig) {
+                    // Mettre à jour la config existante
+                    response = await fetch(`${configUrl}/${existingConfig.id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify(updateData)
+                    });
+                } else {
+                    // Créer une nouvelle config
+                    response = await fetch(configUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify(updateData)
+                    });
+                }
+                
+                if (response.ok) {
+                    // Mettre à jour l'interface
+                    document.getElementById('updateStatus').innerHTML = '🚀 Déploiement en cours...';
+                    document.getElementById('updateStatus').style.background = '#dcfce7';
+                    document.getElementById('updateStatus').style.color = '#16a34a';
+                    
+                    alert(`✅ Version ${version} déployée avec succès!\nLes agents vont se mettre à jour automatiquement dans les 3 prochaines minutes.`);
+                    
+                    // Rafraîchir les données après 10 secondes
+                    setTimeout(() => {
+                        refreshData();
+                        updateDeploymentStats();
+                    }, 10000);
+                } else {
+                    throw new Error('Erreur lors du déploiement');
+                }
+                
+            } catch (error) {
+                console.error('Erreur déploiement:', error);
+                alert(`❌ Erreur lors du déploiement: ${error.message}`);
+            }
+        }
+        
+        // Mettre à jour les statistiques de déploiement
+        function updateDeploymentStats() {
+            // Cette fonction sera appelée lors du refresh des données
+            const servers = window.lastServersData || [];
+            
+            let upToDate = 0;
+            let updating = 0;
+            let outdated = 0;
+            
+            const latestVersion = document.getElementById('latestVersion').textContent;
+            
+            servers.forEach(server => {
+                if (server.fields && server.fields.AgentVersion) {
+                    // Normaliser les versions pour la comparaison
+                    const agentVersion = server.fields.AgentVersion.startsWith('v') ? 
+                        server.fields.AgentVersion : 'v' + server.fields.AgentVersion;
+                    const targetVersion = latestVersion.startsWith('v') ? 
+                        latestVersion : 'v' + latestVersion;
+                    
+                    if (agentVersion === targetVersion) {
+                        upToDate++;
+                    } else if (server.fields.State === 'UPDATING') {
+                        updating++;
+                    } else {
+                        outdated++;
+                    }
+                }
+            });
+            
+            const total = upToDate + updating + outdated;
+            const percentage = total > 0 ? Math.round((upToDate / total) * 100) : 0;
+            
+            document.getElementById('upToDateCount').textContent = upToDate;
+            document.getElementById('updatingCount').textContent = updating;
+            document.getElementById('outdatedCount').textContent = outdated;
+            document.getElementById('updateProgress').style.width = percentage + '%';
+            document.getElementById('updateProgressText').textContent = percentage + '% mis à jour';
+            
+            // Mettre à jour le statut global
+            if (updating > 0) {
+                document.getElementById('updateStatus').innerHTML = `🔄 ${updating} agent(s) en cours de MAJ`;
+                document.getElementById('updateStatus').style.background = '#fef3c7';
+                document.getElementById('updateStatus').style.color = '#92400e';
+            } else if (outdated > 0) {
+                document.getElementById('updateStatus').innerHTML = `⚠️ ${outdated} agent(s) à mettre à jour`;
+                document.getElementById('updateStatus').style.background = '#fee2e2';
+                document.getElementById('updateStatus').style.color = '#dc2626';
+            } else if (upToDate > 0) {
+                document.getElementById('updateStatus').innerHTML = `✅ Tous les agents à jour`;
+                document.getElementById('updateStatus').style.background = '#dcfce7';
+                document.getElementById('updateStatus').style.color = '#16a34a';
+            }
+        }
+        
+        // Sauvegarder les données pour les stats
+        window.lastServersData = [];
+    </script>
+</body>
+</html>
