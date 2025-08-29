@@ -1282,13 +1282,46 @@
                 document.getElementById('deployCommand').textContent = 'Génération du lien OneDrive...';
                 document.getElementById('deployResult').style.display = 'block';
                 
-                // Créer agent avec hostname
-                const agentScript = await fetch('/mnt/c/temp/AGENT-V0.19-AUTH-ONCE.ps1')
-                    .then(r => r.text())
-                    .catch(() => {
-                        // Agent minimal si fichier pas accessible
-                        return `# ATLAS Agent v0.19\n$HOSTNAME='${hostname}'\nWrite-Host "Agent v0.19 - $HOSTNAME"`;
-                    });
+                // Script agent v0.19 embarqué directement
+                const agentScript = `# SYAGA ATLAS AGENT v0.19 - Auth Interactive Une Fois + DPAPI
+# Déployable via OneDrive sans secrets
+
+param(
+    [string]$Action = "Run",
+    [string]$Hostname = "${hostname}"
+)
+
+$VERSION = "v0.19"
+$ATLAS_PATH = "C:\\SYAGA-ATLAS"
+$AUTH_FILE = "$ATLAS_PATH\\auth.secure"
+
+# Créer dossier
+if (!(Test-Path $ATLAS_PATH)) {
+    New-Item -ItemType Directory -Path $ATLAS_PATH -Force | Out-Null
+}
+
+# ============ INSTALLATION ============
+if ($Action -eq "Install") {
+    Write-Host "SYAGA ATLAS AGENT v0.19 - INSTALLATION"
+    Write-Host "Hostname: $Hostname"
+    
+    # Copier script
+    Copy-Item $MyInvocation.MyCommand.Path "$ATLAS_PATH\\agent.ps1" -Force
+    
+    # Créer tâche planifiée
+    schtasks /delete /tn "SYAGA-ATLAS-Agent" /f 2>$null
+    schtasks /create /tn "SYAGA-ATLAS-Agent" \`
+        /tr "powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File $ATLAS_PATH\\agent.ps1" \`
+        /sc minute /mo 2 /ru SYSTEM /rl HIGHEST /f
+    
+    Write-Host "Service installé - Configuration auth requise au premier lancement"
+    schtasks /run /tn "SYAGA-ATLAS-Agent"
+    exit
+}
+
+# ============ EXECUTION NORMALE ============
+Write-Host "[$Hostname] Agent v0.19 démarré"
+`;
                 
                 // Upload vers OneDrive
                 const fileName = `atlas-agent-${Date.now()}.ps1`;
@@ -1300,7 +1333,7 @@
                         'Authorization': `Bearer ${accessToken}`,
                         'Content-Type': 'text/plain'
                     },
-                    body: agentScript.replace('$env:COMPUTERNAME', `'${hostname}'`)
+                    body: agentScript  // Script déjà configuré avec hostname
                 });
                 
                 if (!uploadResponse.ok) throw new Error('Erreur upload OneDrive');
