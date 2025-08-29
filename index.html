@@ -440,7 +440,7 @@
         <div class="card">
             <div class="card-header">
                 📊 Métriques Détaillées - Temps Réel
-                <span style="font-size: 0.85rem; color: #3b82f6;">🔥 v0.17 Hyper-V + Logs</span>
+                <span style="font-size: 0.85rem; color: #3b82f6;">🔥 v0.18 Veeam + IP + Hyper-V</span>
             </div>
             <div id="detailedMetricsContainer">
                 <div class="loading">Chargement métriques détaillées...</div>
@@ -986,16 +986,27 @@
                     const ram = server.fields.MemoryUsage || 0;
                     const disk = server.fields.DiskSpaceGB || 0;
                     const ip = server.fields.IPAddress || 'N/A';
+                    const hyperv = server.fields.HyperVStatus || 'N/A';
+                    const veeam = server.fields.VeeamStatus || 'N/A';
+                    
+                    // Couleur selon version
+                    const versionColor = version.includes('v0.18') ? '#10b981' : '#f59e0b';
                     
                     html += `
                         <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: white;">
                             <h3 style="margin: 0 0 1rem 0; color: #1f2937;">🖥️ ${hostname}</h3>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem;">
-                                <div><strong>Version:</strong> ${version}</div>
+                            <span style="background: ${versionColor}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; float: right; margin-top: -2rem;">${version}</span>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem;">
                                 <div><strong>IP:</strong> ${ip}</div>
                                 <div><strong>CPU:</strong> ${cpu}%</div>
                                 <div><strong>RAM:</strong> ${ram}%</div>
                                 <div><strong>Disk:</strong> ${disk} GB</div>
+                            </div>
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                    <div><strong>🖥️ Hyper-V:</strong> ${hyperv}</div>
+                                    <div><strong>💾 Veeam:</strong> ${veeam}</div>
+                                </div>
                             </div>
                         </div>
                     `;
