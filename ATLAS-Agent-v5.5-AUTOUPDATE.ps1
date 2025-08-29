@@ -494,7 +494,7 @@ function Collecter-ToutesMetriques {
             CPU = Obtenir-MetriquesCPU
             Memory = Obtenir-MetriquesMemoire
             Disks = Obtenir-MetriquesDisques
-            LastUpdate = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
+            LastUpdate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
             AgentVersion = $Script:Version
         }
         Services = Obtenir-ServicesWindows

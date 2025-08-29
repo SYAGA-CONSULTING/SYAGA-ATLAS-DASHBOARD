@@ -621,7 +621,8 @@
         
         // Récupérer les données RÉELLES depuis SharePoint UNIQUEMENT
         async function refreshData() {
-            console.log('📡 Récupération des données ATLAS depuis SharePoint...');
+            const now = new Date();
+            console.log(`📡 Récupération des données ATLAS depuis SharePoint... [${now.toLocaleString('fr-FR')}]`);
             await loadFromSharePoint();
         }
         
