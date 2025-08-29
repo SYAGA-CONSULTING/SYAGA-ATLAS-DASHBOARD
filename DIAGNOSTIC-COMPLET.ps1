@@ -37,7 +37,7 @@ if (Test-Path $configFile) {
             Write-Host "  ✗ ClientSecret NON configuré!" -ForegroundColor Red
         }
     } catch {
-        Write-Host "  ✗ Erreur lecture config: $_" -ForegroundColor Red
+        Write-Host "  [ERREUR] Erreur lecture config: $_" -ForegroundColor Red
     }
 } else {
     Write-Host "  ✗ Config manquante!" -ForegroundColor Red
@@ -188,7 +188,7 @@ if (Test-Path $configFile) {
             Write-Host "  ✗ ClientSecret non configuré - impossible de tester" -ForegroundColor Red
         }
     } catch {
-        Write-Host "  ✗ Erreur lecture config: $_" -ForegroundColor Red
+        Write-Host "  [ERREUR] Erreur lecture config: $_" -ForegroundColor Red
     }
 }
 
