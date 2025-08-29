@@ -265,18 +265,18 @@ function Collecter-Metriques {
     $disks = Obtenir-MetriquesDisques
     
     @{
-        Hostname = $sysInfo.Hostname
-        IPAddress = $sysInfo.IPAddress
-        State = if ($cpu.Usage -gt 90 -or $mem.Usage -gt 90) { "Warning" } else { "OK" }
-        CPUUsage = $cpu.Usage
-        MemoryUsage = $mem.Usage
-        DiskSpaceGB = if ($disks.Count -gt 0) { $disks[0].FreeGB } else { 0 }
-        Role = "Server"
-        HyperVStatus = "N/A"
-        VeeamStatus = "N/A"
-        LastContact = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-        AgentVersion = $Script:Version
-        PendingUpdates = 0
+        Hostname = [string]$sysInfo.Hostname
+        IPAddress = [string]$sysInfo.IPAddress
+        State = [string](if ($cpu.Usage -gt 90 -or $mem.Usage -gt 90) { "Warning" } else { "OK" })
+        CPUUsage = [double](if ($cpu.Usage) { $cpu.Usage } else { 0 })
+        MemoryUsage = [double](if ($mem.Usage) { $mem.Usage } else { 0 })
+        DiskSpaceGB = [double](if ($disks.Count -gt 0) { $disks[0].FreeGB } else { 0 })
+        Role = [string]"Server"
+        HyperVStatus = [string]"N/A"
+        VeeamStatus = [string]"N/A"
+        LastContact = [string](Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+        AgentVersion = [string]$Script:Version
+        PendingUpdates = [double]0
     }
 }
 
@@ -299,19 +299,19 @@ function Envoyer-MetriquesSharePoint {
         $existingItem = $existingItems.value | Where-Object { $_.fields.Title -eq $env:COMPUTERNAME } | Select-Object -First 1
         
         $fields = @{
-            "Title" = $env:COMPUTERNAME
-            "Hostname" = $Metriques.Hostname
-            "IPAddress" = $Metriques.IPAddress
-            "State" = $Metriques.State
-            "CPUUsage" = $Metriques.CPUUsage
-            "MemoryUsage" = $Metriques.MemoryUsage
-            "DiskSpaceGB" = $Metriques.DiskSpaceGB
-            "Role" = $Metriques.Role
-            "HyperVStatus" = $Metriques.HyperVStatus
-            "VeeamStatus" = $Metriques.VeeamStatus
-            "LastContact" = $Metriques.LastContact
-            "AgentVersion" = $Metriques.AgentVersion
-            "PendingUpdates" = $Metriques.PendingUpdates
+            "Title" = [string]$env:COMPUTERNAME
+            "Hostname" = [string]$Metriques.Hostname
+            "IPAddress" = [string]$Metriques.IPAddress
+            "State" = [string]$Metriques.State
+            "CPUUsage" = [double]$Metriques.CPUUsage
+            "MemoryUsage" = [double]$Metriques.MemoryUsage
+            "DiskSpaceGB" = [double]$Metriques.DiskSpaceGB
+            "Role" = [string]$Metriques.Role
+            "HyperVStatus" = [string]$Metriques.HyperVStatus
+            "VeeamStatus" = [string]$Metriques.VeeamStatus
+            "LastContact" = [string]$Metriques.LastContact
+            "AgentVersion" = [string]$Metriques.AgentVersion
+            "PendingUpdates" = [double]$Metriques.PendingUpdates
         }
         
         $body = @{ fields = $fields } | ConvertTo-Json -Depth 10
