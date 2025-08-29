@@ -654,9 +654,16 @@
                 const data = await response.json();
                 
                 // Les données sont au format SharePoint
-                const servers = data.value || [];
+                const allItems = data.value || [];
                 
-                console.log(`✅ ${servers.length} serveurs récupérés via proxy sécurisé authentifié`);
+                // Filtrer pour exclure les entrées CONFIG
+                const servers = allItems.filter(item => 
+                    item.fields && 
+                    item.fields.Hostname !== 'CONFIG' && 
+                    item.fields.Title !== 'AGENT_CONFIG'
+                );
+                
+                console.log(`✅ ${servers.length} serveurs récupérés (${allItems.length} entrées totales)`);
                 
                 updateDashboard(servers);
                 
@@ -928,8 +935,8 @@
                 // Créer ou mettre à jour l'entrée de configuration dans SharePoint
                 const configUrl = `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items`;
                 
-                // D'abord chercher si une config existe déjà
-                const searchResponse = await fetch(`${configUrl}?$expand=fields&$filter=fields/Title eq 'AGENT_CONFIG'`, {
+                // D'abord chercher si une config existe déjà (sans filtre OData)
+                const searchResponse = await fetch(`${configUrl}?$expand=fields`, {
                     headers: {
                         'Accept': 'application/json',
                         'Authorization': `Bearer ${accessToken}`
@@ -937,7 +944,13 @@
                 });
                 
                 const searchData = await searchResponse.json();
-                const existingConfig = searchData.value && searchData.value[0];
+                // Chercher manuellement l'entrée CONFIG
+                const existingConfig = searchData.value && searchData.value.find(item => 
+                    item.fields && (
+                        item.fields.Title === 'AGENT_CONFIG' || 
+                        item.fields.Hostname === 'CONFIG'
+                    )
+                );
                 
                 const updateData = {
                     fields: {
