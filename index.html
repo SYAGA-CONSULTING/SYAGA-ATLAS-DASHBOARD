@@ -377,10 +377,10 @@
                 <div>
                     <h4 style="margin-bottom: 1rem; color: #4b5563;">📦 Version Agent Disponible</h4>
                     <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px;">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;" id="latestVersion">5.6-FINAL</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;" id="latestVersion">v0.12</div>
                         <div style="color: #6b7280; margin-top: 0.5rem;">Dernière version disponible</div>
                         <div style="margin-top: 1rem;">
-                            <button class="btn btn-primary" onclick="deployUpdate('5.6-FINAL')" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;">
+                            <button class="btn btn-primary" onclick="deployUpdate('v0.12')" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;">
                                 📤 Déployer vers tous les agents
                             </button>
                         </div>
@@ -761,9 +761,22 @@
             document.getElementById('lastUpdate').textContent = 
                 new Date().toLocaleString('fr-FR');
             
-            // Serveurs
+            // Serveurs - Trier pour mettre SYAGA-HOST01 en premier, puis 02, 03, 04
+            const sortedServers = [...servers].sort((a, b) => {
+                const orderMap = {
+                    'SYAGA-HOST01': 1,
+                    'SYAGA-HOST02': 2,
+                    'SYAGA-HOST03': 3,
+                    'SYAGA-HOST04': 4,
+                    'SYAGA-VEEAM01': 5
+                };
+                const orderA = orderMap[a.fields.Hostname] || 99;
+                const orderB = orderMap[b.fields.Hostname] || 99;
+                return orderA - orderB;
+            });
+            
             const container = document.getElementById('serversContainer');
-            container.innerHTML = servers.map(server => {
+            container.innerHTML = sortedServers.map(server => {
                 const fields = server.fields;
                 const stateClass = `state-${(fields.State || 'offline').toLowerCase()}`;
                 const statusClass = `status-${(fields.State || 'offline').toLowerCase()}`;
@@ -830,7 +843,7 @@
                                 <span class="detail-label">Agent ATLAS</span>
                                 <span class="detail-value">
                                     ${fields.AgentVersion ? 
-                                        `✅ v${fields.AgentVersion}` : 
+                                        `✅ ${fields.AgentVersion.startsWith('v') ? fields.AgentVersion : 'v' + fields.AgentVersion}` : 
                                         '❌ Non installé'}
                                 </span>
                             </div>
@@ -955,22 +968,9 @@
                     )
                 );
                 
-                // Télécharger le code de l'agent depuis GitHub
-                let agentCode = "";
-                try {
-                    const agentUrl = `https://raw.githubusercontent.com/SYAGA-CONSULTING/SYAGA-ATLAS-DASHBOARD/gh-pages/ATLAS-Agent-v${version}.ps1`;
-                    const codeResponse = await fetch(agentUrl);
-                    if (codeResponse.ok) {
-                        const codeText = await codeResponse.text();
-                        // Encoder en Base64 pour stockage dans SharePoint
-                        agentCode = btoa(unescape(encodeURIComponent(codeText)));
-                        console.log('✅ Code agent récupéré et encodé');
-                    } else {
-                        console.warn('⚠️ Code agent non trouvé sur GitHub');
-                    }
-                } catch (e) {
-                    console.error('Erreur récupération code:', e);
-                }
+                // Plus besoin de GitHub - l'agent est déjà dans SharePoint
+                // On met juste à jour la version cible pour déclencher l'auto-update
+                console.log(`📦 Déploiement de la version ${version} via SharePoint`);
                 
                 const updateData = {
                     fields: {
@@ -1044,7 +1044,13 @@
             
             servers.forEach(server => {
                 if (server.fields && server.fields.AgentVersion) {
-                    if (server.fields.AgentVersion === latestVersion) {
+                    // Normaliser les versions pour la comparaison
+                    const agentVersion = server.fields.AgentVersion.startsWith('v') ? 
+                        server.fields.AgentVersion : 'v' + server.fields.AgentVersion;
+                    const targetVersion = latestVersion.startsWith('v') ? 
+                        latestVersion : 'v' + latestVersion;
+                    
+                    if (agentVersion === targetVersion) {
                         upToDate++;
                     } else if (server.fields.State === 'UPDATING') {
                         updating++;
