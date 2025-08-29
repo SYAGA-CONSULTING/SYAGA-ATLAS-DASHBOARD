@@ -6,10 +6,10 @@ Write-Host "  MIGRATION VERS ATLAS v5.5 AUTOUPDATE" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Vérifier les droits admin
+# Verifier les droits admin
 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "ERREUR: Ce script doit être exécuté en tant qu'Administrateur" -ForegroundColor Red
+    Write-Host "ERREUR: Ce script doit etre execute en tant qu'Administrateur" -ForegroundColor Red
     exit 1
 }
 
@@ -19,21 +19,21 @@ $configFile = "$atlasPath\config.json"
 $agentPath = "$atlasPath\Agent\ATLAS-Agent-Current.ps1"
 $tempPath = "$env:TEMP\ATLAS-Agent-v5.5-AUTOUPDATE.ps1"
 
-Write-Host "[1/6] Vérification de l'installation existante..." -ForegroundColor Yellow
+Write-Host "[1/6] Verification de l'installation existante..." -ForegroundColor Yellow
 
 # Vérifier si ATLAS est installé
 if (!(Test-Path $atlasPath)) {
-    Write-Host "  ⚠️ ATLAS n'est pas installé. Installation complète requise." -ForegroundColor Yellow
+    Write-Host "  [!] ATLAS n'est pas installe. Installation complete requise." -ForegroundColor Yellow
     $install = Read-Host "  Voulez-vous installer ATLAS v5.5? (O/N)"
     if ($install -ne "O") {
         Write-Host "Installation annulée" -ForegroundColor Red
         exit 1
     }
 } else {
-    Write-Host "  ✅ Installation ATLAS détectée" -ForegroundColor Green
+    Write-Host "  [OK] Installation ATLAS detectee" -ForegroundColor Green
 }
 
-Write-Host "[2/6] Récupération du ClientSecret existant..." -ForegroundColor Yellow
+Write-Host "[2/6] Recuperation du ClientSecret existant..." -ForegroundColor Yellow
 
 $clientSecret = ""
 
@@ -43,7 +43,7 @@ if (Test-Path $agentPath) {
     if ($existingContent -match '\$Script:ClientSecret\s*=\s*"([^"]+)"') {
         $clientSecret = $matches[1]
         if ($clientSecret -and $clientSecret -ne "REMPLACER_PAR_LE_SECRET" -and $clientSecret -ne "") {
-            Write-Host "  ✅ ClientSecret récupéré depuis l'agent existant" -ForegroundColor Green
+            Write-Host "  [OK] ClientSecret recupere depuis l'agent existant" -ForegroundColor Green
         }
     }
 }
@@ -54,17 +54,17 @@ if (!$clientSecret -and (Test-Path $configFile)) {
         $config = Get-Content $configFile -Raw | ConvertFrom-Json
         if ($config.ClientSecret -and $config.ClientSecret -ne "REMPLACER_PAR_LE_SECRET") {
             $clientSecret = $config.ClientSecret
-            Write-Host "  ✅ ClientSecret récupéré depuis config.json" -ForegroundColor Green
+            Write-Host "  [OK] ClientSecret recupere depuis config.json" -ForegroundColor Green
         }
     } catch {}
 }
 
 if (!$clientSecret) {
-    Write-Host "  ⚠️ ClientSecret non trouvé" -ForegroundColor Yellow
-    Write-Host "  Le secret devra être ajouté manuellement dans $configFile" -ForegroundColor Yellow
+    Write-Host "  [!] ClientSecret non trouve" -ForegroundColor Yellow
+    Write-Host "  Le secret devra etre ajoute manuellement dans $configFile" -ForegroundColor Yellow
 }
 
-Write-Host "[3/6] Téléchargement de l'agent v5.5..." -ForegroundColor Yellow
+Write-Host "[3/6] Telechargement de l'agent v5.5..." -ForegroundColor Yellow
 
 try {
     # Télécharger depuis GitHub
@@ -75,22 +75,22 @@ try {
     Invoke-WebRequest -Uri $downloadUrl -OutFile $tempPath -UseBasicParsing
     
     if (Test-Path $tempPath) {
-        Write-Host "  ✅ Agent v5.5 téléchargé avec succès" -ForegroundColor Green
+        Write-Host "  [OK] Agent v5.5 telecharge avec succes" -ForegroundColor Green
     } else {
-        throw "Échec du téléchargement"
+        throw "Echec du telechargement"
     }
 } catch {
-    Write-Host "  ❌ Erreur téléchargement: $_" -ForegroundColor Red
+    Write-Host "  [ERREUR] Erreur telechargement: $_" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "[4/6] Arrêt de l'agent existant..." -ForegroundColor Yellow
+Write-Host "[4/6] Arret de l'agent existant..." -ForegroundColor Yellow
 
 # Arrêter les tâches planifiées existantes
 Get-ScheduledTask | Where-Object { $_.TaskName -like "*ATLAS*" } | ForEach-Object {
     try {
         Stop-ScheduledTask -TaskName $_.TaskName -ErrorAction SilentlyContinue
-        Write-Host "  ✅ Tâche arrêtée: $($_.TaskName)" -ForegroundColor Green
+        Write-Host "  [OK] Tache arretee: $($_.TaskName)" -ForegroundColor Green
     } catch {}
 }
 
@@ -112,9 +112,9 @@ if ($clientSecret) {
     
     # Sauvegarder la configuration
     $configData | ConvertTo-Json | Out-File -FilePath $configFile -Encoding UTF8
-    Write-Host "  ✅ Configuration sauvegardée dans $configFile" -ForegroundColor Green
+    Write-Host "  [OK] Configuration sauvegardee dans $configFile" -ForegroundColor Green
 } else {
-    Write-Host "  ⚠️ Configuration créée sans ClientSecret" -ForegroundColor Yellow
+    Write-Host "  [!] Configuration creee sans ClientSecret" -ForegroundColor Yellow
     Write-Host "  IMPORTANT: Ajouter le ClientSecret dans $configFile" -ForegroundColor Red
     
     # Créer un fichier config par défaut
@@ -135,29 +135,29 @@ try {
     
     Write-Host ""
     Write-Host "======================================" -ForegroundColor Green
-    Write-Host "  ✅ MIGRATION TERMINÉE AVEC SUCCÈS!" -ForegroundColor Green
+    Write-Host "  MIGRATION TERMINEE AVEC SUCCES!" -ForegroundColor Green
     Write-Host "======================================" -ForegroundColor Green
     Write-Host ""
-    Write-Host "Agent v5.5 installé avec:" -ForegroundColor Cyan
-    Write-Host "  • Auto-update automatique toutes les 3 minutes" -ForegroundColor White
-    Write-Host "  • Métriques enrichies (Services, Events, Veeam, Hyper-V)" -ForegroundColor White
+    Write-Host "Agent v5.5 installe avec:" -ForegroundColor Cyan
+    Write-Host "  - Auto-update automatique toutes les 3 minutes" -ForegroundColor White
+    Write-Host "  - Metriques enrichies (Services, Events, Veeam, Hyper-V)" -ForegroundColor White
     Write-Host "  • Configuration dans: $configFile" -ForegroundColor White
     Write-Host ""
     
     if (!$clientSecret) {
-        Write-Host "⚠️ ACTION REQUISE:" -ForegroundColor Yellow
+        Write-Host "[!] ACTION REQUISE:" -ForegroundColor Yellow
         Write-Host "  1. Ouvrir $configFile" -ForegroundColor Yellow
         Write-Host "  2. Remplacer 'REMPLACER_PAR_LE_SECRET' par le vrai ClientSecret" -ForegroundColor Yellow
-        Write-Host "  3. Redémarrer la tâche ATLAS-Agent-v5" -ForegroundColor Yellow
+        Write-Host "  3. Redemarrer la tache ATLAS-Agent-v5" -ForegroundColor Yellow
     } else {
-        Write-Host "✅ L'agent est opérationnel et enverra ses métriques toutes les 3 minutes" -ForegroundColor Green
+        Write-Host "[OK] L'agent est operationnel et enverra ses metriques toutes les 3 minutes" -ForegroundColor Green
     }
     
     Write-Host ""
     Write-Host "Dashboard: https://white-river-053fc6703.2.azurestaticapps.net" -ForegroundColor Cyan
     
 } catch {
-    Write-Host "  ❌ Erreur installation: $_" -ForegroundColor Red
+    Write-Host "  [ERREUR] Erreur installation: $_" -ForegroundColor Red
     exit 1
 } finally {
     # Nettoyer le fichier temporaire

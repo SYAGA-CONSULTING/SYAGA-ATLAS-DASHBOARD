@@ -6,9 +6,6 @@ param(
     [int]$IntervalleMinutes = 3
 )
 
-$OutputEncoding = [System.Text.Encoding]::UTF8
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
 # Configuration
 $Script:Version = "5.5-AUTOUPDATE"
 $Script:CheminBase = "C:\ATLAS"
