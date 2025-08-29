@@ -457,6 +457,66 @@
                 <div class="loading">Chargement des logs...</div>
             </div>
         </div>
+
+        <!-- Bouton Déploiement Nouvel Agent -->
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header">
+                🚀 Déployer Nouvel Agent
+                <span style="font-size: 0.85rem; color: #3b82f6;">⚡ Déploiement avec URL temporaire</span>
+            </div>
+            <div style="padding: 20px;">
+                <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px;">
+                    <input type="text" id="newHostname" placeholder="Nom du serveur (ex: SYAGA-VEEAM01)" 
+                           style="flex: 1; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px;">
+                    
+                    <button onclick="generateDeployUrl()" style="
+                        background: linear-gradient(45deg, #0078d4, #40e0d0);
+                        color: white;
+                        padding: 12px 30px;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        font-size: 16px;
+                        transition: all 0.3s;
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        📦 Générer URL de Déploiement
+                    </button>
+                </div>
+                
+                <div id="deployResult" style="display: none;">
+                    <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #0078d4;">
+                        <h4 style="margin: 0 0 15px 0; color: #0078d4;">✅ URL Temporaire Générée</h4>
+                        <p style="margin: 10px 0; color: #666;">Exécutez cette commande en PowerShell Admin sur le serveur cible:</p>
+                        <div style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; position: relative;">
+                            <code id="deployCommand" style="font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 14px;">
+                                Génération en cours...
+                            </code>
+                            <button onclick="copyCommand()" style="
+                                position: absolute;
+                                right: 10px;
+                                top: 10px;
+                                padding: 8px 15px;
+                                background: #0078d4;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 13px;
+                            ">📋 Copier</button>
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; background: #fef3c7; border-radius: 6px;">
+                            <p style="color: #92400e; font-size: 13px; margin: 5px 0;">
+                                ⏱️ <strong>Expire à:</strong> <span id="expireTime" style="font-weight: bold;"></span><br>
+                                🔐 <strong>Sécurité:</strong> Authentification Microsoft 365 avec MFA requise<br>
+                                📌 <strong>Token:</strong> <span id="deployToken" style="font-family: monospace;"></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -1206,6 +1266,137 @@
         
         // Sauvegarder les données pour les stats
         window.lastServersData = [];
+
+        // ========== FONCTIONS DÉPLOIEMENT NOUVEL AGENT ==========
+        async function generateDeployUrl() {
+            const hostname = document.getElementById('newHostname').value.trim();
+            if (!hostname) {
+                alert('⚠️ Veuillez entrer un nom de serveur');
+                return;
+            }
+
+            try {
+                // Générer token unique
+                const token = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+                const expireTime = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+                // Créer entrée de déploiement dans SharePoint
+                const deployData = {
+                    fields: {
+                        Title: 'DEPLOY_TOKEN',
+                        Hostname: hostname,
+                        State: token,
+                        AgentVersion: 'v0.18',
+                        LastContact: expireTime.toISOString(),
+                        CPUUsage: 0,
+                        MemoryUsage: 0,
+                        DiskSpaceGB: 0
+                    }
+                };
+
+                // Sauvegarder dans SharePoint (liste ATLAS-Servers temporairement)
+                const response = await fetch(
+                    `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(deployData)
+                    }
+                );
+
+                if (response.ok) {
+                    // Afficher l'URL générée
+                    const deployUrl = `https://deploy.syaga.fr/${token}`;
+                    const deployCommand = `irm ${deployUrl} | iex`;
+                    
+                    document.getElementById('deployCommand').textContent = deployCommand;
+                    document.getElementById('expireTime').textContent = expireTime.toLocaleTimeString('fr-FR');
+                    document.getElementById('deployToken').textContent = token;
+                    document.getElementById('deployResult').style.display = 'block';
+
+                    // Animation d'apparition
+                    document.getElementById('deployResult').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('deployResult').style.transition = 'opacity 0.5s';
+                        document.getElementById('deployResult').style.opacity = '1';
+                    }, 100);
+
+                    // Auto-masquer après expiration
+                    setTimeout(() => {
+                        document.getElementById('deployResult').style.display = 'none';
+                        // Supprimer le token expiré de SharePoint
+                        cleanupExpiredToken(token);
+                    }, 15 * 60 * 1000);
+
+                    console.log(`✅ URL de déploiement générée pour ${hostname}: ${deployUrl}`);
+                } else {
+                    throw new Error('Erreur création token dans SharePoint');
+                }
+            } catch (error) {
+                console.error('❌ Erreur génération URL:', error);
+                alert(`❌ Erreur: ${error.message}`);
+            }
+        }
+
+        function copyCommand() {
+            const command = document.getElementById('deployCommand').textContent;
+            navigator.clipboard.writeText(command).then(() => {
+                // Feedback visuel
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copié!';
+                btn.style.background = '#10b981';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#0078d4';
+                }, 2000);
+            }).catch(err => {
+                alert('Erreur copie: ' + err);
+            });
+        }
+
+        async function cleanupExpiredToken(token) {
+            try {
+                // Récupérer tous les items
+                const response = await fetch(
+                    `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items?$expand=fields`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const tokenItem = data.value.find(item => 
+                        item.fields.Title === 'DEPLOY_TOKEN' && 
+                        item.fields.State === token
+                    );
+
+                    if (tokenItem) {
+                        // Supprimer le token
+                        await fetch(
+                            `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items/${tokenItem.id}`,
+                            {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${accessToken}`
+                                }
+                            }
+                        );
+                        console.log(`🗑️ Token expiré supprimé: ${token}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur nettoyage token:', error);
+            }
+        }
     </script>
 </body>
 </html>
