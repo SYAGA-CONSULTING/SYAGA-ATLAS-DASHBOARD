@@ -377,10 +377,10 @@
                 <div>
                     <h4 style="margin-bottom: 1rem; color: #4b5563;">📦 Version Agent Disponible</h4>
                     <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px;">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;" id="latestVersion">5.5-AUTOUPDATE</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;" id="latestVersion">5.6-FINAL</div>
                         <div style="color: #6b7280; margin-top: 0.5rem;">Dernière version disponible</div>
                         <div style="margin-top: 1rem;">
-                            <button class="btn btn-primary" onclick="deployUpdate('5.5-AUTOUPDATE')" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;">
+                            <button class="btn btn-primary" onclick="deployUpdate('5.6-FINAL')" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;">
                                 📤 Déployer vers tous les agents
                             </button>
                         </div>
@@ -657,11 +657,13 @@
                 // Les données sont au format SharePoint
                 const allItems = data.value || [];
                 
-                // Filtrer pour exclure les entrées CONFIG
+                // Filtrer pour exclure les entrées CONFIG et UPDATE
                 const servers = allItems.filter(item => 
                     item.fields && 
                     item.fields.Hostname !== 'CONFIG' && 
-                    item.fields.Title !== 'AGENT_CONFIG'
+                    item.fields.Hostname !== 'UPDATE_CONFIG' &&
+                    item.fields.Title !== 'AGENT_CONFIG' &&
+                    item.fields.Title !== 'UPDATE_CONFIG'
                 );
                 
                 console.log(`✅ ${servers.length} serveurs récupérés (${allItems.length} entrées totales)`);
@@ -945,20 +947,38 @@
                 });
                 
                 const searchData = await searchResponse.json();
-                // Chercher manuellement l'entrée CONFIG
+                // Chercher manuellement l'entrée UPDATE_CONFIG
                 const existingConfig = searchData.value && searchData.value.find(item => 
                     item.fields && (
-                        item.fields.Title === 'AGENT_CONFIG' || 
-                        item.fields.Hostname === 'CONFIG'
+                        item.fields.Title === 'UPDATE_CONFIG' || 
+                        item.fields.Hostname === 'UPDATE_CONFIG'
                     )
                 );
                 
+                // Télécharger le code de l'agent depuis GitHub
+                let agentCode = "";
+                try {
+                    const agentUrl = `https://raw.githubusercontent.com/SYAGA-CONSULTING/SYAGA-ATLAS-DASHBOARD/gh-pages/ATLAS-Agent-v${version}.ps1`;
+                    const codeResponse = await fetch(agentUrl);
+                    if (codeResponse.ok) {
+                        const codeText = await codeResponse.text();
+                        // Encoder en Base64 pour stockage dans SharePoint
+                        agentCode = btoa(unescape(encodeURIComponent(codeText)));
+                        console.log('✅ Code agent récupéré et encodé');
+                    } else {
+                        console.warn('⚠️ Code agent non trouvé sur GitHub');
+                    }
+                } catch (e) {
+                    console.error('Erreur récupération code:', e);
+                }
+                
                 const updateData = {
                     fields: {
-                        Title: 'AGENT_CONFIG',
-                        Hostname: 'CONFIG',
+                        Title: 'UPDATE_CONFIG',
+                        Hostname: 'UPDATE_CONFIG',
                         State: 'UPDATE_AVAILABLE',
                         AgentVersion: version,
+                        VeeamStatus: agentCode || "N/A", // On utilise ce champ pour stocker le code
                         LastContact: new Date().toISOString()
                     }
                 };
