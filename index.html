@@ -469,7 +469,13 @@ $Script:NomTache = "ATLAS-Agent-v5"
 # SharePoint
 $Script:TenantId = "6027d81c-ad9b-48f5-9da6-96f1bad11429"
 $Script:ClientId = "f66a8c6c-1037-41b8-be3c-4f6e67c1f49e"
-$Script:ClientSecret = "[REDACTED-USE-CERTIFICATE-AUTH]"
+# Le secret sera recupere depuis la config existante lors de l'auto-update
+$Script:ClientSecret = if (Test-Path "C:\ATLAS\Config\auth.json") {
+    (Get-Content "C:\ATLAS\Config\auth.json" | ConvertFrom-Json).ClientSecret
+} else {
+    # Fallback: recuperer depuis l'agent actuel en memoire
+    $Script:ClientSecret
+}
 $Script:SiteUrl = "https://syagaconsulting.sharepoint.com/sites/SYAGA-Atlas"
 
 # [... Le reste du code de l'agent v5.4 ...]
