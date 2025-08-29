@@ -1327,7 +1327,8 @@
                 if (!shareResponse.ok) throw new Error('Erreur création lien');
                 
                 const shareData = await shareResponse.json();
-                const downloadUrl = shareData.link.webUrl.replace('/view', '/download');
+                // IMPORTANT: Ajouter ?download=1 pour téléchargement direct SharePoint
+                const downloadUrl = shareData.link.webUrl + '?download=1';
                 
                 // Commande finale
                 const deployCommand = `iwr "${downloadUrl}" -OutFile C:\\agent.ps1; powershell -ExecutionPolicy Bypass -File C:\\agent.ps1 -Action Install -Hostname "${hostname}"`;
