@@ -358,8 +358,7 @@
             <span style="font-size: 0.8rem; color: #7f8c8d;">Auto-Update Manager</span>
         </div>
         <div>
-            <button id="authBtn" class="btn btn-primary" style="display:inline-block;">🔐 Se connecter</button>
-            <button id="refreshBtn" class="btn btn-success" style="display:none;">🔄 Actualiser</button>
+            <button id="authBtn" class="btn btn-primary">🔐 Se connecter</button>
         </div>
     </div>
 
@@ -503,7 +502,6 @@ $Script:SiteUrl = "https://syagaconsulting.sharepoint.com/sites/SYAGA-Atlas"
             try {
                 // S'assurer que le bouton Se connecter est visible au démarrage
                 document.getElementById('authBtn').style.display = 'inline-block';
-                document.getElementById('refreshBtn').style.display = 'none';
                 
                 await msalInstance.initialize();
                 
@@ -557,7 +555,6 @@ $Script:SiteUrl = "https://syagaconsulting.sharepoint.com/sites/SYAGA-Atlas"
 
         function onAuthSuccess() {
             document.getElementById('authBtn').style.display = 'none';
-            document.getElementById('refreshBtn').style.display = 'inline-block';
             loadServers();
             checkAgentVersions();
         }
@@ -907,7 +904,6 @@ $Script:SiteUrl = "https://syagaconsulting.sharepoint.com/sites/SYAGA-Atlas"
 
         // Event listeners
         document.getElementById('authBtn').addEventListener('click', login);
-        document.getElementById('refreshBtn').addEventListener('click', loadServers);
         document.getElementById('checkVersionBtn').addEventListener('click', checkAgentVersions);
         document.getElementById('deployUpdateBtn').addEventListener('click', deployV54Update);
         document.getElementById('customUpdateBtn').addEventListener('click', () => {
