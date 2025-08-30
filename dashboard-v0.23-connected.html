@@ -117,21 +117,37 @@
         .severity-high { fill: #e97659; }
         .severity-disaster { fill: #e45959; }
         
-        /* Overlay dialogue - Zabbix exact style */
+        /* Overlay dialogue - Style amélioré pour clic */
         .overlay-dialogue {
-            position: absolute;
+            position: fixed;
             background: #1b1f22;
-            border: 1px solid #404449;
-            border-radius: 4px;
-            padding: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            border: 2px solid #0275b8;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(2,117,184,0.3);
             z-index: 1000;
             display: none;
-            min-width: 350px;
+            min-width: 400px;
+            max-width: 500px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: slideIn 0.3s ease;
         }
         
         .overlay-dialogue.show {
             display: block;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -45%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
         }
         
         .overlay-dialogue h3 {
@@ -368,10 +384,16 @@
         </div>
     </div>
     
-    <!-- Overlay dialogue -->
+    <!-- Fond sombre pour focus -->
+    <div id="overlayBackdrop" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; z-index: 999;" onclick="closeDetailedView()"></div>
+    
+    <!-- Overlay dialogue avec bouton fermer -->
     <div class="overlay-dialogue" id="overlay">
-        <h3 id="overlayTitle">Server Details</h3>
-        <div class="overlay-dialogue-content" id="overlayContent">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #282e33; padding-bottom: 10px; margin-bottom: 15px;">
+            <h3 id="overlayTitle" style="margin: 0; font-size: 18px;">Server Details</h3>
+            <button onclick="closeDetailedView()" style="background: #e45959; border: none; color: white; font-size: 20px; cursor: pointer; padding: 2px 8px; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.background='#ff6b6b'" onmouseout="this.style.background='#e45959'">&times;</button>
+        </div>
+        <div class="overlay-dialogue-content" id="overlayContent" style="margin-top: 10px;">
             <!-- Content will be inserted here -->
         </div>
     </div>
@@ -711,9 +733,12 @@
                 // Stocker le type pour l'affichage
                 server.displayType = actualType;
                 
-                // Add event listeners
-                polygon.addEventListener('mouseenter', (e) => showOverlay(server, e));
-                polygon.addEventListener('mouseleave', hideOverlay);
+                // Add click listener au lieu de hover
+                polygon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showDetailedView(server, e);
+                });
+                polygon.style.cursor = 'pointer';
                 
                 // Create text avec taille adaptée
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -797,7 +822,62 @@
             container.appendChild(svg);
         }
 
-        // Show overlay with server details
+        // Variables pour le zoom et la sélection
+        let selectedServer = null;
+        let originalTransform = null;
+        
+        // Show detailed view with zoom effect
+        function showDetailedView(server, event) {
+            // Si on clique sur le même serveur, fermer
+            if (selectedServer === server) {
+                closeDetailedView();
+                return;
+            }
+            
+            selectedServer = server;
+            
+            // Effet de zoom sur l'hexagone
+            const hexagon = event.target;
+            const rect = hexagon.getBoundingClientRect();
+            const svg = hexagon.ownerSVGElement;
+            
+            // Sauvegarder la transformation originale
+            originalTransform = hexagon.getAttribute('transform') || '';
+            
+            // Appliquer un zoom progressif
+            hexagon.style.transition = 'all 0.3s ease';
+            hexagon.setAttribute('transform', `${originalTransform} scale(1.3)`);
+            hexagon.style.filter = 'drop-shadow(0 0 20px rgba(255,255,255,0.8))';
+            
+            // Afficher le fond et le panneau de détails
+            document.getElementById('overlayBackdrop').style.display = 'block';
+            showOverlay(server, event);
+        }
+        
+        // Fermer la vue détaillée
+        function closeDetailedView() {
+            if (selectedServer) {
+                // Trouver l'hexagone sélectionné et restaurer sa taille
+                const hexagons = document.querySelectorAll('polygon');
+                hexagons.forEach(hex => {
+                    hex.setAttribute('transform', '');
+                    hex.style.filter = '';
+                });
+                
+                selectedServer = null;
+                document.getElementById('overlayBackdrop').style.display = 'none';
+                hideOverlay();
+            }
+        }
+        
+        // Fermer quand on clique ailleurs
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('polygon') && !e.target.closest('.overlay-dialogue')) {
+                closeDetailedView();
+            }
+        });
+        
+        // Show overlay with server details (modifié pour rester ouvert)
         function showOverlay(server, event) {
             const overlay = document.getElementById('overlay');
             const title = document.getElementById('overlayTitle');
@@ -869,16 +949,7 @@
                 ` : ''}
             `;
             
-            // Position overlay
-            const rect = event.target.getBoundingClientRect();
-            overlay.style.left = rect.right + 10 + 'px';
-            overlay.style.top = rect.top + 'px';
-            
-            // Adjust if overlay goes off screen
-            if (rect.right + 360 > window.innerWidth) {
-                overlay.style.left = (rect.left - 360) + 'px';
-            }
-            
+            // L'overlay est maintenant centré grâce au CSS (position: fixed avec transform)
             overlay.classList.add('show');
         }
 
@@ -986,6 +1057,13 @@
         window.addEventListener('resize', () => {
             if (allServers.length > 0) {
                 renderHoneycomb();
+            }
+        });
+        
+        // Fermer avec Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDetailedView();
             }
         });
     </script>
