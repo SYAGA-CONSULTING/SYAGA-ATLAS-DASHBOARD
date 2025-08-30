@@ -337,6 +337,103 @@
             border-color: #007e33;
         }
         
+        /* Contrôles timeline */
+        .timeline-controls {
+            position: absolute;
+            bottom: -50px;
+            left: 150px;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .control-btn {
+            padding: 8px 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+        }
+        
+        .control-btn:active {
+            transform: translateY(0);
+        }
+        
+        .speed-control {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .speed-control label {
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .speed-control select {
+            padding: 6px 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .time-display {
+            padding: 8px 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #333;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        /* Animation CAU */
+        @keyframes cau-activation {
+            0% { background: #fff3cd; }
+            50% { background: #ffc107; transform: scale(1.05); }
+            100% { background: #fff3cd; }
+        }
+        
+        .cau-active {
+            animation: cau-activation 2s infinite;
+        }
+        
+        /* Indicateur CAU */
+        .cau-indicator {
+            position: absolute;
+            top: -30px;
+            background: #ffc107;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+        
+        .cau-indicator.visible {
+            opacity: 1;
+        }
+        
         /* Piste BACKUP */
         .swimlane.backup .swimlane-label { color: #f39c12; }
         .swimlane.backup .swimlane-track { 
@@ -395,8 +492,30 @@
                 <span class="time-mark">18:00</span>
             </div>
             
-            <!-- Position actuelle (sur HOST03) -->
-            <div class="current-position" style="left: calc(150px + 44%);"></div>
+            <!-- Position actuelle -->
+            <div class="current-position" style="left: calc(150px + 50%);"></div>
+            
+            <!-- Contrôles manuels -->
+            <div class="timeline-controls">
+                <button class="control-btn" onclick="resetTimeline()">⏮️ Début</button>
+                <button class="control-btn" onclick="moveBackward()">⏪ Reculer</button>
+                <button class="control-btn" id="playBtn" onclick="togglePlay()">⏸️ Pause</button>
+                <button class="control-btn" onclick="moveForward()">⏩ Avancer</button>
+                <button class="control-btn" onclick="endTimeline()">⏭️ Fin</button>
+                <div class="speed-control">
+                    <label>Vitesse:</label>
+                    <select id="speedSelect" onchange="changeSpeed()">
+                        <option value="0.5">0.5x</option>
+                        <option value="1" selected>1x</option>
+                        <option value="2">2x</option>
+                        <option value="5">5x</option>
+                        <option value="10">10x</option>
+                    </select>
+                </div>
+                <div class="time-display">
+                    <span id="currentTime">15:00</span>
+                </div>
+            </div>
             
             <!-- Swimlanes -->
             <div class="swimlanes">
@@ -515,15 +634,68 @@
     
     <script>
         // Animation de la ligne "Maintenant"
-        let progress = 44; // On est sur HOST03
+        let progress = 50; // On démarre correctement sur HOST03 (milieu de la zone 44-55%)
+        let isPlaying = true;
+        let speed = 1;
+        let animationInterval;
         
         function updatePosition() {
             const position = document.querySelector('.current-position');
             const trackWidth = document.querySelector('.servers-track').offsetWidth;
             position.style.left = `${150 + (trackWidth * progress / 100)}px`;
             
+            // Mettre à jour l'affichage du temps
+            updateTimeDisplay();
+            
             // Gérer les basculements selon la position
             updateFailovers();
+            
+            // Gérer l'indicateur CAU
+            updateCAUIndicator();
+        }
+        
+        function updateTimeDisplay() {
+            const baseTime = 14 * 60; // 14:00 en minutes
+            const totalDuration = 4 * 60; // 4 heures
+            const currentMinutes = baseTime + (totalDuration * progress / 100);
+            const hours = Math.floor(currentMinutes / 60);
+            const minutes = Math.floor(currentMinutes % 60);
+            document.getElementById('currentTime').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+        
+        function updateCAUIndicator() {
+            // Ajouter indicateur CAU lors des transitions
+            const position = document.querySelector('.current-position');
+            let cauIndicator = document.querySelector('.cau-indicator');
+            
+            if (!cauIndicator) {
+                cauIndicator = document.createElement('div');
+                cauIndicator.className = 'cau-indicator';
+                position.appendChild(cauIndicator);
+            }
+            
+            // Afficher CAU lors des transitions entre hosts
+            if ((progress >= 32 && progress <= 34) || // Transition vers HOST02
+                (progress >= 43 && progress <= 45) || // Transition vers HOST03
+                (progress >= 54 && progress <= 56)) { // Transition vers HOST01
+                cauIndicator.textContent = '⚡ CAU ACTIF - Basculement VMs';
+                cauIndicator.classList.add('visible');
+                
+                // Animer les serveurs concernés
+                if (progress >= 43 && progress <= 45) {
+                    document.querySelectorAll('.server-block')[4].classList.add('cau-active');
+                } else {
+                    document.querySelectorAll('.server-block').forEach(block => {
+                        block.classList.remove('cau-active');
+                    });
+                }
+            } else {
+                cauIndicator.classList.remove('visible');
+                document.querySelectorAll('.server-block').forEach(block => {
+                    block.classList.remove('cau-active');
+                });
+            }
         }
         
         function updateFailovers() {
@@ -564,16 +736,93 @@
             }
         }
         
-        // Progression automatique
-        setInterval(() => {
-            if (progress < 100) {
-                progress += 0.05;
-                updatePosition();
+        // Contrôles manuels
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playBtn');
+            btn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+            
+            if (isPlaying) {
+                startAnimation();
+            } else {
+                stopAnimation();
             }
-        }, 1000);
+        }
+        
+        function moveForward() {
+            progress = Math.min(100, progress + 5);
+            updatePosition();
+        }
+        
+        function moveBackward() {
+            progress = Math.max(0, progress - 5);
+            updatePosition();
+        }
+        
+        function resetTimeline() {
+            progress = 0;
+            updatePosition();
+        }
+        
+        function endTimeline() {
+            progress = 100;
+            updatePosition();
+        }
+        
+        function changeSpeed() {
+            speed = parseFloat(document.getElementById('speedSelect').value);
+            if (isPlaying) {
+                stopAnimation();
+                startAnimation();
+            }
+        }
+        
+        function startAnimation() {
+            animationInterval = setInterval(() => {
+                if (progress < 100) {
+                    progress += 0.05 * speed;
+                    updatePosition();
+                } else {
+                    stopAnimation();
+                    isPlaying = false;
+                    document.getElementById('playBtn').textContent = '▶️ Play';
+                }
+            }, 50);
+        }
+        
+        function stopAnimation() {
+            if (animationInterval) {
+                clearInterval(animationInterval);
+            }
+        }
+        
+        // Progression automatique au démarrage
+        startAnimation();
         
         // Initial
         updatePosition();
+        
+        // Permettre le contrôle par clavier
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowRight':
+                    moveForward();
+                    break;
+                case 'ArrowLeft':
+                    moveBackward();
+                    break;
+                case 'Home':
+                    resetTimeline();
+                    break;
+                case 'End':
+                    endTimeline();
+                    break;
+            }
+        });
     </script>
 </body>
 </html>
