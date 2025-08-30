@@ -1,11 +1,34 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <!-- NO CACHE FOR DEBUG -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🔷 ATLAS v0.23 - Honeycomb Monitor (Live SharePoint)</title>
     
-    <!-- MSAL Authentication -->
+    <!-- DÉSACTIVATION TOTALE DU CACHE POUR DEBUG -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Clear-Site-Data" content="cache">
+    <meta name="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <!-- Force reload des ressources avec timestamp unique -->
+    
+    <!-- MSAL Authentication avec anti-cache -->
+    <script>
+        // Forcer le rechargement de la page si elle vient du cache
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+        
+        // Ajouter timestamp à toutes les requêtes
+        const antiCacheTimestamp = new Date().getTime();
+    </script>
     <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
     
     <style>
@@ -299,12 +322,18 @@
 </head>
 <body>
     <div class="header-controls">
+        <span class="last-update" id="versionInfo" style="background: #e45959; color: white; font-weight: bold;">
+            ⚠️ NO CACHE MODE - v0.23
+        </span>
         <span class="last-update" id="lastUpdate">Dernière MAJ: --:--:--</span>
         <button class="control-btn" onclick="toggleAutoRefresh()" id="autoRefreshBtn">
             🔄 Auto-refresh: ON
         </button>
         <button class="control-btn" onclick="loadServers()">
             🔄 Rafraîchir
+        </button>
+        <button class="control-btn" onclick="location.reload(true)" style="background: #e45959;">
+            🔃 Force Reload (Ctrl+F5)
         </button>
     </div>
 
@@ -407,8 +436,13 @@
                 redirectUri: window.location.href.split('?')[0].split('#')[0] // URL dynamique
             },
             cache: {
-                cacheLocation: "sessionStorage",
-                storeAuthStateInCookie: false
+                cacheLocation: "sessionStorage",  // Pas de localStorage pour éviter le cache persistant
+                storeAuthStateInCookie: false,
+                secureCookies: false
+            },
+            system: {
+                allowNativeBroker: false,  // Désactiver le cache natif
+                windowHashTimeout: 3000
             }
         };
 
@@ -427,8 +461,17 @@
         let autoRefreshInterval = null;
         let autoRefreshEnabled = true;
 
+        // Afficher la version avec timestamp
+        document.getElementById('versionInfo').innerHTML = `⚠️ NO CACHE - v0.23.${antiCacheTimestamp}`;
+        
+        // Log pour debug
+        console.log('%c🚫 CACHE DÉSACTIVÉ - Mode Debug', 'background: #e45959; color: white; font-size: 16px; padding: 5px;');
+        console.log(`Version: v0.23.${antiCacheTimestamp}`);
+        console.log('Force reload: Ctrl+F5 ou bouton Force Reload');
+        
         // Initialize
         async function initializeApp() {
+            console.log('Initializing app (NO CACHE)...');
             try {
                 const accounts = msalInstance.getAllAccounts();
                 if (accounts.length > 0) {
@@ -490,17 +533,21 @@
                     return;
                 }
 
-                console.log('Fetching from ATLAS-Servers list...');
+                console.log('Fetching from ATLAS-Servers list (NO CACHE)...');
                 
-                // Utiliser directement l'URL Graph avec les IDs connus
-                const graphUrl = `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items?$expand=fields&$top=100`;
+                // Ajouter timestamp pour éviter le cache
+                const graphUrl = `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items?$expand=fields&$top=100&nocache=${Date.now()}`;
                 
                 const listResponse = await fetch(graphUrl, {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    },
+                    cache: 'no-store'  // Force fetch sans cache
                 });
 
                 console.log('List response status:', listResponse.status);
