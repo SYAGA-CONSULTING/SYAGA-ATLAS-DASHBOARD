@@ -277,6 +277,130 @@
             margin-left: 5px;
         }
         
+        /* Actions sous les blocs */
+        .actions-under-block {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            margin-top: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .action-item {
+            padding: 3px 6px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: #666;
+            transition: all 0.3s;
+        }
+        
+        .action-item.done {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .action-item.pending {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+            opacity: 0.6;
+        }
+        
+        /* Statuts de réplication */
+        .replication-status {
+            position: absolute;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 2px solid #0984e3;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            top: 10px;
+        }
+        
+        .replication-status.ok {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .replication-status.suspended {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        
+        .replication-status.partial {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        
+        .replication-status.syncing {
+            background: #cce5ff;
+            border-color: #004085;
+            color: #004085;
+            animation: pulse-sync 1.5s infinite;
+        }
+        
+        @keyframes pulse-sync {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Marqueurs de redémarrage */
+        .reboot-marker {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .reboot-label {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .reboot-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 2px solid #e74c3c;
+            border-radius: 50%;
+            font-size: 1.2rem;
+        }
+        
+        .reboot-marker.done .reboot-icon {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .reboot-marker.active .reboot-icon {
+            background: #ffebee;
+            border-color: #e74c3c;
+            animation: pulse-red 1s infinite;
+        }
+        
+        .reboot-marker.pending .reboot-icon {
+            background: #fff3cd;
+            border-color: #ffc107;
+            opacity: 0.6;
+        }
+        
         /* Autres pistes */
         .swimlane {
             margin-bottom: 15px;
@@ -543,9 +667,21 @@
                     <div class="servers-track">
                         <!-- PRE-CHECK -->
                         <div class="server-block done" style="left: 0%; width: 11%;">✅ PRE-CHECK</div>
+                        <div class="actions-under-block" style="left: 0%; width: 11%;">
+                            <div class="action-item done">✓ Connectivité</div>
+                            <div class="action-item done">✓ Espace disque</div>
+                            <div class="action-item done">✓ Jobs SQL actifs</div>
+                            <div class="action-item done">✓ Snapshots</div>
+                        </div>
                         
                         <!-- SUSPEND -->
                         <div class="server-block done" style="left: 11%; width: 11%;">✅ SUSPEND</div>
+                        <div class="actions-under-block" style="left: 11%; width: 11%;">
+                            <div class="action-item done">⏸ Jobs SQL</div>
+                            <div class="action-item done">⏸ Veeam Backup</div>
+                            <div class="action-item done">⏸ Réplication</div>
+                            <div class="action-item done">⏸ Exchange DAG</div>
+                        </div>
                         
                         <!-- HOST04 -->
                         <div class="server-block done" style="left: 22%; width: 11%;">✅ HOST04</div>
@@ -582,25 +718,37 @@
                         
                         <!-- VALIDATION -->
                         <div class="server-block pending" style="left: 66%; width: 22%;">⏳ VALIDATION</div>
+                        <div class="actions-under-block" style="left: 66%; width: 22%;">
+                            <div class="action-item pending">⏳ Test services Windows</div>
+                            <div class="action-item pending">⏳ Test connectivité VMs</div>
+                            <div class="action-item pending">⏳ Test réplications</div>
+                            <div class="action-item pending">⏳ Test applications métier</div>
+                            <div class="action-item pending">⏳ Validation utilisateurs</div>
+                        </div>
                         
                         <!-- RESUME -->
                         <div class="server-block pending" style="left: 88%; width: 12%;">⏳ RESUME</div>
+                        <div class="actions-under-block" style="left: 88%; width: 12%;">
+                            <div class="action-item pending">▶ Jobs SQL</div>
+                            <div class="action-item pending">▶ Veeam</div>
+                            <div class="action-item pending">▶ Réplication</div>
+                            <div class="action-item pending">▶ Exchange</div>
+                        </div>
                     </div>
                 </div>
                 
                 <!-- RÉPLICATION -->
                 <div class="swimlane replication">
-                    <div class="swimlane-label">Réplication</div>
+                    <div class="swimlane-label">Réplication<br>Hyper-V</div>
                     <div class="swimlane-track">
-                        <div class="flow-marker suspend" style="left: 11%;">⏸</div>
-                        <div class="flow-marker resume" style="left: 22%;">▶</div>
-                        <div class="flow-marker suspend" style="left: 33%;">⏸</div>
-                        <div class="flow-marker resume" style="left: 44%;">▶</div>
-                        <div class="flow-marker suspend" style="left: 44%;">⏸</div>
-                        <div class="flow-marker resume" style="left: 55%;">▶</div>
-                        <div class="flow-marker suspend" style="left: 55%;">⏸</div>
-                        <div class="flow-marker resume" style="left: 66%;">▶</div>
-                        <div class="flow-marker resume" style="left: 88%;">▶</div>
+                        <div class="replication-status ok" style="left: 0%; width: 11%;">✅ 7/7 OK</div>
+                        <div class="replication-status suspended" style="left: 11%; width: 11%;">⏸ SUSPENDU</div>
+                        <div class="replication-status partial" style="left: 22%; width: 11%;">⚠️ 6/7 (VEEAM ❌)</div>
+                        <div class="replication-status partial" style="left: 33%; width: 11%;">⚠️ 5/7 (RDS ↔)</div>
+                        <div class="replication-status partial" style="left: 44%; width: 11%;">⚡ 4/7 (3 VMs ↔)</div>
+                        <div class="replication-status partial" style="left: 55%; width: 11%;">⚠️ 5/7 (DC,APP ↔)</div>
+                        <div class="replication-status syncing" style="left: 66%; width: 22%;">🔄 RESYNC EN COURS</div>
+                        <div class="replication-status ok" style="left: 88%; width: 12%;">✅ 7/7 OK</div>
                     </div>
                 </div>
                 
@@ -615,12 +763,28 @@
                 
                 <!-- REBOOTS -->
                 <div class="swimlane reboots">
-                    <div class="swimlane-label" style="color: #e74c3c;">Redémarrages</div>
-                    <div class="swimlane-track" style="border-color: #e74c3c;">
-                        <div style="position: absolute; height: 40px; top: 10px; left: 27%; width: 6%; background: #d4edda; border: 2px solid #28a745; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem;">✅</div>
-                        <div style="position: absolute; height: 40px; top: 10px; left: 38%; width: 6%; background: #d4edda; border: 2px solid #28a745; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem;">✅</div>
-                        <div style="position: absolute; height: 40px; top: 10px; left: 49%; width: 6%; background: #ffebee; border: 2px solid #e74c3c; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; animation: pulse-red 1s infinite;">🔄</div>
-                        <div style="position: absolute; height: 40px; top: 10px; left: 60%; width: 6%; background: white; border: 2px solid #e74c3c; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; opacity: 0.4;">🔄</div>
+                    <div class="swimlane-label" style="color: #e74c3c;">Redémarrages<br>Serveurs</div>
+                    <div class="swimlane-track" style="border-color: #e74c3c; display: flex; align-items: center; justify-content: space-around; padding: 0 5%;">
+                        <!-- HOST04 -->
+                        <div class="reboot-marker done" style="left: 27.5%;">
+                            <span class="reboot-label">HOST04</span>
+                            <span class="reboot-icon">✅</span>
+                        </div>
+                        <!-- HOST02 -->
+                        <div class="reboot-marker done" style="left: 38.5%;">
+                            <span class="reboot-label">HOST02</span>
+                            <span class="reboot-icon">✅</span>
+                        </div>
+                        <!-- HOST03 -->
+                        <div class="reboot-marker active" style="left: 49.5%;">
+                            <span class="reboot-label">HOST03</span>
+                            <span class="reboot-icon">🔄</span>
+                        </div>
+                        <!-- HOST01 -->
+                        <div class="reboot-marker pending" style="left: 60.5%;">
+                            <span class="reboot-label">HOST01</span>
+                            <span class="reboot-icon">⏳</span>
+                        </div>
                     </div>
                 </div>
             </div>
