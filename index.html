@@ -470,7 +470,7 @@
     </div>
     
     <!-- Header -->
-    <div class="header">
+    <div class="header" id="mainHeader" style="display: none;">
         <div class="logo">
             <span>🚀 ATLAS Dashboard</span>
             <span class="version-badge">v0.22</span>
@@ -481,7 +481,7 @@
             </div>
             <div class="realtime-indicator">
                 <span class="pulse-dot">●</span>
-                <span id="lastUpdate">Connexion...</span>
+                <span id="lastUpdate">En attente...</span>
             </div>
         </div>
     </div>
@@ -790,7 +790,8 @@
             const loginScreen = document.getElementById('loginScreen');
             if (loginScreen) loginScreen.style.display = 'none';
             
-            // Afficher le container principal
+            // Afficher le header et le container principal
+            document.getElementById('mainHeader').style.display = 'flex';
             const container = document.querySelector('.container');
             if (container) container.style.display = 'block';
             
@@ -1252,6 +1253,10 @@
         
         // ==================== AUTO-REFRESH ====================
         function startAutoRefresh() {
+            // Mise à jour initiale de l'heure
+            document.getElementById('lastUpdate').textContent = 
+                `Mis à jour: ${new Date().toLocaleTimeString()}`;
+            
             autoRefreshInterval = setInterval(async () => {
                 await loadServers();
                 document.getElementById('lastUpdate').textContent = 
