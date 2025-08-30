@@ -220,9 +220,20 @@
         }
         
         .vm-principal.inactive {
-            background: #f8f9fa;
-            border-color: #6c757d;
+            background: #ffebee;
+            border: 2px solid #dc3545;
             opacity: 0.4;
+            text-decoration: line-through;
+            position: relative;
+        }
+        
+        .vm-principal.inactive::after {
+            content: '❌';
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.7rem;
         }
         
         /* VM réplica */
@@ -245,11 +256,18 @@
             font-style: normal;
             font-weight: bold;
             animation: replica-blink 1s infinite;
+            box-shadow: 0 0 10px rgba(255,193,7,0.5);
         }
         
         @keyframes replica-blink {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(255,193,7,0.4); }
-            50% { box-shadow: 0 0 0 5px rgba(255,193,7,0.2); }
+            0%, 100% { 
+                box-shadow: 0 0 0 0 rgba(255,193,7,0.8);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 15px rgba(255,193,7,0.6);
+                transform: scale(1.05);
+            }
         }
         
         /* Indicateur de source */
@@ -452,17 +470,17 @@
         <div class="metrics">
             <div class="metric-card">
                 <div class="metric-label">Temps Écoulé</div>
-                <div class="metric-value">00:45:23</div>
+                <div class="metric-value" id="elapsed-time">00:00:00</div>
                 <div class="metric-sub">Depuis 14:00</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">Progression</div>
-                <div class="metric-value">35%</div>
-                <div class="metric-sub">Update HOST03</div>
+                <div class="metric-value" id="progress-percent">0%</div>
+                <div class="metric-sub" id="current-action">Initialisation</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">VMs Basculées</div>
-                <div class="metric-value">3/7</div>
+                <div class="metric-value" id="vm-count">0/7</div>
                 <div class="metric-sub">Sur réplicas</div>
             </div>
             <div class="metric-card">
@@ -662,6 +680,33 @@
             const minutes = Math.floor(currentMinutes % 60);
             document.getElementById('currentTime').textContent = 
                 `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            
+            // Mettre à jour le temps écoulé
+            const elapsedMinutes = totalDuration * progress / 100;
+            const elapsedHours = Math.floor(elapsedMinutes / 60);
+            const elapsedMins = Math.floor(elapsedMinutes % 60);
+            const elapsedSecs = Math.floor((elapsedMinutes * 60) % 60);
+            document.getElementById('elapsed-time').textContent = 
+                `${elapsedHours.toString().padStart(2, '0')}:${elapsedMins.toString().padStart(2, '0')}:${elapsedSecs.toString().padStart(2, '0')}`;
+            
+            // Mettre à jour le pourcentage
+            document.getElementById('progress-percent').textContent = `${Math.round(progress)}%`;
+            
+            // Mettre à jour l'action en cours
+            let currentAction = 'Initialisation';
+            if (progress < 11) currentAction = 'PRE-CHECK';
+            else if (progress < 22) currentAction = 'SUSPEND Flux';
+            else if (progress < 33) currentAction = 'Update HOST04';
+            else if (progress < 44) currentAction = 'Update HOST02';
+            else if (progress < 55) currentAction = 'Update HOST03';
+            else if (progress < 66) currentAction = 'Update HOST01';
+            else if (progress < 88) currentAction = 'VALIDATION';
+            else currentAction = 'RESUME Flux';
+            document.getElementById('current-action').textContent = currentAction;
+            
+            // Compter les VMs basculées
+            const activeReplicas = document.querySelectorAll('.vm-replica.active').length;
+            document.getElementById('vm-count').textContent = `${activeReplicas}/7`;
         }
         
         function updateCAUIndicator() {
@@ -676,62 +721,135 @@
             }
             
             // Afficher CAU lors des transitions entre hosts
-            if ((progress >= 32 && progress <= 34) || // Transition vers HOST02
-                (progress >= 43 && progress <= 45) || // Transition vers HOST03
-                (progress >= 54 && progress <= 56)) { // Transition vers HOST01
-                cauIndicator.textContent = '⚡ CAU ACTIF - Basculement VMs';
+            const serverBlocks = document.querySelectorAll('.server-block');
+            let cauActive = false;
+            let cauMessage = '';
+            
+            // Transition vers HOST04 (21-23%)
+            if (progress >= 21 && progress <= 23) {
+                cauActive = true;
+                cauMessage = '⚡ CAU ACTIF - Démarrage HOST04';
+                serverBlocks[2].classList.add('cau-active'); // HOST04
+            }
+            // Transition vers HOST02 (32-34%)
+            else if (progress >= 32 && progress <= 34) {
+                cauActive = true;
+                cauMessage = '⚡ CAU ACTIF - Basculement vers HOST02';
+                serverBlocks[3].classList.add('cau-active'); // HOST02
+            }
+            // Transition vers HOST03 (43-45%)
+            else if (progress >= 43 && progress <= 45) {
+                cauActive = true;
+                cauMessage = '⚡ CAU ACTIF - Migration VMs HOST03';
+                serverBlocks[4].classList.add('cau-active'); // HOST03
+            }
+            // Transition vers HOST01 (54-56%)
+            else if (progress >= 54 && progress <= 56) {
+                cauActive = true;
+                cauMessage = '⚡ CAU ACTIF - Failover vers HOST01';
+                serverBlocks[5].classList.add('cau-active'); // HOST01
+            }
+            // Fin validation (65-67%)
+            else if (progress >= 65 && progress <= 67) {
+                cauActive = true;
+                cauMessage = '✅ CAU - Validation finale';
+                serverBlocks[6].classList.add('cau-active'); // VALIDATION
+            }
+            
+            if (cauActive) {
+                cauIndicator.textContent = cauMessage;
                 cauIndicator.classList.add('visible');
-                
-                // Animer les serveurs concernés
-                if (progress >= 43 && progress <= 45) {
-                    document.querySelectorAll('.server-block')[4].classList.add('cau-active');
-                } else {
-                    document.querySelectorAll('.server-block').forEach(block => {
-                        block.classList.remove('cau-active');
-                    });
-                }
             } else {
                 cauIndicator.classList.remove('visible');
-                document.querySelectorAll('.server-block').forEach(block => {
+                serverBlocks.forEach(block => {
                     block.classList.remove('cau-active');
                 });
             }
         }
         
         function updateFailovers() {
-            // HOST03 en update (44-55%)
-            if (progress >= 44 && progress < 55) {
-                // HOST03: VMs principales inactives
-                document.querySelectorAll('.vms-under-server')[4].querySelectorAll('.vm-principal').forEach(vm => {
+            const vmsUnderServer = document.querySelectorAll('.vms-under-server');
+            
+            // Réinitialiser tous les états
+            document.querySelectorAll('.vm-principal').forEach(vm => {
+                vm.classList.remove('inactive');
+            });
+            document.querySelectorAll('.vm-replica').forEach(vm => {
+                vm.classList.remove('active');
+            });
+            
+            // HOST04 en update (22-33%)
+            if (progress >= 22 && progress < 33) {
+                // HOST04 (index 0): VEEAM01 inactive
+                vmsUnderServer[0].querySelectorAll('.vm-principal').forEach(vm => {
                     vm.classList.add('inactive');
                 });
-                // HOST01: Réplicas de HOST03 actifs
-                document.querySelectorAll('.vms-under-server')[5].querySelectorAll('.vm-replica').forEach(vm => {
-                    if (vm.textContent.includes('SQL') || vm.textContent.includes('RDS')) {
+                // Pas de réplica pour VEEAM01
+            }
+            // HOST02 en update (33-44%)
+            else if (progress >= 33 && progress < 44) {
+                // HOST02 (index 1): RDS inactive
+                vmsUnderServer[1].querySelectorAll('.vm-principal').forEach(vm => {
+                    if (vm.textContent.includes('RDS')) {
+                        vm.classList.add('inactive');
+                    }
+                });
+                // HOST01 (index 3): Réplica RDS actif
+                vmsUnderServer[3].querySelectorAll('.vm-replica').forEach(vm => {
+                    if (vm.textContent.includes('RDS')) {
                         vm.classList.add('active');
                     }
                 });
-                // HOST02: Réplica WEB actif
-                document.querySelectorAll('.vms-under-server')[3].querySelectorAll('.vm-replica').forEach(vm => {
+            }
+            // HOST03 en update (44-55%)
+            else if (progress >= 44 && progress < 55) {
+                // HOST03 (index 2): SQL, WEB, SAGE inactives
+                vmsUnderServer[2].querySelectorAll('.vm-principal').forEach(vm => {
+                    vm.classList.add('inactive');
+                });
+                
+                // HOST01 (index 3): Réplica SQL actif
+                vmsUnderServer[3].querySelectorAll('.vm-replica').forEach(vm => {
+                    if (vm.textContent.includes('SQL')) {
+                        vm.classList.add('active');
+                    }
+                });
+                
+                // HOST02 (index 1): Réplica WEB actif
+                vmsUnderServer[1].querySelectorAll('.vm-replica').forEach(vm => {
                     if (vm.textContent.includes('WEB')) {
                         vm.classList.add('active');
                     }
                 });
-                // HOST04: Réplica SAGE actif
-                document.querySelectorAll('.vms-under-server')[2].querySelectorAll('.vm-replica').forEach(vm => {
+                
+                // HOST04 (index 0): Réplica SAGE actif
+                vmsUnderServer[0].querySelectorAll('.vm-replica').forEach(vm => {
                     if (vm.textContent.includes('SAGE')) {
                         vm.classList.add('active');
                     }
                 });
             }
-            // HOST03 terminé
-            else if (progress >= 55) {
-                // Tout revient à la normale
-                document.querySelectorAll('.vm-principal.inactive').forEach(vm => {
-                    vm.classList.remove('inactive');
+            // HOST01 en update (55-66%)
+            else if (progress >= 55 && progress < 66) {
+                // HOST01 (index 3): DC et APP inactives
+                vmsUnderServer[3].querySelectorAll('.vm-principal').forEach(vm => {
+                    if (vm.textContent.includes('DC') || vm.textContent.includes('APP')) {
+                        vm.classList.add('inactive');
+                    }
                 });
-                document.querySelectorAll('.vm-replica.active').forEach(vm => {
-                    vm.classList.remove('active');
+                
+                // HOST03 (index 2): Réplica DC actif
+                vmsUnderServer[2].querySelectorAll('.vm-replica').forEach(vm => {
+                    if (vm.textContent.includes('DC')) {
+                        vm.classList.add('active');
+                    }
+                });
+                
+                // HOST02 (index 1): Réplica APP actif
+                vmsUnderServer[1].querySelectorAll('.vm-replica').forEach(vm => {
+                    if (vm.textContent.includes('APP')) {
+                        vm.classList.add('active');
+                    }
                 });
             }
         }
@@ -780,7 +898,7 @@
         function startAnimation() {
             animationInterval = setInterval(() => {
                 if (progress < 100) {
-                    progress += 0.05 * speed;
+                    progress += 0.025 * speed;  // Réduit de moitié la vitesse
                     updatePosition();
                 } else {
                     stopAnimation();
