@@ -316,16 +316,16 @@
             <div class="stat-item" style="border-right: 1px solid #282e33; padding-right: 20px; margin-right: 10px;">
                 <div style="display: flex; flex-direction: column; gap: 5px; font-size: 11px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 20px; height: 20px; border: 2px solid #35bf8d; border-radius: 3px;"></div>
-                        <span style="color: #35bf8d;">Physical</span>
+                        <div style="width: 20px; height: 20px; border: 4px solid #00ff00; border-radius: 3px; box-shadow: 0 0 5px rgba(0,255,0,0.5);"></div>
+                        <span style="color: #00ff00; font-weight: bold;">🖥️ Physical</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 20px; height: 20px; border: 2px dashed #0275b8; border-radius: 3px;"></div>
-                        <span style="color: #0275b8;">VM</span>
+                        <div style="width: 20px; height: 20px; border: 4px dashed #00ffff; border-radius: 3px; box-shadow: 0 0 5px rgba(0,255,255,0.5);"></div>
+                        <span style="color: #00ffff; font-weight: bold;">💻 VM</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 20px; height: 20px; border: 3px solid #ffc859; border-radius: 3px;"></div>
-                        <span style="color: #ffc859;">Host</span>
+                        <div style="width: 20px; height: 20px; border: 5px solid #ffaa00; border-radius: 3px; box-shadow: 0 0 5px rgba(255,170,0,0.5);"></div>
+                        <span style="color: #ffaa00; font-weight: bold;">🏠 Host</span>
                     </div>
                 </div>
             </div>
@@ -596,6 +596,29 @@
             svg.setAttribute('class', 'honeycomb-svg');
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
             
+            // Ajouter des gradients pour les VMs
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            
+            // Gradient pour VM OK
+            const vmGradientOk = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+            vmGradientOk.setAttribute('id', 'vm-gradient-ok');
+            vmGradientOk.innerHTML = `
+                <stop offset="0%" style="stop-color:#35bf8d;stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:#0275b8;stop-opacity:0.5" />
+            `;
+            defs.appendChild(vmGradientOk);
+            
+            // Gradient pour VM Warning
+            const vmGradientWarning = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+            vmGradientWarning.setAttribute('id', 'vm-gradient-warning');
+            vmGradientWarning.innerHTML = `
+                <stop offset="0%" style="stop-color:#ffc859;stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:#0275b8;stop-opacity:0.5" />
+            `;
+            defs.appendChild(vmGradientWarning);
+            
+            svg.appendChild(defs);
+            
             // Adapter la taille des hexagones en fonction du nombre de serveurs
             let hexSize;
             const serverCount = serversToShow.length;
@@ -637,34 +660,56 @@
             const offsetX = (width - totalWidth) / 2 + hexSize;
             const offsetY = (height - totalHeight) / 2 + hexSize;
             
-            // Draw hexagons
+            // Draw hexagons avec meilleur espacement
             serversToShow.forEach((server, index) => {
                 const row = Math.floor(index / cols);
                 const col = index % cols;
                 
-                const x = offsetX + col * hexWidth * 0.75;
-                const y = offsetY + row * hexHeight * 0.866 + (col % 2 ? hexHeight * 0.433 : 0);
+                // Augmenter l'espacement entre les hexagones
+                const spacing = hexSize >= 65 ? 1.5 : 1.2;  // Plus d'espace pour les gros hexagones
+                const x = offsetX + col * hexWidth * spacing;
+                const y = offsetY + row * hexHeight * spacing;
                 
                 // Create group
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 
-                // Create hexagon avec style différent pour VM/Physical
+                // Create hexagon avec style TRÈS différent pour VM/Physical
                 const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
                 polygon.setAttribute('points', createHexagon(x, y, hexSize));
-                polygon.setAttribute('class', `hexagon severity-${server.severity}`);
                 
-                // Style différent pour VM vs Physical
-                if (server.serverType === 'VM') {
-                    polygon.setAttribute('stroke', '#0275b8');  // Bordure bleue pour VM
-                    polygon.setAttribute('stroke-width', '2');
-                    polygon.setAttribute('stroke-dasharray', '5,2');  // Bordure en pointillés
-                } else if (server.serverType === 'Host') {
-                    polygon.setAttribute('stroke', '#ffc859');  // Bordure dorée pour Host Hyper-V
-                    polygon.setAttribute('stroke-width', '3');
-                } else {
-                    polygon.setAttribute('stroke', '#35bf8d');  // Bordure verte pour Physical
-                    polygon.setAttribute('stroke-width', '2');
+                // Déterminer le type réel basé sur le nom ou autres indices
+                let actualType = 'Physical';  // Par défaut
+                if (server.name.toLowerCase().includes('vm') || 
+                    server.name.toLowerCase().includes('veeam') ||
+                    server.isVirtual || 
+                    server.vmHost) {
+                    actualType = 'VM';
+                } else if (server.name.toLowerCase().includes('host') || 
+                           server.hypervisor === 'Hyper-V') {
+                    actualType = 'Host';
                 }
+                
+                // Style TRÈS différent et visible pour VM vs Physical
+                if (actualType === 'VM') {
+                    polygon.setAttribute('fill', `url(#vm-gradient-${server.severity})`);
+                    polygon.setAttribute('stroke', '#00ffff');  // Cyan brillant pour VM
+                    polygon.setAttribute('stroke-width', '4');
+                    polygon.setAttribute('stroke-dasharray', '10,5');  // Gros pointillés
+                    polygon.style.filter = 'drop-shadow(0 0 10px rgba(0,255,255,0.5))';  // Lueur cyan
+                } else if (actualType === 'Host') {
+                    polygon.setAttribute('class', `hexagon severity-${server.severity}`);
+                    polygon.setAttribute('stroke', '#ffaa00');  // Orange brillant pour Host
+                    polygon.setAttribute('stroke-width', '5');
+                    polygon.style.filter = 'drop-shadow(0 0 10px rgba(255,170,0,0.5))';  // Lueur orange
+                } else {
+                    polygon.setAttribute('class', `hexagon severity-${server.severity}`);
+                    polygon.setAttribute('stroke', '#00ff00');  // Vert brillant pour Physical
+                    polygon.setAttribute('stroke-width', '4');
+                    polygon.style.filter = 'drop-shadow(0 0 10px rgba(0,255,0,0.3))';  // Lueur verte
+                }
+                
+                // Stocker le type pour l'affichage
+                server.displayType = actualType;
                 
                 // Add event listeners
                 polygon.addEventListener('mouseenter', (e) => showOverlay(server, e));
@@ -700,24 +745,26 @@
                 
                 // Pour les très gros hexagones, ajouter des infos supplémentaires
                 if (hexSize >= 65) {
-                    // Type de serveur (VM/Physical/Host)
+                    // Type de serveur (VM/Physical/Host) - Utiliser displayType
                     const typeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                     typeText.setAttribute('x', x);
                     typeText.setAttribute('y', y + 10);
                     typeText.setAttribute('class', 'hexagon-text');
-                    typeText.style.fontSize = '12px';
-                    typeText.style.opacity = '0.9';
+                    typeText.style.fontSize = '14px';
                     typeText.style.fontWeight = 'bold';
                     
-                    if (server.serverType === 'VM') {
-                        typeText.style.fill = '#0275b8';
-                        typeText.textContent = '🖥️ VM';
-                    } else if (server.serverType === 'Host') {
-                        typeText.style.fill = '#ffc859';
-                        typeText.textContent = '🏠 Host Hyper-V';
+                    if (server.displayType === 'VM') {
+                        typeText.style.fill = '#00ffff';
+                        typeText.style.filter = 'drop-shadow(0 0 3px rgba(0,255,255,0.8))';
+                        typeText.textContent = '💻 MACHINE VIRTUELLE';
+                    } else if (server.displayType === 'Host') {
+                        typeText.style.fill = '#ffaa00';
+                        typeText.style.filter = 'drop-shadow(0 0 3px rgba(255,170,0,0.8))';
+                        typeText.textContent = '🏠 HOST HYPER-V';
                     } else {
-                        typeText.style.fill = '#35bf8d';
-                        typeText.textContent = '🖲️ Physical';
+                        typeText.style.fill = '#00ff00';
+                        typeText.style.filter = 'drop-shadow(0 0 3px rgba(0,255,0,0.8))';
+                        typeText.textContent = '🖥️ SERVEUR PHYSIQUE';
                     }
                     g.appendChild(typeText);
                     
