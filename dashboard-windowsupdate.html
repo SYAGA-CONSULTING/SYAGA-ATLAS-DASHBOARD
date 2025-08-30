@@ -1243,6 +1243,7 @@
                         <button class="action-button" onclick="refreshAgentScan()">🤖 Rescan Agent</button>
                         <button class="action-button" onclick="editPattern()">✏️ Modifier Pattern</button>
                         <button class="action-button" onclick="simulatePattern()">🎮 Simulation</button>
+                        <button class="action-button" onclick="openWorkflowSimulator()">🔄 Workflow SSIS</button>
                         <button class="action-button" onclick="validatePattern()">✅ Valider Configuration</button>
                         <button class="action-button primary" onclick="applyPattern()">🚀 Appliquer Pattern</button>
                     </div>
@@ -1690,6 +1691,16 @@
             a.href = url;
             a.download = `LAA-Simulation-Report-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
+        }
+        
+        // Ouvrir le simulateur SSIS-style dans un nouvel onglet
+        function openWorkflowSimulator() {
+            const simulatorWindow = window.open('simulateur-ssis-style.html', '_blank', 'width=1600,height=1000,scrollbars=yes,resizable=yes');
+            if (simulatorWindow) {
+                simulatorWindow.focus();
+            } else {
+                alert('⚠️ Popup bloqué. Veuillez autoriser les popups pour ouvrir le simulateur workflow.');
+            }
         }
         
         // Simulation de progression
