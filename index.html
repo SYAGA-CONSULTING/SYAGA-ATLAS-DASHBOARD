@@ -631,6 +631,10 @@
                 if (response && response.account) {
                     console.log('✅ Retour de connexion détecté:', response.account.username);
                     msalInstance.setActiveAccount(response.account);
+                    // Forcer le rechargement complet après reconnexion
+                    displayUserInfo(response.account);
+                    await loadDashboard();
+                    return; // Ne pas continuer avec handleAuth
                 }
                 
                 await handleAuth();
@@ -662,12 +666,16 @@
         
         // Afficher l'écran de connexion
         function showLoginScreen() {
-            // Masquer le loading spinner
+            // Masquer TOUT avant d'afficher l'écran de connexion
             document.getElementById('loading').style.display = 'none';
+            document.getElementById('mainHeader').style.display = 'none';
             
             // Masquer le contenu principal
             const container = document.querySelector('.container');
             if (container) container.style.display = 'none';
+            
+            // Vider userInfo
+            document.getElementById('userInfo').innerHTML = '';
             
             // Créer ou afficher l'écran de connexion
             let loginScreen = document.getElementById('loginScreen');
@@ -754,12 +762,16 @@
         async function signOut() {
             const accounts = msalInstance.getAllAccounts();
             if (accounts.length > 0) {
+                // Clear le localStorage avant déconnexion
+                localStorage.clear();
+                sessionStorage.clear();
+                
                 await msalInstance.logoutPopup({
                     account: accounts[0],
                     postLogoutRedirectUri: window.location.origin
                 });
-                // Recharger la page après déconnexion
-                window.location.reload();
+                // Forcer un reload complet
+                window.location.href = window.location.origin;
             }
         }
         
