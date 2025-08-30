@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 ATLAS CAU Timeline - VMs sous les serveurs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            padding: 20px;
+            min-width: 1600px;
+        }
+        
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        /* Header métriques */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+        
+        .metric-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            opacity: 0.85;
+            margin-bottom: 8px;
+        }
+        
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+        }
+        
+        .metric-sub {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        
+        /* Timeline principale */
+        .timeline-container {
+            background: #fafafa;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 40px 30px 30px 30px;
+            position: relative;
+            overflow: visible;
+        }
+        
+        /* Grille temporelle */
+        .time-axis {
+            position: absolute;
+            top: 10px;
+            left: 150px;
+            right: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .time-mark {
+            position: relative;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #666;
+            padding: 0 5px;
+            background: #fafafa;
+        }
+        
+        .time-mark::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1px;
+            height: 600px;
+            background: #e8e8e8;
+        }
+        
+        /* Position actuelle */
+        .current-position {
+            position: absolute;
+            top: 40px;
+            bottom: 20px;
+            width: 2px;
+            background: #ff4757;
+            z-index: 50;
+            transition: left 0.5s ease;
+        }
+        
+        .current-position::before {
+            content: '▼ MAINTENANT';
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4757;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(255,71,87,0.3);
+        }
+        
+        /* Swimlanes */
+        .swimlanes {
+            margin-top: 50px;
+            position: relative;
+        }
+        
+        /* Piste SERVEURS avec VMs */
+        .servers-section {
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .servers-label {
+            position: absolute;
+            left: 0;
+            width: 140px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            text-align: right;
+            padding-right: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #5f27cd;
+        }
+        
+        .servers-track {
+            margin-left: 150px;
+            position: relative;
+            min-height: 250px;
+        }
+        
+        /* Serveur principal */
+        .server-block {
+            position: absolute;
+            top: 0;
+            height: 50px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+        
+        .server-block.done {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .server-block.active {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+            box-shadow: 0 0 0 4px rgba(255,193,7,0.2);
+        }
+        
+        .server-block.pending {
+            opacity: 0.6;
+        }
+        
+        /* Container des VMs sous chaque serveur */
+        .vms-under-server {
+            position: absolute;
+            top: 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        /* VM principale */
+        .vm-principal {
+            padding: 6px 10px;
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+        
+        .vm-principal.inactive {
+            background: #f8f9fa;
+            border-color: #6c757d;
+            opacity: 0.4;
+        }
+        
+        /* VM réplica */
+        .vm-replica {
+            padding: 6px 10px;
+            background: #f8f9fa;
+            border: 2px dashed #6c757d;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0.6;
+            font-style: italic;
+            transition: all 0.3s;
+        }
+        
+        .vm-replica.active {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            opacity: 1;
+            font-style: normal;
+            font-weight: bold;
+            animation: replica-blink 1s infinite;
+        }
+        
+        @keyframes replica-blink {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,193,7,0.4); }
+            50% { box-shadow: 0 0 0 5px rgba(255,193,7,0.2); }
+        }
+        
+        /* Indicateur de source */
+        .vm-source {
+            font-size: 0.65rem;
+            color: #666;
+            margin-left: 5px;
+        }
+        
+        /* Autres pistes */
+        .swimlane {
+            margin-bottom: 15px;
+            position: relative;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .swimlane-label {
+            position: absolute;
+            left: 0;
+            width: 140px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            text-align: right;
+            padding-right: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .swimlane-track {
+            margin-left: 150px;
+            flex: 1;
+            height: 60px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            position: relative;
+            overflow: visible;
+        }
+        
+        /* Piste RÉPLICATION */
+        .swimlane.replication .swimlane-label { color: #0984e3; }
+        .swimlane.replication .swimlane-track { 
+            border-color: #0984e3;
+            background: linear-gradient(90deg,
+                #d4edda 0%, #d4edda 11%,
+                #ffebee 11%, #ffebee 22%,
+                #d4edda 22%, #d4edda 33%,
+                #ffebee 33%, #ffebee 44%,
+                #d4edda 44%, #d4edda 55%,
+                #ffebee 55%, #ffebee 66%,
+                #d4edda 66%, #d4edda 88%,
+                #d4edda 88%, #d4edda 100%
+            );
+        }
+        
+        .flow-marker {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 2px solid #333;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            z-index: 5;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .flow-marker.suspend { 
+            background: #ff4444; 
+            color: white;
+            border-color: #cc0000;
+        }
+        
+        .flow-marker.resume { 
+            background: #00c851; 
+            color: white;
+            border-color: #007e33;
+        }
+        
+        /* Piste BACKUP */
+        .swimlane.backup .swimlane-label { color: #f39c12; }
+        .swimlane.backup .swimlane-track { 
+            border-color: #f39c12;
+            background: linear-gradient(90deg,
+                #d4edda 0%, #d4edda 11%,
+                #ffebee 11%, #ffebee 88%,
+                #d4edda 88%, #d4edda 100%
+            );
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Métriques -->
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-label">Temps Écoulé</div>
+                <div class="metric-value">00:45:23</div>
+                <div class="metric-sub">Depuis 14:00</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Progression</div>
+                <div class="metric-value">35%</div>
+                <div class="metric-sub">Update HOST03</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">VMs Basculées</div>
+                <div class="metric-value">3/7</div>
+                <div class="metric-sub">Sur réplicas</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Disponibilité</div>
+                <div class="metric-value">100%</div>
+                <div class="metric-sub">Tous services OK</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Prochaine Action</div>
+                <div class="metric-value">HOST01</div>
+                <div class="metric-sub">Dans 25 min</div>
+            </div>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="timeline-container">
+            <!-- Axe temporel -->
+            <div class="time-axis">
+                <span class="time-mark">14:00</span>
+                <span class="time-mark">14:30</span>
+                <span class="time-mark">15:00</span>
+                <span class="time-mark">15:30</span>
+                <span class="time-mark">16:00</span>
+                <span class="time-mark">16:30</span>
+                <span class="time-mark">17:00</span>
+                <span class="time-mark">17:30</span>
+                <span class="time-mark">18:00</span>
+            </div>
+            
+            <!-- Position actuelle (sur HOST03) -->
+            <div class="current-position" style="left: calc(150px + 44%);"></div>
+            
+            <!-- Swimlanes -->
+            <div class="swimlanes">
+                <!-- SERVEURS avec VMs en dessous -->
+                <div class="servers-section">
+                    <div class="servers-label">Serveurs<br>&<br>VMs</div>
+                    <div class="servers-track">
+                        <!-- PRE-CHECK -->
+                        <div class="server-block done" style="left: 0%; width: 11%;">✅ PRE-CHECK</div>
+                        
+                        <!-- SUSPEND -->
+                        <div class="server-block done" style="left: 11%; width: 11%;">✅ SUSPEND</div>
+                        
+                        <!-- HOST04 -->
+                        <div class="server-block done" style="left: 22%; width: 11%;">✅ HOST04</div>
+                        <div class="vms-under-server" style="left: 22%; width: 11%;">
+                            <div class="vm-principal">💾 VEEAM01</div>
+                            <div class="vm-replica">💼 SAGE <span class="vm-source">(←H03)</span></div>
+                        </div>
+                        
+                        <!-- HOST02 -->
+                        <div class="server-block done" style="left: 33%; width: 11%;">✅ HOST02</div>
+                        <div class="vms-under-server" style="left: 33%; width: 11%;">
+                            <div class="vm-principal">🖥️ RDS</div>
+                            <div class="vm-replica">📱 APP <span class="vm-source">(←H01)</span></div>
+                            <div class="vm-replica">🌐 WEB <span class="vm-source">(←H03)</span></div>
+                        </div>
+                        
+                        <!-- HOST03 (EN UPDATE) -->
+                        <div class="server-block active" style="left: 44%; width: 11%;">⚡ HOST03</div>
+                        <div class="vms-under-server" style="left: 44%; width: 11%;">
+                            <div class="vm-principal inactive">🗄️ SQL</div>
+                            <div class="vm-principal inactive">🌐 WEB</div>
+                            <div class="vm-principal inactive">💼 SAGE</div>
+                            <div class="vm-replica">💾 DC <span class="vm-source">(←H01)</span></div>
+                        </div>
+                        
+                        <!-- HOST01 -->
+                        <div class="server-block pending" style="left: 55%; width: 11%;">⏳ HOST01</div>
+                        <div class="vms-under-server" style="left: 55%; width: 11%;">
+                            <div class="vm-principal">💾 DC</div>
+                            <div class="vm-principal">📱 APP</div>
+                            <div class="vm-replica active">🖥️ RDS <span class="vm-source">(←H02)</span></div>
+                            <div class="vm-replica active">🗄️ SQL <span class="vm-source">(←H03)</span></div>
+                        </div>
+                        
+                        <!-- VALIDATION -->
+                        <div class="server-block pending" style="left: 66%; width: 22%;">⏳ VALIDATION</div>
+                        
+                        <!-- RESUME -->
+                        <div class="server-block pending" style="left: 88%; width: 12%;">⏳ RESUME</div>
+                    </div>
+                </div>
+                
+                <!-- RÉPLICATION -->
+                <div class="swimlane replication">
+                    <div class="swimlane-label">Réplication</div>
+                    <div class="swimlane-track">
+                        <div class="flow-marker suspend" style="left: 11%;">⏸</div>
+                        <div class="flow-marker resume" style="left: 22%;">▶</div>
+                        <div class="flow-marker suspend" style="left: 33%;">⏸</div>
+                        <div class="flow-marker resume" style="left: 44%;">▶</div>
+                        <div class="flow-marker suspend" style="left: 44%;">⏸</div>
+                        <div class="flow-marker resume" style="left: 55%;">▶</div>
+                        <div class="flow-marker suspend" style="left: 55%;">⏸</div>
+                        <div class="flow-marker resume" style="left: 66%;">▶</div>
+                        <div class="flow-marker resume" style="left: 88%;">▶</div>
+                    </div>
+                </div>
+                
+                <!-- BACKUP -->
+                <div class="swimlane backup">
+                    <div class="swimlane-label">Sauvegarde<br>Veeam</div>
+                    <div class="swimlane-track">
+                        <div class="flow-marker suspend" style="left: 11%;">⏸</div>
+                        <div class="flow-marker resume" style="left: 88%;">▶</div>
+                    </div>
+                </div>
+                
+                <!-- REBOOTS -->
+                <div class="swimlane reboots">
+                    <div class="swimlane-label" style="color: #e74c3c;">Redémarrages</div>
+                    <div class="swimlane-track" style="border-color: #e74c3c;">
+                        <div style="position: absolute; height: 40px; top: 10px; left: 27%; width: 6%; background: #d4edda; border: 2px solid #28a745; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem;">✅</div>
+                        <div style="position: absolute; height: 40px; top: 10px; left: 38%; width: 6%; background: #d4edda; border: 2px solid #28a745; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem;">✅</div>
+                        <div style="position: absolute; height: 40px; top: 10px; left: 49%; width: 6%; background: #ffebee; border: 2px solid #e74c3c; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; animation: pulse-red 1s infinite;">🔄</div>
+                        <div style="position: absolute; height: 40px; top: 10px; left: 60%; width: 6%; background: white; border: 2px solid #e74c3c; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; opacity: 0.4;">🔄</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+            @keyframes pulse-red {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.4); }
+                50% { box-shadow: 0 0 0 6px rgba(231,76,60,0.2); }
+            }
+        </style>
+        
+        <!-- Légende -->
+        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; display: flex; justify-content: center; gap: 40px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 60px; padding: 4px 8px; background: #d4edda; border: 2px solid #28a745; border-radius: 4px; font-size: 0.75rem; text-align: center;">Principal</div>
+                <span>VM sur son host normal</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 60px; padding: 4px 8px; background: #f8f9fa; border: 2px dashed #6c757d; border-radius: 4px; font-size: 0.75rem; text-align: center; opacity: 0.6;">Réplica</div>
+                <span>Réplica en attente</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 60px; padding: 4px 8px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 4px; font-size: 0.75rem; text-align: center;">Actif</div>
+                <span>Réplica activé (failover)</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Animation de la ligne "Maintenant"
+        let progress = 44; // On est sur HOST03
+        
+        function updatePosition() {
+            const position = document.querySelector('.current-position');
+            const trackWidth = document.querySelector('.servers-track').offsetWidth;
+            position.style.left = `${150 + (trackWidth * progress / 100)}px`;
+            
+            // Gérer les basculements selon la position
+            updateFailovers();
+        }
+        
+        function updateFailovers() {
+            // HOST03 en update (44-55%)
+            if (progress >= 44 && progress < 55) {
+                // HOST03: VMs principales inactives
+                document.querySelectorAll('.vms-under-server')[4].querySelectorAll('.vm-principal').forEach(vm => {
+                    vm.classList.add('inactive');
+                });
+                // HOST01: Réplicas de HOST03 actifs
+                document.querySelectorAll('.vms-under-server')[5].querySelectorAll('.vm-replica').forEach(vm => {
+                    if (vm.textContent.includes('SQL') || vm.textContent.includes('RDS')) {
+                        vm.classList.add('active');
+                    }
+                });
+                // HOST02: Réplica WEB actif
+                document.querySelectorAll('.vms-under-server')[3].querySelectorAll('.vm-replica').forEach(vm => {
+                    if (vm.textContent.includes('WEB')) {
+                        vm.classList.add('active');
+                    }
+                });
+                // HOST04: Réplica SAGE actif
+                document.querySelectorAll('.vms-under-server')[2].querySelectorAll('.vm-replica').forEach(vm => {
+                    if (vm.textContent.includes('SAGE')) {
+                        vm.classList.add('active');
+                    }
+                });
+            }
+            // HOST03 terminé
+            else if (progress >= 55) {
+                // Tout revient à la normale
+                document.querySelectorAll('.vm-principal.inactive').forEach(vm => {
+                    vm.classList.remove('inactive');
+                });
+                document.querySelectorAll('.vm-replica.active').forEach(vm => {
+                    vm.classList.remove('active');
+                });
+            }
+        }
+        
+        // Progression automatique
+        setInterval(() => {
+            if (progress < 100) {
+                progress += 0.05;
+                updatePosition();
+            }
+        }, 1000);
+        
+        // Initial
+        updatePosition();
+    </script>
+</body>
+</html>
