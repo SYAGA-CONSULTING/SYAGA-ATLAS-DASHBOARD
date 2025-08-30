@@ -947,9 +947,9 @@
                             <div class="client-complexity">Complexité: ÉLEVÉE</div>
                         </div>
                         <div class="client-stats">
-                            <div>📊 15 serveurs</div>
-                            <div>💻 8 VMs critiques</div>
-                            <div>🔄 3 réplications</div>
+                            <div>📊 4 hosts Hyper-V</div>
+                            <div>💻 3 VMs prod + 1 Veeam</div>
+                            <div>🔄 3 réplications (pas Veeam)</div>
                         </div>
                     </div>
                     
@@ -997,30 +997,30 @@
                             <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px;">
                                 <div style="font-weight: bold; margin-bottom: 10px; color: #00ff88;">🗓️ Tâches Planifiées Détectées</div>
                                 <div style="font-size: 0.85rem; line-height: 1.4;">
-                                    <div>• <strong>LAA-SQL01:</strong> Backup DB quotidien 02:00-02:45</div>
-                                    <div>• <strong>LAA-HOST01:</strong> Défrag disque dimanche 03:00</div>
-                                    <div>• <strong>LAA-BACKUP01:</strong> Veeam job 22:00-06:00</div>
-                                    <div>• <strong>LAA-WEB01:</strong> Purge logs IIS 01:30</div>
+                                    <div>• <strong>LAA-VEEAM01:</strong> Backup VMs 22:00-06:00 (DC, RDS, SQL)</div>
+                                    <div>• <strong>LAA-SQL (VM):</strong> Backup DB quotidien 02:00-02:45</div>
+                                    <div>• <strong>LAA-HOST03:</strong> Défrag disque dimanche 03:00</div>
+                                    <div>• <strong>LAA-RDS (VM):</strong> Nettoyage profiles 01:00</div>
                                 </div>
                             </div>
                             
                             <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px;">
                                 <div style="font-weight: bold; margin-bottom: 10px; color: #ff9800;">⚠️ Processus Critiques</div>
                                 <div style="font-size: 0.85rem; line-height: 1.4;">
-                                    <div>• <strong>LAA-SQL01:</strong> Always-On AG Listener actif</div>
-                                    <div>• <strong>LAA-HOST01:</strong> Cluster Service running</div>
-                                    <div>• <strong>LAA-WEB01:</strong> Load Balancer pool membre</div>
-                                    <div>• <strong>LAA-BACKUP01:</strong> 5 jobs Veeam en queue</div>
+                                    <div>• <strong>LAA-DC (VM):</strong> Active Directory DS running</div>
+                                    <div>• <strong>LAA-RDS (VM):</strong> 12 sessions RDS actives</div>
+                                    <div>• <strong>LAA-SQL (VM):</strong> SQL Server instance active (89 conn.)</div>
+                                    <div>• <strong>LAA-VEEAM01:</strong> 3 jobs backup Hyper-V</div>
                                 </div>
                             </div>
                             
                             <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px;">
                                 <div style="font-weight: bold; margin-bottom: 10px; color: #2196f3;">🔍 Dépendances Réseau</div>
                                 <div style="font-size: 0.85rem; line-height: 1.4;">
-                                    <div>• <strong>Port 1433:</strong> SQL connections actives (247)</div>
-                                    <div>• <strong>Port 443:</strong> HTTPS sessions (89)</div>
-                                    <div>• <strong>SMB:</strong> Partages critiques exposés</div>
-                                    <div>• <strong>RDP:</strong> 3 sessions admin actives</div>
+                                    <div>• <strong>Réplication Hyper-V:</strong> 3 flux actifs entre hosts</div>
+                                    <div>• <strong>Port 1433:</strong> SQL connections (89 actives)</div>
+                                    <div>• <strong>Port 3389:</strong> 12 sessions RDS + 2 admin</div>
+                                    <div>• <strong>Veeam:</strong> Jobs backup vers stockage local HOST04</div>
                                 </div>
                             </div>
                         </div>
@@ -1034,16 +1034,16 @@
                                     <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.9;">Aucune tâche critique planifiée dans cette plage</div>
                                 </div>
                                 <div style="background: rgba(255,152,0,0.1); border: 1px solid rgba(255,152,0,0.3); border-radius: 6px; padding: 12px;">
-                                    <strong>⚠️ Conflit Potentiel:</strong> LAA-SQL01 backup à 02:00
-                                    <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.9;">Recommandation: Reporter backup ou commencer après 03:00</div>
+                                    <strong>⚠️ Conflit Potentiel:</strong> Backup SQL VM à 02:00
+                                    <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.9;">Recommandation: Commencer après 03:00 ou reporter backup SQL</div>
                                 </div>
                                 <div style="background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); border-radius: 6px; padding: 12px;">
-                                    <strong>✅ Pré-requis Détectés:</strong> Cluster ready pour maintenance
-                                    <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.9;">SQL Always-On peut basculer automatiquement</div>
+                                    <strong>✅ Réplications Détectées:</strong> 3 VMs répliquées prêtes
+                                    <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.9;">DC, RDS, SQL ont des réplicas sur autres hosts</div>
                                 </div>
                                 <div style="background: rgba(33,150,243,0.1); border: 1px solid rgba(33,150,243,0.3); border-radius: 6px; padding: 12px;">
-                                    <strong>🔧 Action Recommandée:</strong> Pauser Veeam 30min avant
-                                    <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.9;">Éviter corruption pendant snapshot VM</div>
+                                    <strong>🔧 Action Recommandée:</strong> Pauser jobs Veeam pendant updates
+                                    <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.9;">LAA-VEEAM01 sauvegarde les 3 VMs de prod</div>
                                 </div>
                             </div>
                         </div>
@@ -1052,77 +1052,83 @@
                     <div class="architecture-map">
                         <h4 style="margin-bottom: 15px; color: #00ff88;">🏗️ Cartographie des Dépendances (Enrichie par Agent)</h4>
                         <div class="server-dependencies">
+                            <!-- Host 1 - VM DC -->
                             <div class="server-node physical critical">
                                 <div class="server-header">
                                     <div class="server-name">LAA-HOST01</div>
-                                    <div class="server-role">HOST PHYSIQUE</div>
+                                    <div class="server-role">HOST HYPER-V</div>
                                 </div>
                                 <div class="constraints-list">
-                                    <div class="constraint-item">Héberge 4 VMs critiques</div>
-                                    <div class="constraint-item">Contrôleur domaine principal</div>
-                                    <div class="constraint-item">Sauvegarde quotidienne 2h00</div>
-                                    <div class="constraint-item">Réplication vers LAA-HOST02</div>
+                                    <div class="constraint-item">Héberge: LAA-DC (AD/DNS)</div>
+                                    <div class="constraint-item">Réplication DC vers HOST02</div>
+                                    <div class="constraint-item">Sauvegardé par LAA-VEEAM01</div>
                                     <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2);">
                                         <div style="color: #ffa500; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px;">🤖 Agent Live:</div>
-                                        <div class="constraint-item" style="color: #00ff88;">Cluster Service: Healthy</div>
-                                        <div class="constraint-item" style="color: #ff9800;">Défrag planifié dim 03:00</div>
-                                        <div class="constraint-item" style="color: #2196f3;">Uptime: 47 jours</div>
+                                        <div class="constraint-item" style="color: #00ff88;">Hyper-V: Healthy</div>
+                                        <div class="constraint-item" style="color: #2196f3;">VM LAA-DC: Running</div>
+                                        <div class="constraint-item" style="color: #00ff88;">Réplication: Sync OK</div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="server-node vm critical">
+                            <!-- Host 2 - VM RDS -->
+                            <div class="server-node physical critical">
                                 <div class="server-header">
-                                    <div class="server-name">LAA-SQL01</div>
-                                    <div class="server-role">VM SQL</div>
+                                    <div class="server-name">LAA-HOST02</div>
+                                    <div class="server-role">HOST HYPER-V</div>
                                 </div>
                                 <div class="constraints-list">
-                                    <div class="constraint-item">Base production 24/7</div>
-                                    <div class="constraint-item">Fenêtre maintenance: 2h-4h</div>
-                                    <div class="constraint-item">Cluster SQL Always-On</div>
-                                    <div class="constraint-item">Backup toutes les 4h</div>
+                                    <div class="constraint-item">Héberge: LAA-RDS (Terminal Server)</div>
+                                    <div class="constraint-item">Réplication RDS vers HOST03</div>
+                                    <div class="constraint-item">Sessions utilisateurs actives</div>
+                                    <div class="constraint-item">Sauvegardé par LAA-VEEAM01</div>
                                     <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2);">
                                         <div style="color: #ffa500; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px;">🤖 Agent Live:</div>
-                                        <div class="constraint-item" style="color: #00ff88;">Always-On AG: Synchronized</div>
-                                        <div class="constraint-item" style="color: #ff9800;">Backup job 02:00-02:45</div>
-                                        <div class="constraint-item" style="color: #2196f3;">Active connections: 247</div>
-                                        <div class="constraint-item" style="color: #ff4444;">CONFLIT: Backup pendant fenêtre</div>
+                                        <div class="constraint-item" style="color: #00ff88;">VM LAA-RDS: Running</div>
+                                        <div class="constraint-item" style="color: #ff9800;">12 sessions RDS actives</div>
+                                        <div class="constraint-item" style="color: #00ff88;">Réplication: Sync OK</div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="server-node vm">
+                            <!-- Host 3 - VM SQL -->
+                            <div class="server-node physical critical">
                                 <div class="server-header">
-                                    <div class="server-name">LAA-WEB01</div>
-                                    <div class="server-role">VM WEB</div>
+                                    <div class="server-name">LAA-HOST03</div>
+                                    <div class="server-role">HOST HYPER-V</div>
                                 </div>
                                 <div class="constraints-list">
-                                    <div class="constraint-item">Load balancer avec WEB02</div>
-                                    <div class="constraint-item">Peut redémarrer pendant bureau</div>
-                                    <div class="constraint-item">Sauvegarde hebdomadaire</div>
+                                    <div class="constraint-item">Héberge: LAA-SQL (Base production)</div>
+                                    <div class="constraint-item">Réplication SQL vers HOST01</div>
+                                    <div class="constraint-item">Base critique 24/7</div>
+                                    <div class="constraint-item">Sauvegardé par LAA-VEEAM01</div>
                                     <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2);">
                                         <div style="color: #ffa500; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px;">🤖 Agent Live:</div>
-                                        <div class="constraint-item" style="color: #00ff88;">Load Balancer: Active</div>
-                                        <div class="constraint-item" style="color: #2196f3;">HTTPS sessions: 89</div>
-                                        <div class="constraint-item" style="color: #ff9800;">Log purge 01:30</div>
+                                        <div class="constraint-item" style="color: #00ff88;">VM LAA-SQL: Running</div>
+                                        <div class="constraint-item" style="color: #2196f3;">Connexions SQL: 89</div>
+                                        <div class="constraint-item" style="color: #ff9800;">Backup SQL 02:00-02:45</div>
+                                        <div class="constraint-item" style="color: #00ff88;">Réplication: Sync OK</div>
                                     </div>
                                 </div>
                             </div>
                             
+                            <!-- Host 4 - VM Veeam -->
                             <div class="server-node physical">
                                 <div class="server-header">
-                                    <div class="server-name">LAA-BACKUP01</div>
-                                    <div class="server-role">SERVEUR BACKUP</div>
+                                    <div class="server-name">LAA-HOST04</div>
+                                    <div class="server-role">HOST HYPER-V</div>
                                 </div>
                                 <div class="constraints-list">
-                                    <div class="constraint-item">Job Veeam actif 22h-6h</div>
-                                    <div class="constraint-item">Espace libre: 15%</div>
-                                    <div class="constraint-item">Pas de redémarrage forcé</div>
+                                    <div class="constraint-item">Héberge: LAA-VEEAM01</div>
+                                    <div class="constraint-item">PAS de réplication (stockage local)</div>
+                                    <div class="constraint-item">Sauvegarde toutes VMs de prod</div>
+                                    <div class="constraint-item">Jobs Veeam 22h-6h</div>
                                     <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2);">
                                         <div style="color: #ffa500; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px;">🤖 Agent Live:</div>
-                                        <div class="constraint-item" style="color: #00ff88;">Veeam Service: Running</div>
-                                        <div class="constraint-item" style="color: #ff9800;">5 jobs en queue</div>
-                                        <div class="constraint-item" style="color: #ff4444;">ATTENTION: Job actif 22h-6h</div>
+                                        <div class="constraint-item" style="color: #00ff88;">VM LAA-VEEAM01: Running</div>
+                                        <div class="constraint-item" style="color: #ff9800;">3 jobs backup actifs</div>
+                                        <div class="constraint-item" style="color: #2196f3;">Stockage local: 2.1TB/3TB</div>
+                                        <div class="constraint-item" style="color: #ff4444;">CRITIQUE: Pas de réplication</div>
                                     </div>
                                 </div>
                             </div>
@@ -1134,16 +1140,16 @@
                         <div class="sequence-header">
                             <span>🎯</span>
                             <span>Séquence Optimale Générée par IA + Agent</span>
-                            <span style="margin-left: auto; font-size: 0.9rem;">Durée totale: 3h45 (ajustée)</span>
+                            <span style="margin-left: auto; font-size: 0.9rem;">Durée totale: 4h05 (LAA réel)</span>
                         </div>
                         
                         <div style="background: rgba(255,152,0,0.1); border: 1px solid rgba(255,152,0,0.3); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
                             <div style="font-weight: bold; color: #ffa500; margin-bottom: 10px;">🤖 Optimisations Agent Intégrées:</div>
                             <div style="font-size: 0.9rem; line-height: 1.4;">
-                                • <strong>Fenêtre ajustée:</strong> Dimanche 06:30-10:15 (évite conflits backup)<br>
-                                • <strong>Pré-action automatique:</strong> Pause Veeam 30min avant<br>
-                                • <strong>Vérifications live:</strong> Cluster health, sessions actives, jobs en cours<br>
-                                • <strong>Rollback intelligent:</strong> Points de restauration avant chaque action critique
+                                • <strong>Architecture réelle LAA:</strong> 4 hosts Hyper-V avec 4 VMs (DC, RDS, SQL, Veeam)<br>
+                                • <strong>Réplications détectées:</strong> 3 VMs prod répliquées (pas Veeam = risque)<br>
+                                • <strong>Ordre optimisé:</strong> Veeam d'abord, puis hosts avec migrations Live<br>
+                                • <strong>Sécurité renforcée:</strong> Snapshots + migrations utilisant réplicas
                             </div>
                         </div>
                         
@@ -1153,76 +1159,65 @@
                                 <div class="step-server" style="color: #ffa500;">🤖 PRE-AGENT</div>
                                 <div class="step-actions">
                                     <strong style="color: #ffa500;">Vérifications Automatiques:</strong><br>
-                                    • Scan conflits temps réel • Validation cluster health<br>
-                                    • Pause Veeam jobs actifs • Notification admin
+                                    • Scan réplications Hyper-V • Validation jobs Veeam<br>
+                                    • Pause backups LAA-VEEAM01 • Notification admin
                                 </div>
-                                <div class="step-duration">10min</div>
+                                <div class="step-duration">15min</div>
                             </div>
                             
                             <div class="sequence-step">
                                 <div class="step-number">1</div>
-                                <div class="step-server">LAA-BACKUP01</div>
+                                <div class="step-server">LAA-HOST04</div>
                                 <div class="step-actions">
-                                    Pre: <span style="color: #00ff88;">Agent: 5 jobs Veeam pausés</span> • Snapshot manuel<br>
-                                    Update: KB5030211, KB5030214 (657MB)<br>
-                                    Post: <span style="color: #00ff88;">Agent: Test auto jobs</span> • Vérif logs • Monitoring
+                                    Pre: <span style="color: #00ff88;">Agent: Jobs Veeam pausés</span> • Snapshot LAA-VEEAM01<br>
+                                    Update: KB5030211, KB5030214 (657MB) - Host Hyper-V<br>
+                                    Post: <span style="color: #ff4444;">CRITIQUE: Pas de réplication VM Veeam</span> • Test jobs
+                                </div>
+                                <div class="step-duration">45min</div>
+                            </div>
+                            
+                            <div class="sequence-step">
+                                <div class="step-number">2</div>
+                                <div class="step-server">LAA-HOST02</div>
+                                <div class="step-actions">
+                                    Pre: <span style="color: #00ff88;">Agent: 12 sessions RDS déconnectées</span> • Migration LAA-RDS vers HOST03<br>
+                                    Update: KB5030211, KB5029351 (423MB) - Host Hyper-V<br>
+                                    Post: Migration retour LAA-RDS • Test Terminal Services
+                                </div>
+                                <div class="step-duration">55min</div>
+                            </div>
+                            
+                            <div class="sequence-step">
+                                <div class="step-number">3</div>
+                                <div class="step-server">LAA-HOST01</div>
+                                <div class="step-actions">
+                                    Pre: Migration LAA-DC vers HOST02 (réplica) • <span style="color: #ff9800;">ATTENTION: AD critique</span><br>
+                                    Update: KB5030211, KB5029351 (423MB) - Host Hyper-V<br>
+                                    Post: Migration retour LAA-DC • Test Active Directory
                                 </div>
                                 <div class="step-duration">50min</div>
                             </div>
                             
                             <div class="sequence-step">
-                                <div class="step-number">2</div>
-                                <div class="step-server">LAA-WEB02</div>
-                                <div class="step-actions">
-                                    Pre: Retrait load balancer • Snapshot VM<br>
-                                    Update: KB5030211, KB5029351 (423MB)<br>
-                                    Post: Test IIS • Ré-intégration LB
-                                </div>
-                                <div class="step-duration">35min</div>
-                            </div>
-                            
-                            <div class="sequence-step">
-                                <div class="step-number">3</div>
-                                <div class="step-server">LAA-WEB01</div>
-                                <div class="step-actions">
-                                    Pre: Bascule trafic vers WEB02 • Snapshot<br>
-                                    Update: KB5030211, KB5029351 (423MB)<br>
-                                    Post: Test IIS • Restauration trafic
-                                </div>
-                                <div class="step-duration">35min</div>
-                            </div>
-                            
-                            <div class="sequence-step">
                                 <div class="step-number">4</div>
-                                <div class="step-server">LAA-SQL02</div>
+                                <div class="step-server">LAA-HOST03</div>
                                 <div class="step-actions">
-                                    Pre: Bascule Always-On vers SQL01 • Snapshot<br>
-                                    Update: KB5030211, KB5030298 (892MB)<br>
-                                    Post: Test cluster • Sync validation
+                                    Pre: <span style="color: #00ff88;">Agent: 89 conn. SQL fermées</span> • Migration LAA-SQL vers HOST01<br>
+                                    Update: KB5030211, KB5030298 (892MB) - Host Hyper-V<br>
+                                    Post: Migration retour LAA-SQL • Test base production
                                 </div>
-                                <div class="step-duration">55min</div>
+                                <div class="step-duration">60min</div>
                             </div>
                             
                             <div class="sequence-step">
                                 <div class="step-number">5</div>
-                                <div class="step-server">LAA-SQL01</div>
+                                <div class="step-server" style="color: #00ff88;">🤖 POST-AGENT</div>
                                 <div class="step-actions">
-                                    Pre: Maintenance mode cluster • Snapshot<br>
-                                    Update: KB5030211, KB5030298 (892MB)<br>
-                                    Post: Restauration cluster • Test complet
+                                    <strong style="color: #00ff88;">Vérifications Finales:</strong><br>
+                                    • Test réplications Hyper-V • Redémarrage jobs Veeam<br>
+                                    • Validation services critiques • Rapport complet
                                 </div>
-                                <div class="step-duration">55min</div>
-                            </div>
-                            
-                            <div class="sequence-step">
-                                <div class="step-number">6</div>
-                                <div class="step-server">LAA-HOST01</div>
-                                <div class="step-actions">
-                                    Pre: Migration VMs vers HOST02 • Snapshot<br>
-                                    Update: KB5030211, KB5029876 (1.2GB)<br>
-                                    Post: Migration retour • Tests complets
-                                </div>
-                                <div class="step-duration">90min</div>
+                                <div class="step-duration">20min</div>
                             </div>
                         </div>
                         
@@ -1235,10 +1230,10 @@
                             <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2);">
                                 <div style="font-size: 0.8rem; color: #ffa500;">
                                     <strong>🤖 Améliorations Agent Live:</strong><br>
-                                    ✅ Détection 12 tâches planifiées<br>
-                                    ✅ Monitoring 4 processus critiques<br>
-                                    ✅ Validation cluster en temps réel<br>
-                                    ⚠️ Résolution conflit backup SQL (reporté à 03:30)
+                                    ✅ Architecture LAA réelle mappée (4 hosts + 4 VMs)<br>
+                                    ✅ Réplications Hyper-V détectées (3/4 VMs)<br>
+                                    ✅ Sessions actives RDS (12) et SQL (89)<br>
+                                    ⚠️ Risque identifié: LAA-VEEAM01 non répliquée
                                 </div>
                             </div>
                         </div>
