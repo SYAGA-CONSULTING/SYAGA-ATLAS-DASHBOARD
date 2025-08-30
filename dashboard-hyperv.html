@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🖥️ ATLAS - Hyper-V Management</title>
+    
+    <!-- NO CACHE FOR DEBUG -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- MSAL Authentication -->
+    <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        /* Navigation tabs */
+        .nav-tabs {
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            display: flex;
+            gap: 20px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+        
+        .nav-tab {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .nav-tab:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .nav-tab.active {
+            background: rgba(255,255,255,0.3);
+            border-color: #00ff00;
+            box-shadow: 0 0 10px rgba(0,255,0,0.3);
+        }
+        
+        /* Main container */
+        .container {
+            padding: 30px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        /* Host cards grid */
+        .hosts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .host-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s;
+        }
+        
+        .host-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .host-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .host-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .host-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .status-online {
+            background: #00ff00;
+            color: #000;
+        }
+        
+        .status-warning {
+            background: #ffaa00;
+            color: #000;
+        }
+        
+        .status-offline {
+            background: #ff0000;
+            color: #fff;
+        }
+        
+        /* Host metrics */
+        .host-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00ff00;
+        }
+        
+        .metric-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        /* VMs list */
+        .vms-container {
+            margin-top: 20px;
+        }
+        
+        .vms-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .vms-title {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .vm-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            padding: 5px 15px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        
+        .action-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .action-btn.danger {
+            background: rgba(255,0,0,0.3);
+            border-color: #ff0000;
+        }
+        
+        .action-btn.success {
+            background: rgba(0,255,0,0.2);
+            border-color: #00ff00;
+        }
+        
+        /* VMs grid */
+        .vms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        
+        .vm-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .vm-card:hover {
+            background: rgba(0,0,0,0.5);
+            transform: scale(1.05);
+        }
+        
+        .vm-icon {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+        
+        .vm-name {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .vm-state {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        
+        .vm-running {
+            background: #00ff00;
+            color: #000;
+        }
+        
+        .vm-paused {
+            background: #ffaa00;
+            color: #000;
+        }
+        
+        .vm-stopped {
+            background: #666;
+            color: #fff;
+        }
+        
+        .vm-replicating {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #00aaff;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* Replication status */
+        .replication-status {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            border-left: 4px solid #00aaff;
+        }
+        
+        .replication-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .replication-title {
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .replication-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .replication-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        /* Orchestration panel */
+        .orchestration-panel {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 350px;
+            display: none;
+        }
+        
+        .orchestration-panel.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .orchestration-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .orchestration-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .orchestration-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .orchestration-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="nav-tabs">
+        <a href="dashboard-v0.23-connected.html" class="nav-tab">🔷 Vue Globale</a>
+        <a href="dashboard-hyperv.html" class="nav-tab active">🖥️ Hyper-V</a>
+        <a href="dashboard-windowsupdate.html" class="nav-tab">🔄 Windows Update</a>
+        <a href="dashboard-veeam.html" class="nav-tab">💾 Veeam</a>
+        <a href="dashboard-orchestration.html" class="nav-tab">🎭 Orchestration</a>
+    </div>
+    
+    <!-- Header -->
+    <div class="container">
+        <div class="header">
+            <h1>🖥️ Gestion Hyper-V</h1>
+            <p>Visualisation et contrôle des machines virtuelles et réplications</p>
+        </div>
+        
+        <!-- Hosts Grid -->
+        <div class="hosts-grid" id="hostsGrid">
+            <!-- Host 1 - SYAGA-HOST01 -->
+            <div class="host-card">
+                <div class="host-header">
+                    <div class="host-name">
+                        🏠 SYAGA-HOST01
+                    </div>
+                    <div class="host-status status-online">EN LIGNE</div>
+                </div>
+                
+                <div class="host-metrics">
+                    <div class="metric">
+                        <div class="metric-value">4</div>
+                        <div class="metric-label">VMs</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">45%</div>
+                        <div class="metric-label">CPU</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">62%</div>
+                        <div class="metric-label">RAM</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.2TB</div>
+                        <div class="metric-label">Stockage</div>
+                    </div>
+                </div>
+                
+                <div class="vms-container">
+                    <div class="vms-header">
+                        <div class="vms-title">Machines Virtuelles</div>
+                        <div class="vm-actions">
+                            <button class="action-btn success" onclick="startAllVMs('HOST01')">▶️ Tout démarrer</button>
+                            <button class="action-btn danger" onclick="stopAllVMs('HOST01')">⏹️ Tout arrêter</button>
+                        </div>
+                    </div>
+                    
+                    <div class="vms-grid">
+                        <div class="vm-card" onclick="showVMDetails('VEEAM01')">
+                            <div class="vm-replicating"></div>
+                            <div class="vm-icon">💾</div>
+                            <div class="vm-name">SYAGA-VEEAM01</div>
+                            <div class="vm-state vm-running">Running</div>
+                        </div>
+                        
+                        <div class="vm-card" onclick="showVMDetails('DC01')">
+                            <div class="vm-icon">🔐</div>
+                            <div class="vm-name">SYAGA-DC01</div>
+                            <div class="vm-state vm-running">Running</div>
+                        </div>
+                        
+                        <div class="vm-card" onclick="showVMDetails('SQL01')">
+                            <div class="vm-replicating"></div>
+                            <div class="vm-icon">🗄️</div>
+                            <div class="vm-name">SYAGA-SQL01</div>
+                            <div class="vm-state vm-running">Running</div>
+                        </div>
+                        
+                        <div class="vm-card" onclick="showVMDetails('WEB01')">
+                            <div class="vm-icon">🌐</div>
+                            <div class="vm-name">SYAGA-WEB01</div>
+                            <div class="vm-state vm-paused">Paused</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="replication-status">
+                    <div class="replication-header">
+                        <div class="replication-title">
+                            🔄 Réplication Active
+                        </div>
+                        <button class="action-btn" onclick="showReplicationDetails('HOST01')">Détails</button>
+                    </div>
+                    <div class="replication-details">
+                        <div class="replication-item">
+                            <span>Destination:</span>
+                            <strong>SYAGA-HOST02</strong>
+                        </div>
+                        <div class="replication-item">
+                            <span>État:</span>
+                            <strong style="color: #00ff00;">Normal</strong>
+                        </div>
+                        <div class="replication-item">
+                            <span>Dernière sync:</span>
+                            <strong>Il y a 5 min</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Host 2 - Site de secours -->
+            <div class="host-card">
+                <div class="host-header">
+                    <div class="host-name">
+                        🏢 SYAGA-HOST02 (Secours)
+                    </div>
+                    <div class="host-status status-online">EN LIGNE</div>
+                </div>
+                
+                <div class="host-metrics">
+                    <div class="metric">
+                        <div class="metric-value">4</div>
+                        <div class="metric-label">Réplicas</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">12%</div>
+                        <div class="metric-label">CPU</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">18%</div>
+                        <div class="metric-label">RAM</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1.2TB</div>
+                        <div class="metric-label">Stockage</div>
+                    </div>
+                </div>
+                
+                <div class="vms-container">
+                    <div class="vms-header">
+                        <div class="vms-title">Machines Virtuelles (Réplicas)</div>
+                        <div class="vm-actions">
+                            <button class="action-btn" onclick="testFailover()">🔄 Test Failover</button>
+                            <button class="action-btn danger" onclick="executeFailover()">⚠️ Failover</button>
+                        </div>
+                    </div>
+                    
+                    <div class="vms-grid">
+                        <div class="vm-card" style="opacity: 0.6;">
+                            <div class="vm-icon">💾</div>
+                            <div class="vm-name">VEEAM01-Replica</div>
+                            <div class="vm-state vm-stopped">Standby</div>
+                        </div>
+                        
+                        <div class="vm-card" style="opacity: 0.6;">
+                            <div class="vm-icon">🔐</div>
+                            <div class="vm-name">DC01-Replica</div>
+                            <div class="vm-state vm-stopped">Standby</div>
+                        </div>
+                        
+                        <div class="vm-card" style="opacity: 0.6;">
+                            <div class="vm-icon">🗄️</div>
+                            <div class="vm-name">SQL01-Replica</div>
+                            <div class="vm-state vm-stopped">Standby</div>
+                        </div>
+                        
+                        <div class="vm-card" style="opacity: 0.6;">
+                            <div class="vm-icon">🌐</div>
+                            <div class="vm-name">WEB01-Replica</div>
+                            <div class="vm-state vm-stopped">Standby</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="replication-status">
+                    <div class="replication-header">
+                        <div class="replication-title">
+                            📥 Réception Réplication
+                        </div>
+                        <button class="action-btn" onclick="showReplicationLog()">📊 Logs</button>
+                    </div>
+                    <div class="replication-details">
+                        <div class="replication-item">
+                            <span>Source:</span>
+                            <strong>SYAGA-HOST01</strong>
+                        </div>
+                        <div class="replication-item">
+                            <span>RPO:</span>
+                            <strong style="color: #00ff00;">5 minutes</strong>
+                        </div>
+                        <div class="replication-item">
+                            <span>Taille:</span>
+                            <strong>1.2 TB</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions d'orchestration (popup) -->
+        <div class="orchestration-panel" id="orchestrationPanel">
+            <div class="orchestration-title">
+                <span>🎭 Actions d'Orchestration</span>
+                <button class="close-btn" onclick="closeOrchestration()">&times;</button>
+            </div>
+            <div class="orchestration-actions" id="orchestrationActions">
+                <!-- Actions dynamiques selon contexte -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Simulations des actions
+        function showVMDetails(vmName) {
+            const panel = document.getElementById('orchestrationPanel');
+            const actions = document.getElementById('orchestrationActions');
+            
+            actions.innerHTML = `
+                <h3>VM: ${vmName}</h3>
+                <button class="orchestration-btn" onclick="migrateVM('${vmName}')">
+                    🚀 Migrer vers autre hôte
+                </button>
+                <button class="orchestration-btn" onclick="snapshotVM('${vmName}')">
+                    📸 Créer un snapshot
+                </button>
+                <button class="orchestration-btn" onclick="replicateVM('${vmName}')">
+                    🔄 Configurer réplication
+                </button>
+                <button class="orchestration-btn" onclick="resizeVM('${vmName}')">
+                    📏 Redimensionner (CPU/RAM)
+                </button>
+            `;
+            
+            panel.classList.add('show');
+        }
+        
+        function closeOrchestration() {
+            document.getElementById('orchestrationPanel').classList.remove('show');
+        }
+        
+        function startAllVMs(host) {
+            console.log(`Démarrage de toutes les VMs sur ${host}`);
+            alert(`Démarrage de toutes les VMs sur ${host}`);
+        }
+        
+        function stopAllVMs(host) {
+            if (confirm(`⚠️ Êtes-vous sûr de vouloir arrêter toutes les VMs sur ${host} ?`)) {
+                console.log(`Arrêt de toutes les VMs sur ${host}`);
+            }
+        }
+        
+        function testFailover() {
+            alert('Test de failover lancé - Les VMs de test seront créées');
+        }
+        
+        function executeFailover() {
+            if (confirm('⚠️ ATTENTION: Cette action basculera TOUTES les VMs vers le site de secours. Continuer?')) {
+                console.log('Exécution du failover...');
+            }
+        }
+        
+        function migrateVM(vmName) {
+            console.log(`Migration de ${vmName}`);
+            alert(`Migration de ${vmName} vers un autre hôte`);
+        }
+        
+        function snapshotVM(vmName) {
+            console.log(`Snapshot de ${vmName}`);
+            alert(`Création d'un snapshot pour ${vmName}`);
+        }
+        
+        function replicateVM(vmName) {
+            console.log(`Configuration réplication pour ${vmName}`);
+            alert(`Configuration de la réplication pour ${vmName}`);
+        }
+        
+        function resizeVM(vmName) {
+            const newCpu = prompt(`Nombre de vCPU pour ${vmName}:`, "4");
+            const newRam = prompt(`RAM en GB pour ${vmName}:`, "8");
+            if (newCpu && newRam) {
+                alert(`${vmName} sera redimensionnée: ${newCpu} vCPU, ${newRam}GB RAM`);
+            }
+        }
+        
+        function showReplicationDetails(host) {
+            alert(`Détails de réplication pour ${host}`);
+        }
+        
+        function showReplicationLog() {
+            alert('Affichage des logs de réplication');
+        }
+        
+        // Auto-refresh simulation
+        setInterval(() => {
+            // Mise à jour des métriques (simulation)
+            document.querySelectorAll('.metric-value').forEach(el => {
+                if (el.textContent.includes('%')) {
+                    const current = parseInt(el.textContent);
+                    const variation = Math.floor(Math.random() * 10) - 5;
+                    el.textContent = Math.max(0, Math.min(100, current + variation)) + '%';
+                }
+            });
+        }, 5000);
+    </script>
+</body>
+</html>
