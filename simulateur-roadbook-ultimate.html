@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ ATLAS Roadbook Ultimate - Maximum Clarity</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #f0f0f0;
+            color: #333;
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        /* Header Stats */
+        .stats-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stat {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        /* Timeline Container */
+        .timeline-wrapper {
+            position: relative;
+            background: #fafafa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 30px 20px;
+            overflow-x: auto;
+        }
+        
+        /* Time Grid */
+        .time-grid {
+            position: absolute;
+            top: 0;
+            left: 100px;
+            right: 20px;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        
+        .time-line {
+            width: 1px;
+            height: 100%;
+            background: #e0e0e0;
+            position: relative;
+        }
+        
+        .time-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #666;
+            background: #fafafa;
+            padding: 0 5px;
+        }
+        
+        /* Current Position Indicator */
+        .now-indicator {
+            position: absolute;
+            top: -10px;
+            bottom: -10px;
+            width: 4px;
+            background: #ff4757;
+            box-shadow: 0 0 20px rgba(255,71,87,0.5);
+            z-index: 100;
+            transition: left 0.5s ease;
+        }
+        
+        .now-indicator::before {
+            content: 'MAINTENANT';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4757;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .now-indicator::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #ff4757;
+        }
+        
+        /* Tracks */
+        .tracks {
+            position: relative;
+            padding-top: 40px;
+        }
+        
+        .track {
+            margin-bottom: 25px;
+            position: relative;
+            min-height: 80px;
+        }
+        
+        .track-header {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 90px;
+            text-align: right;
+            padding-right: 15px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .track-content {
+            margin-left: 100px;
+            position: relative;
+            height: 60px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        /* Track 1: SERVEURS */
+        .track.servers .track-header {
+            color: #5f27cd;
+        }
+        
+        .track.servers .track-content {
+            border-color: #5f27cd;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            gap: 10px;
+        }
+        
+        .server-block {
+            height: 40px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            padding: 0 15px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .server-block.done {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .server-block.current {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+            box-shadow: 0 0 0 3px rgba(255,193,7,0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        .server-block.waiting {
+            background: #f8f9fa;
+            border-color: #adb5bd;
+            color: #6c757d;
+            opacity: 0.6;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        /* Track 2: ACTIONS */
+        .track.actions .track-header {
+            color: #00b894;
+        }
+        
+        .track.actions .track-content {
+            border-color: #00b894;
+            display: flex;
+            align-items: center;
+            padding: 5px;
+        }
+        
+        .action-item {
+            position: absolute;
+            height: 30px;
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            border-radius: 15px;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 2;
+        }
+        
+        .action-item.suspend {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+        
+        .action-item.resume {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+        
+        .action-item.migration {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            color: #1565c0;
+        }
+        
+        /* Track 3: RÉPLICATION */
+        .track.replication .track-header {
+            color: #0984e3;
+        }
+        
+        .track.replication .track-content {
+            border-color: #0984e3;
+        }
+        
+        .repl-bar {
+            position: absolute;
+            height: 100%;
+            top: 0;
+        }
+        
+        .repl-bar.active {
+            background: linear-gradient(90deg, 
+                transparent,
+                rgba(52, 211, 153, 0.3) 10%,
+                rgba(52, 211, 153, 0.3) 90%,
+                transparent
+            );
+            border-left: 3px solid #10b981;
+            border-right: 3px solid #10b981;
+        }
+        
+        .repl-bar.suspended {
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(239, 68, 68, 0.2) 10px,
+                rgba(239, 68, 68, 0.2) 20px
+            );
+            border-left: 3px solid #ef4444;
+            border-right: 3px solid #ef4444;
+        }
+        
+        /* Track 4: BACKUP */
+        .track.backup .track-header {
+            color: #f39c12;
+        }
+        
+        .track.backup .track-content {
+            border-color: #f39c12;
+        }
+        
+        .backup-bar {
+            position: absolute;
+            height: 100%;
+            top: 0;
+        }
+        
+        .backup-bar.active {
+            background: linear-gradient(90deg, 
+                transparent,
+                rgba(251, 191, 36, 0.3) 10%,
+                rgba(251, 191, 36, 0.3) 90%,
+                transparent
+            );
+            border-left: 3px solid #f59e0b;
+            border-right: 3px solid #f59e0b;
+        }
+        
+        .backup-bar.suspended {
+            background: repeating-linear-gradient(
+                -45deg,
+                transparent,
+                transparent 10px,
+                rgba(239, 68, 68, 0.2) 10px,
+                rgba(239, 68, 68, 0.2) 20px
+            );
+            border-left: 3px solid #ef4444;
+            border-right: 3px solid #ef4444;
+        }
+        
+        /* Track 5: SYSTÈME */
+        .track.system .track-header {
+            color: #e74c3c;
+        }
+        
+        .track.system .track-content {
+            border-color: #e74c3c;
+            display: flex;
+            align-items: center;
+            padding: 5px;
+        }
+        
+        .system-event {
+            position: absolute;
+            height: 40px;
+            background: white;
+            border: 2px solid #e74c3c;
+            border-radius: 20px;
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            z-index: 2;
+        }
+        
+        .system-event.reboot {
+            background: #ffebee;
+            color: #c62828;
+            animation: blink 1s infinite;
+        }
+        
+        .system-event.check {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Legend */
+        .legend {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-box {
+            width: 40px;
+            height: 25px;
+            border: 2px solid #333;
+            border-radius: 4px;
+        }
+        
+        .legend-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-label">Temps Écoulé</div>
+                <div class="stat-value" id="elapsed">00:45:23</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Progression Globale</div>
+                <div class="stat-value" id="progress">35%</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Étape Actuelle</div>
+                <div class="stat-value" id="current">HOST04 (65%)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Temps Restant</div>
+                <div class="stat-value" id="remaining">01:14:37</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Vitesse</div>
+                <div class="stat-value" id="speed">×1.2</div>
+            </div>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="timeline-wrapper">
+            <!-- Time Grid -->
+            <div class="time-grid">
+                <div class="time-line"><span class="time-label">14:00</span></div>
+                <div class="time-line"><span class="time-label">14:30</span></div>
+                <div class="time-line"><span class="time-label">15:00</span></div>
+                <div class="time-line"><span class="time-label">15:30</span></div>
+                <div class="time-line"><span class="time-label">16:00</span></div>
+                <div class="time-line"><span class="time-label">16:30</span></div>
+                <div class="time-line"><span class="time-label">17:00</span></div>
+                <div class="time-line"><span class="time-label">17:30</span></div>
+                <div class="time-line"><span class="time-label">18:00</span></div>
+            </div>
+            
+            <!-- Current Position -->
+            <div class="now-indicator" style="left: calc(100px + 35%);"></div>
+            
+            <!-- Tracks -->
+            <div class="tracks">
+                <!-- Track 1: SERVEURS -->
+                <div class="track servers">
+                    <div class="track-header">SERVEURS</div>
+                    <div class="track-content">
+                        <div class="server-block done" style="flex: 0 0 10%;">✅ PRE-CHECK</div>
+                        <div class="server-block done" style="flex: 0 0 10%;">✅ SUSPEND</div>
+                        <div class="server-block current" style="flex: 0 0 20%;">⚡ HOST04</div>
+                        <div class="server-block waiting" style="flex: 0 0 15%;">⏳ HOST02</div>
+                        <div class="server-block waiting" style="flex: 0 0 15%;">⏳ HOST01</div>
+                        <div class="server-block waiting" style="flex: 0 0 15%;">⏳ HOST03</div>
+                        <div class="server-block waiting" style="flex: 0 0 10%;">⏳ RESUME</div>
+                    </div>
+                </div>
+                
+                <!-- Track 2: ACTIONS -->
+                <div class="track actions">
+                    <div class="track-header">ACTIONS</div>
+                    <div class="track-content">
+                        <div class="action-item suspend" style="left: 10%;">⏸️ PAUSE BACKUP</div>
+                        <div class="action-item suspend" style="left: 12%;">⏸️ PAUSE REPL H04</div>
+                        <div class="action-item migration" style="left: 35%;">➡️ MIGRATE RDS</div>
+                        <div class="action-item resume" style="left: 38%;">▶️ RESUME REPL H04</div>
+                        <div class="action-item suspend" style="left: 40%;">⏸️ PAUSE REPL H02</div>
+                        <div class="action-item migration" style="left: 55%;">➡️ MIGRATE DC</div>
+                        <div class="action-item resume" style="left: 58%;">▶️ RESUME REPL H02</div>
+                        <div class="action-item suspend" style="left: 60%;">⏸️ PAUSE REPL H01</div>
+                        <div class="action-item migration" style="left: 75%;">➡️ MIGRATE SQL</div>
+                        <div class="action-item resume" style="left: 78%;">▶️ RESUME REPL H01</div>
+                        <div class="action-item suspend" style="left: 80%;">⏸️ PAUSE REPL H03</div>
+                        <div class="action-item resume" style="left: 90%;">▶️ RESUME ALL</div>
+                    </div>
+                </div>
+                
+                <!-- Track 3: RÉPLICATION -->
+                <div class="track replication">
+                    <div class="track-header">RÉPLICATION</div>
+                    <div class="track-content">
+                        <div class="repl-bar active" style="left: 0; width: 10%;"></div>
+                        <div class="repl-bar suspended" style="left: 10%; width: 25%;"></div>
+                        <div class="repl-bar active" style="left: 35%; width: 5%;"></div>
+                        <div class="repl-bar suspended" style="left: 40%; width: 15%;"></div>
+                        <div class="repl-bar active" style="left: 55%; width: 5%;"></div>
+                        <div class="repl-bar suspended" style="left: 60%; width: 15%;"></div>
+                        <div class="repl-bar active" style="left: 75%; width: 5%;"></div>
+                        <div class="repl-bar suspended" style="left: 80%; width: 10%;"></div>
+                        <div class="repl-bar active" style="left: 90%; width: 10%;"></div>
+                    </div>
+                </div>
+                
+                <!-- Track 4: BACKUP -->
+                <div class="track backup">
+                    <div class="track-header">BACKUP</div>
+                    <div class="track-content">
+                        <div class="backup-bar active" style="left: 0; width: 10%;"></div>
+                        <div class="backup-bar suspended" style="left: 10%; width: 80%;"></div>
+                        <div class="backup-bar active" style="left: 90%; width: 10%;"></div>
+                    </div>
+                </div>
+                
+                <!-- Track 5: SYSTÈME -->
+                <div class="track system">
+                    <div class="track-header">SYSTÈME</div>
+                    <div class="track-content">
+                        <div class="system-event check" style="left: 2%; width: 8%;">✅ CHECKS</div>
+                        <div class="system-event reboot" style="left: 32%; width: 8%;">🔄 REBOOT H04</div>
+                        <div class="system-event" style="left: 50%; width: 8%; opacity: 0.3;">🔄 REBOOT H02</div>
+                        <div class="system-event" style="left: 65%; width: 8%; opacity: 0.3;">🔄 REBOOT H01</div>
+                        <div class="system-event" style="left: 82%; width: 8%; opacity: 0.3;">🔄 REBOOT H03</div>
+                        <div class="system-event check" style="left: 92%; width: 6%;">✅ FINAL</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box" style="background: #d4edda; border-color: #28a745;"></div>
+                <span class="legend-text">Terminé</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: #fff3cd; border-color: #ffc107;"></div>
+                <span class="legend-text">En cours</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: #f8f9fa; border-color: #adb5bd;"></div>
+                <span class="legend-text">En attente</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: rgba(52, 211, 153, 0.3); border-color: #10b981;"></div>
+                <span class="legend-text">Flux actif</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(239, 68, 68, 0.3) 5px, rgba(239, 68, 68, 0.3) 10px); border-color: #ef4444;"></div>
+                <span class="legend-text">Flux suspendu</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Animation et mise à jour temps réel
+        let state = {
+            startTime: Date.now() - (45 * 60 * 1000 + 23 * 1000),
+            totalDuration: 2 * 60 * 60 * 1000,
+            progress: 35
+        };
+        
+        function updateStats() {
+            const now = Date.now();
+            const elapsed = now - state.startTime;
+            const remaining = state.totalDuration - elapsed;
+            
+            // Format time
+            const formatTime = (ms) => {
+                const h = Math.floor(ms / 3600000);
+                const m = Math.floor((ms % 3600000) / 60000);
+                const s = Math.floor((ms % 60000) / 1000);
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            };
+            
+            document.getElementById('elapsed').textContent = formatTime(elapsed);
+            document.getElementById('remaining').textContent = formatTime(remaining);
+            document.getElementById('progress').textContent = `${Math.round(state.progress)}%`;
+            
+            // Move NOW indicator
+            const indicator = document.querySelector('.now-indicator');
+            const trackWidth = document.querySelector('.track-content').offsetWidth;
+            indicator.style.left = `${100 + (trackWidth * state.progress / 100)}px`;
+        }
+        
+        function simulate() {
+            setInterval(() => {
+                if (state.progress < 100) {
+                    state.progress += 0.05;
+                    updateStats();
+                }
+            }, 500);
+        }
+        
+        // Start
+        updateStats();
+        simulate();
+        
+        // Pulse effect on NOW indicator
+        setInterval(() => {
+            const indicator = document.querySelector('.now-indicator');
+            indicator.style.boxShadow = `0 0 ${20 + Math.sin(Date.now() / 200) * 10}px rgba(255,71,87,0.5)`;
+        }, 50);
+    </script>
+</body>
+</html>
