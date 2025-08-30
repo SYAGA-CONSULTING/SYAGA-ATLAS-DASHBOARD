@@ -161,7 +161,8 @@
         .servers-track {
             margin-left: 150px;
             position: relative;
-            min-height: 250px;
+            min-height: 300px;  /* Plus de hauteur pour éviter superposition */
+            margin-bottom: 20px;
         }
         
         /* Serveur principal */
@@ -205,6 +206,7 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
+            z-index: 10;  /* Passer devant les actions */
         }
         
         /* VM principale */
@@ -280,13 +282,13 @@
         /* Actions sous les blocs */
         .actions-under-block {
             position: absolute;
-            top: 100%;
+            top: 155px;  /* Position fixe après les VMs */
             left: 0;
             width: 100%;
-            margin-top: 5px;
             display: flex;
             flex-direction: column;
             gap: 2px;
+            z-index: 1;  /* Passer derrière les VMs */
         }
         
         .action-item {
@@ -756,8 +758,8 @@
                 <div class="swimlane backup">
                     <div class="swimlane-label">Sauvegarde<br>Veeam</div>
                     <div class="swimlane-track">
-                        <div class="flow-marker suspend" style="left: 11%;">⏸</div>
-                        <div class="flow-marker resume" style="left: 88%;">▶</div>
+                        <div class="backup-status suspended" style="left: 0%; width: 88%; padding: 0 10px; position: absolute; top: 10px; height: 40px; display: flex; align-items: center; justify-content: center; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; font-size: 0.75rem; font-weight: bold; color: #856404;">⏸ BACKUP SUSPENDU</div>
+                        <div class="backup-status active" style="left: 88%; width: 12%; padding: 0 10px; position: absolute; top: 10px; height: 40px; display: flex; align-items: center; justify-content: center; background: #d4edda; border: 2px solid #28a745; border-radius: 8px; font-size: 0.75rem; font-weight: bold; color: #155724;">▶ ACTIF</div>
                     </div>
                 </div>
                 
@@ -766,24 +768,24 @@
                     <div class="swimlane-label" style="color: #e74c3c;">Redémarrages<br>Serveurs</div>
                     <div class="swimlane-track" style="border-color: #e74c3c; display: flex; align-items: center; justify-content: space-around; padding: 0 5%;">
                         <!-- HOST04 -->
-                        <div class="reboot-marker done" style="left: 27.5%;">
-                            <span class="reboot-label">HOST04</span>
-                            <span class="reboot-icon">✅</span>
+                        <div class="reboot-marker done" style="position: absolute; left: 25%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                            <span class="reboot-label" style="font-size: 0.7rem; font-weight: bold; color: #333;">HOST04</span>
+                            <span class="reboot-icon" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #d4edda; border: 2px solid #28a745; border-radius: 50%; font-size: 1.2rem;">✅</span>
                         </div>
                         <!-- HOST02 -->
-                        <div class="reboot-marker done" style="left: 38.5%;">
-                            <span class="reboot-label">HOST02</span>
-                            <span class="reboot-icon">✅</span>
+                        <div class="reboot-marker done" style="position: absolute; left: 36%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                            <span class="reboot-label" style="font-size: 0.7rem; font-weight: bold; color: #333;">HOST02</span>
+                            <span class="reboot-icon" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #d4edda; border: 2px solid #28a745; border-radius: 50%; font-size: 1.2rem;">✅</span>
                         </div>
                         <!-- HOST03 -->
-                        <div class="reboot-marker active" style="left: 49.5%;">
-                            <span class="reboot-label">HOST03</span>
-                            <span class="reboot-icon">🔄</span>
+                        <div class="reboot-marker active" style="position: absolute; left: 47%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                            <span class="reboot-label" style="font-size: 0.7rem; font-weight: bold; color: #333;">HOST03</span>
+                            <span class="reboot-icon" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #ffebee; border: 2px solid #e74c3c; border-radius: 50%; font-size: 1.2rem; animation: pulse-red 1s infinite;">🔄</span>
                         </div>
                         <!-- HOST01 -->
-                        <div class="reboot-marker pending" style="left: 60.5%;">
-                            <span class="reboot-label">HOST01</span>
-                            <span class="reboot-icon">⏳</span>
+                        <div class="reboot-marker pending" style="position: absolute; left: 58%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                            <span class="reboot-label" style="font-size: 0.7rem; font-weight: bold; color: #333;">HOST01</span>
+                            <span class="reboot-icon" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #fff3cd; border: 2px solid #ffc107; border-radius: 50%; font-size: 1.2rem; opacity: 0.6;">⏳</span>
                         </div>
                     </div>
                 </div>
