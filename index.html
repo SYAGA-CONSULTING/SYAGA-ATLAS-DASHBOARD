@@ -486,7 +486,7 @@
         </div>
     </div>
     
-    <div class="container">
+    <div class="container" style="display: none;">
         <!-- Panneau d'orchestration principal -->
         <div class="orchestration-panel">
             <div class="orchestration-header">
@@ -625,10 +625,19 @@
             
             try {
                 await msalInstance.initialize();
+                
+                // IMPORTANT: Gérer le retour après connexion/déconnexion
+                const response = await msalInstance.handleRedirectPromise();
+                if (response && response.account) {
+                    console.log('✅ Retour de connexion détecté:', response.account.username);
+                    msalInstance.setActiveAccount(response.account);
+                }
+                
                 await handleAuth();
             } catch (error) {
                 console.error('Erreur initialisation:', error);
-                addLog('error', 'Erreur initialisation: ' + error.message);
+                // En cas d'erreur, afficher l'écran de connexion
+                showLoginScreen();
             }
         });
         
@@ -1214,19 +1223,25 @@
         
         // ==================== LOGS ====================
         function addLog(type, message) {
-            const console = document.getElementById('logConsole');
+            const logConsole = document.getElementById('logConsole');
+            // Vérifier que la console existe avant d'ajouter des logs
+            if (!logConsole) {
+                console.log(`[${type}] ${message}`);
+                return;
+            }
+            
             const entry = document.createElement('div');
             entry.className = `log-entry ${type}`;
             
             const timestamp = new Date().toLocaleTimeString();
             entry.textContent = `[${timestamp}] ${message}`;
             
-            console.appendChild(entry);
-            console.scrollTop = console.scrollHeight;
+            logConsole.appendChild(entry);
+            logConsole.scrollTop = logConsole.scrollHeight;
             
             // Limiter à 100 entrées
-            while (console.children.length > 100) {
-                console.removeChild(console.firstChild);
+            while (logConsole.children.length > 100) {
+                logConsole.removeChild(logConsole.firstChild);
             }
         }
         
