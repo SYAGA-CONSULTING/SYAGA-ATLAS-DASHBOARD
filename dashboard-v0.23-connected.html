@@ -758,10 +758,12 @@
                 
                 // Create group
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('data-server', server.name);  // Pour debug
                 
                 // Create hexagon avec style TRÈS différent pour VM/Physical
                 const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
                 polygon.setAttribute('points', createHexagon(x, y, hexSize));
+                polygon.setAttribute('data-server', server.name);  // Pour identifier
                 
                 // Déterminer le type réel basé sur le nom ou autres indices
                 let actualType = 'Physical';  // Par défaut
@@ -804,18 +806,8 @@
                 // Stocker le type pour l'affichage
                 server.displayType = actualType;
                 
-                // Add click listener au lieu de hover
-                polygon.addEventListener('click', (e) => {
-                    console.log('Click detected on:', server.name, server.displayType);
-                    e.stopPropagation();
-                    e.preventDefault();
-                    showDetailedView(server, e);
-                });
-                polygon.style.cursor = 'pointer';
-                
-                // S'assurer que le groupe SVG ne bloque pas les clics
-                g.style.pointerEvents = 'none';
-                polygon.style.pointerEvents = 'auto';
+                // Enlever le listener du polygon qui ne marche pas
+                // On va utiliser uniquement le rectangle invisible
                 
                 // Create text avec taille adaptée
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -896,29 +888,44 @@
                     }
                 }
                 
-                // Ajouter un rectangle invisible au-dessus pour capturer les clics
-                const clickRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                const bounds = hexSize * 1.5;
-                clickRect.setAttribute('x', x - bounds/2);
-                clickRect.setAttribute('y', y - bounds/2);
-                clickRect.setAttribute('width', bounds);
-                clickRect.setAttribute('height', bounds);
-                clickRect.setAttribute('fill', 'transparent');
-                clickRect.setAttribute('stroke', 'none');
-                clickRect.style.cursor = 'pointer';
-                clickRect.addEventListener('click', (e) => {
-                    console.log('Click on rect for:', server.name);
+                // Créer un hexagone invisible pour les clics (même forme que le visible)
+                const clickPoly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                clickPoly.setAttribute('points', createHexagon(x, y, hexSize * 1.1)); // Un peu plus grand
+                clickPoly.setAttribute('fill', 'transparent');
+                clickPoly.setAttribute('stroke', 'transparent');
+                clickPoly.style.cursor = 'pointer';
+                clickPoly.setAttribute('data-server-click', server.name);
+                
+                // Événement de clic sur l'hexagone invisible
+                clickPoly.onclick = function(e) {
+                    console.log('🔴 CLICK DETECTED ON:', server.name, 'Type:', actualType);
+                    console.log('Event target:', e.target);
                     e.stopPropagation();
                     e.preventDefault();
+                    
+                    // Appeler directement showDetailedView
                     showDetailedView(server, { target: polygon });
-                });
-                g.appendChild(clickRect);
+                    return false;
+                };
+                
+                // Ajouter EN DERNIER pour qu'il soit au-dessus
+                g.appendChild(clickPoly);
+                
+                console.log(`✅ Click zone ajoutée pour ${server.name}`);
                 
                 svg.appendChild(g);
             });
             
             container.innerHTML = '';
             container.appendChild(svg);
+            
+            // Debug : vérifier les zones de clic
+            console.log('🔍 Vérification des zones de clic:');
+            const clickZones = svg.querySelectorAll('[data-server-click]');
+            console.log(`Nombre de zones de clic créées: ${clickZones.length}`);
+            clickZones.forEach(zone => {
+                console.log(`- Zone de clic pour: ${zone.getAttribute('data-server-click')}`);
+            });
         }
 
         // Variables pour le zoom et la sélection
