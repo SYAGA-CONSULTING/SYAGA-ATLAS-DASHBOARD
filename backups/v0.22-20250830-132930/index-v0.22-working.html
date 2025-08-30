@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 ATLAS Dashboard v0.23 - Smart Matrix Multi-Client</title>
+    <title>🚀 ATLAS Dashboard v0.22 - Orchestration Intelligente</title>
     
     <!-- ANTI-CACHE TOTAL -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -13,13 +13,13 @@
     <!-- MSAL pour Azure AD Auth -->
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     
-    <!-- VERSION 0.23 -->
+    <!-- VERSION 0.22 -->
     <script>
-        console.log('🚀 ATLAS v0.23 - Smart Matrix Multi-Client:', new Date().toISOString());
-        const currentVersion = 'v0.23';
+        console.log('🚀 ATLAS v0.22 - Orchestration & Update Intelligence:', new Date().toISOString());
+        const currentVersion = 'v0.22';
         if (localStorage.getItem('dashboardVersion') !== currentVersion) {
             localStorage.setItem('dashboardVersion', currentVersion);
-            console.log('🆕 Version 0.23 avec Smart Matrix et multi-versions');
+            console.log('🆕 Version 0.22 avec orchestration avancée');
             if ('caches' in window) {
                 caches.keys().then(names => {
                     names.forEach(name => caches.delete(name));

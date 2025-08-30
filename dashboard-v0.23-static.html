@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 ATLAS v0.23 - Smart Matrix Dashboard (STATIC)</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .version-badge {
+            background: #10b981;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        /* Mode Indicator */
+        .mode-indicator {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            padding: 0.75rem 1.5rem;
+            margin: 1rem 2rem;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .mode-indicator.normal {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+        
+        /* Client Matrix */
+        .matrix-container {
+            padding: 1rem 2rem;
+        }
+        
+        .client-section {
+            margin-bottom: 2rem;
+        }
+        
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .section-header.critical {
+            color: #ff6b6b;
+            border-color: rgba(255, 107, 107, 0.5);
+        }
+        
+        .section-header.active {
+            color: #4ade80;
+            border-color: rgba(74, 222, 128, 0.5);
+        }
+        
+        .section-header.waiting {
+            color: #94a3b8;
+            border-color: rgba(148, 163, 184, 0.5);
+        }
+        
+        /* Client Row */
+        .client-row {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: grid;
+            grid-template-columns: 150px 1fr 150px 100px;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .client-row:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .client-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            position: relative;
+            height: 24px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+            border-radius: 12px;
+            position: relative;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            padding: 0 0.75rem;
+        }
+        
+        .progress-bar.warning {
+            background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+        }
+        
+        .progress-bar.critical {
+            background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+        }
+        
+        .progress-text {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .end-time {
+            text-align: right;
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+        
+        .status-icon {
+            font-size: 1.25rem;
+        }
+        
+        /* Animations */
+        @keyframes pulse-orange {
+            0%, 100% { 
+                opacity: 1; 
+                box-shadow: 0 0 0 0 rgba(251, 146, 60, 0);
+            }
+            50% { 
+                opacity: 0.9; 
+                box-shadow: 0 0 20px 5px rgba(251, 146, 60, 0.3);
+            }
+        }
+        
+        @keyframes flash-red {
+            0%, 100% { 
+                opacity: 1; 
+                box-shadow: 0 0 30px 10px rgba(239, 68, 68, 0.5);
+            }
+            50% { 
+                opacity: 0.7; 
+                box-shadow: 0 0 40px 15px rgba(239, 68, 68, 0.7);
+            }
+        }
+        
+        .client-row.warning {
+            animation: pulse-orange 2s ease-in-out infinite;
+        }
+        
+        .client-row.critical {
+            animation: flash-red 1s ease-in-out infinite;
+        }
+        
+        /* Global Controls */
+        .global-controls {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-radius: 12px;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-start {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-pause {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-stop {
+            background: #ef4444;
+            color: white;
+        }
+        
+        /* Stats Bar */
+        .stats-bar {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <span>🚀 ATLAS v0.23</span>
+            <span class="version-badge">Smart Matrix</span>
+        </div>
+        <div class="user-info">
+            <span>sebastien.questier@syaga.fr</span>
+            <button style="background: none; border: 1px solid white; color: white; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">
+                Déconnexion
+            </button>
+        </div>
+    </div>
+    
+    <!-- Mode Indicator -->
+    <div class="mode-indicator">
+        <strong>MODE:</strong> Alertes prioritaires (2 problèmes détectés)
+    </div>
+    
+    <!-- Client Matrix -->
+    <div class="matrix-container">
+        
+        <!-- Critical Section -->
+        <div class="client-section">
+            <div class="section-header critical">
+                <span>🔥</span>
+                <span>CRITIQUES (action requise)</span>
+            </div>
+            
+            <div class="client-row critical">
+                <div class="client-name">UAI</div>
+                <div class="progress-container">
+                    <div class="progress-bar critical" style="width: 20%;">
+                        <span class="progress-text">20% - DÉPASSE fenêtre de 1h30!</span>
+                    </div>
+                </div>
+                <div class="end-time">Fin: 17:30</div>
+                <div class="status-icon">🔥</div>
+            </div>
+            
+            <div class="client-row warning">
+                <div class="client-name">BUQUET</div>
+                <div class="progress-container">
+                    <div class="progress-bar warning" style="width: 40%;">
+                        <span class="progress-text">40% - Retard estimé: 15 min</span>
+                    </div>
+                </div>
+                <div class="end-time">Fin: 15:45</div>
+                <div class="status-icon">⚠️</div>
+            </div>
+        </div>
+        
+        <!-- Active Section -->
+        <div class="client-section">
+            <div class="section-header active">
+                <span>✅</span>
+                <span>EN COURS (tout va bien)</span>
+            </div>
+            
+            <div class="client-row">
+                <div class="client-name">LAA</div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: 80%;">
+                        <span class="progress-text">80%</span>
+                    </div>
+                </div>
+                <div class="end-time">Fin: 14:30</div>
+                <div class="status-icon">✅</div>
+            </div>
+            
+            <div class="client-row">
+                <div class="client-name">PROVENÇALE</div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: 60%;">
+                        <span class="progress-text">60%</span>
+                    </div>
+                </div>
+                <div class="end-time">Fin: 15:00</div>
+                <div class="status-icon">✅</div>
+            </div>
+            
+            <div class="client-row">
+                <div class="client-name">PHARMABEST</div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: 80%;">
+                        <span class="progress-text">80%</span>
+                    </div>
+                </div>
+                <div class="end-time">Fin: 14:15</div>
+                <div class="status-icon">✅</div>
+            </div>
+            
+            <div class="client-row">
+                <div class="client-name">SYAGA</div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: 100%;">
+                        <span class="progress-text">100%</span>
+                    </div>
+                </div>
+                <div class="end-time">Terminé</div>
+                <div class="status-icon">✅</div>
+            </div>
+        </div>
+        
+        <!-- Waiting Section -->
+        <div class="client-section">
+            <div class="section-header waiting">
+                <span>⏸️</span>
+                <span>EN ATTENTE</span>
+            </div>
+            
+            <div class="client-row">
+                <div class="client-name">CLIENT007</div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: 0%;">
+                        <span class="progress-text">0%</span>
+                    </div>
+                </div>
+                <div class="end-time">Démarre: 16:00</div>
+                <div class="status-icon">⏳</div>
+            </div>
+            
+            <div class="client-row">
+                <div class="client-name">CLIENT008</div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: 0%;">
+                        <span class="progress-text">0%</span>
+                    </div>
+                </div>
+                <div class="end-time">Démarre: 16:30</div>
+                <div class="status-icon">⏳</div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Global Controls -->
+    <div class="global-controls">
+        <button class="control-btn btn-start">
+            <span>▶️</span>
+            <span>Start</span>
+        </button>
+        <button class="control-btn btn-pause">
+            <span>⏸️</span>
+            <span>Pause</span>
+        </button>
+        <button class="control-btn btn-stop">
+            <span>🛑</span>
+            <span>Stop</span>
+        </button>
+    </div>
+    
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <span class="stat-label">Global:</span>
+            <span class="stat-value">234/567 serveurs (41%)</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">ETA:</span>
+            <span class="stat-value">15:45</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Vitesse:</span>
+            <span class="stat-value">78 serveurs/h</span>
+        </div>
+    </div>
+    
+    <div style="height: 100px;"></div> <!-- Spacer for fixed footer -->
+</body>
+</html>
