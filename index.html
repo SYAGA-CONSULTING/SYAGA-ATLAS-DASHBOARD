@@ -475,9 +475,14 @@
             <span>🚀 ATLAS Dashboard</span>
             <span class="version-badge">v0.22</span>
         </div>
-        <div class="realtime-indicator">
-            <span class="pulse-dot">●</span>
-            <span id="lastUpdate">Connexion...</span>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div id="userInfo" style="display: flex; align-items: center; gap: 0.5rem;">
+                <!-- Info utilisateur sera injecté ici -->
+            </div>
+            <div class="realtime-indicator">
+                <span class="pulse-dot">●</span>
+                <span id="lastUpdate">Connexion...</span>
+            </div>
         </div>
     </div>
     
@@ -634,16 +639,39 @@
                 
                 if (accounts.length > 0) {
                     console.log('✅ Compte trouvé:', accounts[0].username);
+                    displayUserInfo(accounts[0]);
                     await loadDashboard();
                 } else {
                     console.log('🔐 Connexion requise');
                     const loginResponse = await msalInstance.loginPopup(loginRequest);
                     console.log('✅ Connexion réussie:', loginResponse.account.username);
+                    displayUserInfo(loginResponse.account);
                     await loadDashboard();
                 }
             } catch (error) {
                 console.error('❌ Erreur auth:', error);
                 addLog('error', 'Erreur authentification: ' + error.message);
+            }
+        }
+        
+        // Afficher les informations utilisateur
+        function displayUserInfo(account) {
+            const userInfoDiv = document.getElementById('userInfo');
+            userInfoDiv.innerHTML = `
+                <span style="color: #666; font-size: 0.9rem;">👤 ${account.username}</span>
+                <button class="btn btn-danger" onclick="signOut()" style="padding: 0.3rem 0.8rem; font-size: 0.85rem;">
+                    Déconnexion
+                </button>
+            `;
+        }
+        
+        // Fonction de déconnexion
+        async function signOut() {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length > 0) {
+                await msalInstance.logoutPopup({
+                    account: accounts[0]
+                });
             }
         }
         
