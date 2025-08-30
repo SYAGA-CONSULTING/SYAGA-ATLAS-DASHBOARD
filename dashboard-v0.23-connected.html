@@ -421,7 +421,7 @@
             }
 
             const request = {
-                scopes: ["Sites.Read.All"],
+                scopes: ["Sites.Read.All", "Sites.ReadWrite.All"],
                 account: accounts[0]
             };
 
@@ -434,7 +434,7 @@
             }
         }
 
-        // Load servers from SharePoint
+        // Load servers from SharePoint using Microsoft Graph
         async function loadServers() {
             const container = document.getElementById('honeycomb-container');
             container.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">Chargement des serveurs...</div></div>';
@@ -447,9 +447,30 @@
                     return;
                 }
 
-                console.log('Fetching from SharePoint...');
-                const response = await fetch(
-                    `${sharePointConfig.siteUrl}/_api/web/lists/getbytitle('${sharePointConfig.listName}')/items?$select=Title,CLIENT,TYPE_x0020_OS,OS,Processeur,M_x00e9_moire,COMMENTAIRE,MAJ_x0020_CRITIQUE,DISQUE,BACKUP,HYPERVISEUR&$top=1000`,
+                console.log('Fetching from SharePoint via Microsoft Graph...');
+                
+                // First, get the site ID
+                const siteResponse = await fetch(
+                    'https://graph.microsoft.com/v1.0/sites/syagaconsulting.sharepoint.com:/sites/SERVEUR-UPDATE',
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Accept': 'application/json'
+                        }
+                    }
+                );
+                
+                if (!siteResponse.ok) {
+                    throw new Error(`Failed to get site: ${siteResponse.status}`);
+                }
+                
+                const siteData = await siteResponse.json();
+                const siteId = siteData.id;
+                console.log('Site ID:', siteId);
+                
+                // Get the list
+                const listResponse = await fetch(
+                    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/SERVEUR UPDATE/items?expand=fields&$top=999`,
                     {
                         headers: {
                             'Authorization': `Bearer ${accessToken}`,
@@ -458,14 +479,14 @@
                     }
                 );
 
-                console.log('Response status:', response.status);
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('SharePoint error:', errorText);
-                    throw new Error(`Failed to fetch data: ${response.status}`);
+                console.log('List response status:', listResponse.status);
+                if (!listResponse.ok) {
+                    const errorText = await listResponse.text();
+                    console.error('Graph API error:', errorText);
+                    throw new Error(`Failed to fetch list: ${listResponse.status}`);
                 }
                 
-                const data = await response.json();
+                const data = await listResponse.json();
                 console.log('Data received:', data.value?.length || 0, 'items');
                 
                 // Filter out config entries and process servers
@@ -476,19 +497,19 @@
                 }
                 
                 allServers = data.value
-                    .filter(item => !item.Title?.toLowerCase().includes('config'))
+                    .filter(item => item.fields && !item.fields.Title?.toLowerCase().includes('config'))
                     .map(item => ({
-                        name: item.Title || 'Unknown',
-                        client: item.CLIENT || 'N/A',
-                        os: item.OS || 'N/A',
-                        processor: item.Processeur || 'N/A',
-                        memory: item.M_x00e9_moire || 'N/A',
-                        criticalUpdates: parseInt(item.MAJ_x0020_CRITIQUE) || 0,
-                        diskSpace: parseInt(item.DISQUE) || 100,
-                        backup: item.BACKUP || 'N/A',
-                        hypervisor: item.HYPERVISEUR || 'N/A',
-                        comment: item.COMMENTAIRE || '',
-                        severity: calculateSeverity(item)
+                        name: item.fields.Title || 'Unknown',
+                        client: item.fields.CLIENT || 'N/A',
+                        os: item.fields.OS || 'N/A',
+                        processor: item.fields.Processeur || 'N/A',
+                        memory: item.fields.M_x00e9_moire || 'N/A',
+                        criticalUpdates: parseInt(item.fields.MAJ_x0020_CRITIQUE) || 0,
+                        diskSpace: parseInt(item.fields.DISQUE) || 100,
+                        backup: item.fields.BACKUP || 'N/A',
+                        hypervisor: item.fields.HYPERVISEUR || 'N/A',
+                        comment: item.fields.COMMENTAIRE || '',
+                        severity: calculateSeverity(item.fields)
                     }));
                 
                 console.log('Servers processed:', allServers.length);
