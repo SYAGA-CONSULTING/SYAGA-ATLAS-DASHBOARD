@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 ATLAS v0.23 - Honeycomb View (Zabbix-style)</title>
+    <title>🐝 ATLAS v0.23 - True Honeycomb View</title>
     
     <style>
         * {
@@ -14,15 +14,15 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a1a;
+            background: #0a0a0a;
             color: #ffffff;
-            overflow-x: auto;
+            overflow: auto;
         }
         
         /* Header */
         .header {
-            background: #2a2a2a;
-            padding: 0.75rem 1.5rem;
+            background: linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -33,11 +33,11 @@
         }
         
         .logo {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 1rem;
         }
         
         .controls {
@@ -48,30 +48,33 @@
         
         .control-btn {
             padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            background: #444;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
             color: white;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 0.9rem;
         }
         
         .control-btn:hover {
-            background: #555;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #666;
         }
         
         .control-btn.active {
             background: #10b981;
+            border-color: #10b981;
         }
         
         /* Stats Bar */
         .stats-bar {
-            background: #2a2a2a;
-            padding: 0.5rem 1.5rem;
+            background: #1a1a1a;
+            padding: 0.75rem 2rem;
             display: flex;
-            gap: 2rem;
-            border-bottom: 1px solid #444;
-            font-size: 0.9rem;
+            gap: 3rem;
+            border-bottom: 1px solid #333;
+            font-size: 0.95rem;
         }
         
         .stat {
@@ -81,203 +84,192 @@
         }
         
         .stat-label {
-            color: #888;
+            color: #666;
         }
         
         .stat-value {
             font-weight: bold;
+            font-size: 1.1rem;
         }
         
         .stat-value.green { color: #10b981; }
-        .stat-value.yellow { color: #f59e0b; }
+        .stat-value.yellow { color: #fbbf24; }
         .stat-value.red { color: #ef4444; }
+        .stat-value.blue { color: #3b82f6; }
         
-        /* Honeycomb Grid */
-        .honeycomb-container {
-            padding: 1.5rem;
-            min-height: calc(100vh - 120px);
+        /* True Honeycomb Grid */
+        .honeycomb-wrapper {
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            min-height: calc(100vh - 140px);
         }
         
         .honeycomb {
             display: flex;
             flex-wrap: wrap;
+            list-style: none;
             margin: 0 auto;
-            max-width: 1800px;
+            padding: 0;
+            max-width: 1600px;
         }
         
-        .hex-row {
-            display: flex;
-            margin: -26px 0;
-        }
-        
-        .hex-row:nth-child(even) {
-            margin-left: 53px;
-        }
-        
-        /* Hexagon */
-        .hexagon {
-            width: 100px;
-            height: 57.74px;
-            margin: 28.87px 6px;
+        .honeycomb-cell {
+            flex: 0 1 calc(16.666% - 1px);
+            max-width: calc(16.666% - 1px);
+            margin: 0.5px;
             position: relative;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            padding-bottom: 19.21%; /* = (100-2) / 6 * 1.16 */
+            text-align: center;
+            transition: all 0.3s;
         }
         
-        .hexagon:hover {
-            transform: scale(1.1);
+        /* Create offset for honeycomb pattern */
+        .honeycomb-cell:nth-child(12n+7),
+        .honeycomb-cell:nth-child(12n+8),
+        .honeycomb-cell:nth-child(12n+9),
+        .honeycomb-cell:nth-child(12n+10),
+        .honeycomb-cell:nth-child(12n+11),
+        .honeycomb-cell:nth-child(12n+12) {
+            margin-top: -2.5%;
+            margin-bottom: -2.5%;
+        }
+        
+        .honeycomb-cell:hover {
             z-index: 10;
         }
         
-        .hex-inner {
+        /* Hexagon shape using clip-path */
+        .honeycomb-cell-content {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            position: relative;
-            transform: rotate(30deg);
-        }
-        
-        .hex-content {
-            width: 100%;
-            height: 100%;
-            background: #333;
-            position: relative;
+            background: #1a1a1a;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            transform: rotate(-30deg);
-            transition: all 0.3s ease;
+            cursor: pointer;
             border: 2px solid transparent;
         }
         
-        /* States */
-        .hex-content.ok {
-            background: linear-gradient(135deg, #065f46 0%, #10b981 100%);
-            border-color: #34d399;
+        .honeycomb-cell-content:hover {
+            transform: scale(1.1);
         }
         
-        .hex-content.warning {
-            background: linear-gradient(135deg, #92400e 0%, #f59e0b 100%);
-            border-color: #fbbf24;
+        /* Status colors */
+        .honeycomb-cell-content.ok {
+            background: linear-gradient(135deg, #064e3b, #10b981);
+        }
+        
+        .honeycomb-cell-content.warning {
+            background: linear-gradient(135deg, #78350f, #fbbf24);
             animation: pulse-warning 2s infinite;
         }
         
-        .hex-content.critical {
-            background: linear-gradient(135deg, #991b1b 0%, #ef4444 100%);
-            border-color: #f87171;
-            animation: pulse-critical 1s infinite;
+        .honeycomb-cell-content.critical {
+            background: linear-gradient(135deg, #7f1d1d, #ef4444);
+            animation: flash-critical 1s infinite;
         }
         
-        .hex-content.inactive {
-            background: #2a2a2a;
-            border-color: #444;
-            opacity: 0.6;
+        .honeycomb-cell-content.updating {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            animation: pulse-update 1.5s infinite;
         }
         
-        .hex-content.updating {
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-            border-color: #60a5fa;
-            animation: rotate-border 2s linear infinite;
+        .honeycomb-cell-content.inactive {
+            background: #262626;
+            opacity: 0.4;
         }
         
         @keyframes pulse-warning {
             0%, 100% { 
                 opacity: 1;
-                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+                filter: brightness(1);
             }
             50% { 
-                opacity: 0.9;
-                box-shadow: 0 0 20px 10px rgba(245, 158, 11, 0.3);
+                opacity: 0.85;
+                filter: brightness(1.2);
             }
         }
         
-        @keyframes pulse-critical {
+        @keyframes flash-critical {
             0%, 100% { 
                 opacity: 1;
-                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+                filter: brightness(1);
             }
             50% { 
-                opacity: 0.8;
-                box-shadow: 0 0 30px 15px rgba(239, 68, 68, 0.5);
+                opacity: 0.7;
+                filter: brightness(1.5);
             }
         }
         
-        @keyframes rotate-border {
-            0% { transform: rotate(-30deg) scale(1); }
-            50% { transform: rotate(-30deg) scale(1.05); }
-            100% { transform: rotate(-30deg) scale(1); }
+        @keyframes pulse-update {
+            0%, 100% { 
+                transform: scale(1);
+            }
+            50% { 
+                transform: scale(1.05);
+            }
         }
-        
-        /* Hexagon before/after for shape */
-        .hexagon:before,
-        .hexagon:after {
-            content: "";
-            position: absolute;
-            width: 0;
-            border-left: 50px solid transparent;
-            border-right: 50px solid transparent;
-            left: 0;
-        }
-        
-        .hexagon:before {
-            bottom: 100%;
-            border-bottom: 28.87px solid #333;
-        }
-        
-        .hexagon:after {
-            top: 100%;
-            border-top: 28.87px solid #333;
-        }
-        
-        .hexagon.ok:before { border-bottom-color: #065f46; }
-        .hexagon.ok:after { border-top-color: #065f46; }
-        .hexagon.warning:before { border-bottom-color: #92400e; }
-        .hexagon.warning:after { border-top-color: #92400e; }
-        .hexagon.critical:before { border-bottom-color: #991b1b; }
-        .hexagon.critical:after { border-top-color: #991b1b; }
-        .hexagon.inactive:before { border-bottom-color: #2a2a2a; }
-        .hexagon.inactive:after { border-top-color: #2a2a2a; }
-        .hexagon.updating:before { border-bottom-color: #1e3a8a; }
-        .hexagon.updating:after { border-top-color: #1e3a8a; }
         
         /* Content inside hexagon */
-        .hex-label {
-            font-size: 0.75rem;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 2px;
-        }
-        
-        .hex-value {
-            font-size: 0.65rem;
-            opacity: 0.9;
+        .hex-inner {
+            padding: 10%;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
         
         .hex-icon {
-            font-size: 1.5rem;
-            margin-bottom: 4px;
+            font-size: 1.8rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .hex-label {
+            font-size: 0.7rem;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90%;
+        }
+        
+        .hex-value {
+            font-size: 0.6rem;
+            opacity: 0.8;
+            margin-top: 0.1rem;
         }
         
         /* Tooltip */
         .tooltip {
             position: absolute;
-            bottom: 120%;
+            bottom: 105%;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             color: white;
-            padding: 0.5rem 0.75rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
             white-space: nowrap;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
             z-index: 1000;
             border: 1px solid #444;
+            backdrop-filter: blur(10px);
         }
         
-        .hexagon:hover .tooltip {
+        .honeycomb-cell:hover .tooltip {
             opacity: 1;
         }
         
@@ -286,58 +278,73 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: rgba(42, 42, 42, 0.95);
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
             padding: 1rem;
             border-radius: 8px;
-            border: 1px solid #444;
+            border: 1px solid #333;
         }
         
         .legend-title {
             font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            color: #888;
+            margin-bottom: 0.75rem;
+            color: #999;
+            font-weight: 600;
         }
         
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            margin: 0.25rem 0;
+            gap: 0.75rem;
+            margin: 0.5rem 0;
             font-size: 0.85rem;
         }
         
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
+        .legend-hex {
+            width: 24px;
+            height: 24px;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
         }
         
-        /* Filter buttons */
-        .filter-group {
-            display: flex;
-            gap: 0.5rem;
+        /* Responsive adjustments */
+        @media (max-width: 1400px) {
+            .honeycomb-cell {
+                flex: 0 1 calc(20% - 1px);
+                max-width: calc(20% - 1px);
+                padding-bottom: 23.05%;
+            }
+            .honeycomb-cell:nth-child(10n+6),
+            .honeycomb-cell:nth-child(10n+7),
+            .honeycomb-cell:nth-child(10n+8),
+            .honeycomb-cell:nth-child(10n+9),
+            .honeycomb-cell:nth-child(10n+10) {
+                margin-top: -2.5%;
+                margin-bottom: -2.5%;
+            }
+            .honeycomb-cell:nth-child(12n+7),
+            .honeycomb-cell:nth-child(12n+8),
+            .honeycomb-cell:nth-child(12n+9),
+            .honeycomb-cell:nth-child(12n+10),
+            .honeycomb-cell:nth-child(12n+11),
+            .honeycomb-cell:nth-child(12n+12) {
+                margin-top: 0;
+                margin-bottom: 0;
+            }
         }
         
-        .filter-btn {
-            padding: 0.25rem 0.75rem;
-            border: 1px solid #444;
-            background: transparent;
-            color: #888;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-        
-        .filter-btn:hover {
-            border-color: #666;
-            color: #fff;
-        }
-        
-        .filter-btn.active {
-            background: #444;
-            color: #fff;
-            border-color: #666;
+        @media (max-width: 1000px) {
+            .honeycomb-cell {
+                flex: 0 1 calc(25% - 1px);
+                max-width: calc(25% - 1px);
+                padding-bottom: 28.81%;
+            }
+            .honeycomb-cell:nth-child(8n+5),
+            .honeycomb-cell:nth-child(8n+6),
+            .honeycomb-cell:nth-child(8n+7),
+            .honeycomb-cell:nth-child(8n+8) {
+                margin-top: -3%;
+                margin-bottom: -3%;
+            }
         }
     </style>
 </head>
@@ -345,22 +352,17 @@
     <!-- Header -->
     <div class="header">
         <div class="logo">
-            <span>🔷</span>
-            <span>ATLAS Honeycomb Monitor</span>
-            <span style="color: #10b981; font-size: 0.9rem;">v0.23</span>
+            <span style="font-size: 2rem;">🐝</span>
+            <span>ATLAS Honeycomb</span>
+            <span style="color: #fbbf24; font-size: 0.9rem;">v0.23</span>
         </div>
         <div class="controls">
-            <div class="filter-group">
-                <button class="filter-btn active" onclick="filterView('all')">Tous</button>
-                <button class="filter-btn" onclick="filterView('critical')">Critiques</button>
-                <button class="filter-btn" onclick="filterView('warning')">Alertes</button>
-                <button class="filter-btn" onclick="filterView('active')">Actifs</button>
-            </div>
-            <button class="control-btn" onclick="toggleAutoRefresh()">
-                <span id="refreshIcon">🔄</span> Auto-refresh
-            </button>
-            <button class="control-btn" onclick="startOrchestration()">
-                ▶️ Start
+            <button class="control-btn" onclick="filterView('all')">Tous</button>
+            <button class="control-btn" onclick="filterView('critical')">🔥 Critiques</button>
+            <button class="control-btn" onclick="filterView('warning')">⚠️ Alertes</button>
+            <button class="control-btn" onclick="filterView('ok')">✅ OK</button>
+            <button class="control-btn active" onclick="toggleAutoRefresh()">
+                🔄 Auto-refresh
             </button>
         </div>
     </div>
@@ -372,20 +374,20 @@
             <span class="stat-value" id="totalServers">0</span>
         </div>
         <div class="stat">
-            <span class="stat-label">✅ OK:</span>
+            <span class="stat-label">✅</span>
             <span class="stat-value green" id="okCount">0</span>
         </div>
         <div class="stat">
-            <span class="stat-label">⚠️ Warning:</span>
+            <span class="stat-label">⚠️</span>
             <span class="stat-value yellow" id="warningCount">0</span>
         </div>
         <div class="stat">
-            <span class="stat-label">🔥 Critical:</span>
+            <span class="stat-label">🔥</span>
             <span class="stat-value red" id="criticalCount">0</span>
         </div>
         <div class="stat">
-            <span class="stat-label">🔄 Updating:</span>
-            <span class="stat-value" style="color: #3b82f6;" id="updatingCount">0</span>
+            <span class="stat-label">🔄</span>
+            <span class="stat-value blue" id="updatingCount">0</span>
         </div>
         <div class="stat" style="margin-left: auto;">
             <span class="stat-label">Dernière MAJ:</span>
@@ -394,53 +396,56 @@
     </div>
     
     <!-- Honeycomb Grid -->
-    <div class="honeycomb-container">
-        <div class="honeycomb" id="honeycombGrid">
+    <div class="honeycomb-wrapper">
+        <ul class="honeycomb" id="honeycombGrid">
             <!-- Dynamically generated hexagons -->
-        </div>
+        </ul>
     </div>
     
     <!-- Legend -->
     <div class="legend">
-        <div class="legend-title">LÉGENDE</div>
+        <div class="legend-title">ÉTAT DES SERVEURS</div>
         <div class="legend-item">
-            <div class="legend-color" style="background: #10b981;"></div>
+            <div class="legend-hex" style="background: linear-gradient(135deg, #064e3b, #10b981);"></div>
             <span>Opérationnel</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: #f59e0b;"></div>
+            <div class="legend-hex" style="background: linear-gradient(135deg, #78350f, #fbbf24);"></div>
             <span>Avertissement</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: #ef4444;"></div>
+            <div class="legend-hex" style="background: linear-gradient(135deg, #7f1d1d, #ef4444);"></div>
             <span>Critique</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: #3b82f6;"></div>
+            <div class="legend-hex" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);"></div>
             <span>Mise à jour</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: #2a2a2a;"></div>
+            <div class="legend-hex" style="background: #262626;"></div>
             <span>Inactif</span>
         </div>
     </div>
     
     <script>
-        // Server data simulation
+        // Server data
         const clients = [
             'SYAGA', 'LAA', 'PROVENÇALE', 'BUQUET', 'UAI', 'PHARMABEST',
             'CLIENT007', 'CLIENT008', 'CLIENT009', 'CLIENT010',
-            'DATACENTER-01', 'DATACENTER-02', 'BACKUP-SITE', 'DR-SITE'
+            'DATACENTER-A', 'DATACENTER-B', 'BACKUP-PARIS', 'BACKUP-LYON',
+            'DR-SITE', 'TEST-ENV', 'DEV-ENV', 'STAGING'
         ];
         
-        const servers = [];
-        let autoRefresh = false;
+        let servers = [];
+        let autoRefresh = true;
         let refreshInterval = null;
+        let currentFilter = 'all';
         
-        // Generate server hexagons
+        // Generate servers
         function generateServers() {
+            servers = [];
             clients.forEach(client => {
-                const serverCount = Math.floor(Math.random() * 8) + 3;
+                const serverCount = 3 + Math.floor(Math.random() * 5);
                 for (let i = 1; i <= serverCount; i++) {
                     servers.push({
                         id: `${client}-SRV${String(i).padStart(2, '0')}`,
@@ -450,6 +455,7 @@
                         cpu: Math.floor(Math.random() * 100),
                         memory: Math.floor(Math.random() * 100),
                         disk: Math.floor(Math.random() * 100),
+                        response: Math.floor(Math.random() * 500),
                         lastUpdate: new Date()
                     });
                 }
@@ -458,78 +464,64 @@
         
         function getRandomStatus() {
             const rand = Math.random();
-            if (rand < 0.65) return 'ok';
-            if (rand < 0.80) return 'warning';
-            if (rand < 0.90) return 'critical';
-            if (rand < 0.95) return 'updating';
+            if (rand < 0.60) return 'ok';
+            if (rand < 0.75) return 'warning';
+            if (rand < 0.85) return 'critical';
+            if (rand < 0.93) return 'updating';
             return 'inactive';
         }
         
-        // Render honeycomb grid
+        // Render honeycomb
         function renderHoneycomb(filter = 'all') {
             const grid = document.getElementById('honeycombGrid');
             grid.innerHTML = '';
             
-            let filteredServers = servers;
+            let displayServers = servers;
             if (filter !== 'all') {
-                filteredServers = servers.filter(s => {
-                    if (filter === 'active') return s.status === 'ok' || s.status === 'updating';
-                    return s.status === filter;
-                });
+                displayServers = servers.filter(s => s.status === filter);
             }
             
-            // Group by client for better organization
-            const grouped = {};
-            filteredServers.forEach(server => {
-                if (!grouped[server.client]) {
-                    grouped[server.client] = [];
-                }
-                grouped[server.client].push(server);
-            });
-            
-            // Create hexagons
-            Object.keys(grouped).forEach((client, clientIndex) => {
-                const clientServers = grouped[client];
-                
-                clientServers.forEach((server, index) => {
-                    const hex = createHexagon(server);
-                    grid.appendChild(hex);
-                });
+            displayServers.forEach(server => {
+                const cell = createHexCell(server);
+                grid.appendChild(cell);
             });
             
             updateStats();
+            currentFilter = filter;
         }
         
-        // Create single hexagon element
-        function createHexagon(server) {
-            const hex = document.createElement('div');
-            hex.className = `hexagon ${server.status}`;
-            hex.onclick = () => showServerDetails(server);
+        // Create hexagon cell
+        function createHexCell(server) {
+            const li = document.createElement('li');
+            li.className = 'honeycomb-cell';
             
             let icon = '💻';
-            if (server.status === 'critical') icon = '🔥';
-            else if (server.status === 'warning') icon = '⚠️';
-            else if (server.status === 'updating') icon = '🔄';
-            else if (server.status === 'ok') icon = '✅';
-            else if (server.status === 'inactive') icon = '💤';
+            switch(server.status) {
+                case 'critical': icon = '🔥'; break;
+                case 'warning': icon = '⚠️'; break;
+                case 'updating': icon = '🔄'; break;
+                case 'ok': icon = '✅'; break;
+                case 'inactive': icon = '💤'; break;
+            }
             
-            hex.innerHTML = `
-                <div class="hex-inner">
-                    <div class="hex-content ${server.status}">
+            li.innerHTML = `
+                <div class="honeycomb-cell-content ${server.status}" onclick="showDetails('${server.id}')">
+                    <div class="hex-inner">
                         <div class="hex-icon">${icon}</div>
                         <div class="hex-label">${server.client}</div>
                         <div class="hex-value">${server.name}</div>
-                        <div class="tooltip">
-                            ${server.id}<br>
-                            CPU: ${server.cpu}%<br>
-                            RAM: ${server.memory}%<br>
-                            Disk: ${server.disk}%
-                        </div>
+                    </div>
+                    <div class="tooltip">
+                        <strong>${server.id}</strong><br>
+                        CPU: ${server.cpu}%<br>
+                        RAM: ${server.memory}%<br>
+                        Disk: ${server.disk}%<br>
+                        Response: ${server.response}ms
                     </div>
                 </div>
             `;
             
-            return hex;
+            return li;
         }
         
         // Update statistics
@@ -544,81 +536,86 @@
         
         // Filter view
         function filterView(filter) {
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            currentFilter = filter;
             renderHoneycomb(filter);
+            
+            // Update button states
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                if (!btn.textContent.includes('Auto-refresh')) {
+                    btn.classList.remove('active');
+                }
+            });
+            event.target.classList.add('active');
         }
         
         // Toggle auto-refresh
         function toggleAutoRefresh() {
             autoRefresh = !autoRefresh;
-            const btn = event.target;
-            btn.classList.toggle('active');
+            event.target.classList.toggle('active');
             
             if (autoRefresh) {
-                refreshInterval = setInterval(() => {
-                    simulateChanges();
-                    renderHoneycomb();
-                }, 3000);
-                document.getElementById('refreshIcon').textContent = '🔄';
+                startAutoRefresh();
             } else {
-                clearInterval(refreshInterval);
-                document.getElementById('refreshIcon').textContent = '⏸️';
+                stopAutoRefresh();
             }
         }
         
-        // Simulate status changes
+        // Start auto-refresh
+        function startAutoRefresh() {
+            refreshInterval = setInterval(() => {
+                simulateChanges();
+                renderHoneycomb(currentFilter);
+            }, 3000);
+        }
+        
+        // Stop auto-refresh
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+        
+        // Simulate changes
         function simulateChanges() {
             servers.forEach(server => {
-                if (Math.random() < 0.1) { // 10% chance of status change
+                if (Math.random() < 0.15) { // 15% chance of change
+                    const oldStatus = server.status;
                     server.status = getRandomStatus();
-                    server.cpu = Math.floor(Math.random() * 100);
-                    server.memory = Math.floor(Math.random() * 100);
+                    
+                    // Update metrics
+                    if (server.status === 'critical') {
+                        server.cpu = 80 + Math.floor(Math.random() * 20);
+                        server.memory = 85 + Math.floor(Math.random() * 15);
+                    } else if (server.status === 'warning') {
+                        server.cpu = 60 + Math.floor(Math.random() * 20);
+                        server.memory = 65 + Math.floor(Math.random() * 20);
+                    } else if (server.status === 'ok') {
+                        server.cpu = Math.floor(Math.random() * 60);
+                        server.memory = Math.floor(Math.random() * 70);
+                    }
+                    
                     server.disk = Math.floor(Math.random() * 100);
+                    server.response = Math.floor(Math.random() * 500);
                     server.lastUpdate = new Date();
                 }
             });
         }
         
         // Show server details
-        function showServerDetails(server) {
-            alert(`
-                Serveur: ${server.id}
-                Client: ${server.client}
-                État: ${server.status.toUpperCase()}
-                CPU: ${server.cpu}%
-                RAM: ${server.memory}%
-                Disque: ${server.disk}%
-                Dernière MAJ: ${server.lastUpdate.toLocaleString('fr-FR')}
-            `);
-        }
-        
-        // Start orchestration
-        function startOrchestration() {
-            servers.forEach((server, index) => {
-                if (server.status === 'inactive' || server.status === 'ok') {
-                    setTimeout(() => {
-                        server.status = 'updating';
-                        renderHoneycomb();
-                        
-                        setTimeout(() => {
-                            server.status = Math.random() < 0.8 ? 'ok' : 'warning';
-                            renderHoneycomb();
-                        }, 3000 + Math.random() * 5000);
-                    }, index * 100);
-                }
-            });
+        function showDetails(serverId) {
+            const server = servers.find(s => s.id === serverId);
+            if (!server) return;
+            
+            console.log('Server details:', server);
+            // In production, this would open a modal or detailed view
         }
         
         // Initialize
         window.onload = () => {
             generateServers();
             renderHoneycomb();
-            
-            // Auto-start auto-refresh
-            setTimeout(() => {
-                document.querySelector('.control-btn').click();
-            }, 1000);
+            startAutoRefresh();
         };
     </script>
 </body>
