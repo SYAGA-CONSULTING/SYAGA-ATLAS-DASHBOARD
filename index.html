@@ -626,43 +626,30 @@
             try {
                 await msalInstance.initialize();
                 
-                // IMPORTANT: Gérer le retour après connexion/déconnexion
+                // Gérer le retour après connexion
                 const response = await msalInstance.handleRedirectPromise();
                 if (response && response.account) {
                     console.log('✅ Retour de connexion détecté:', response.account.username);
                     msalInstance.setActiveAccount(response.account);
-                    // Forcer le rechargement complet après reconnexion
-                    displayUserInfo(response.account);
-                    await loadDashboard();
-                    return; // Ne pas continuer avec handleAuth
                 }
                 
-                await handleAuth();
-            } catch (error) {
-                console.error('Erreur initialisation:', error);
-                // En cas d'erreur, afficher l'écran de connexion
-                showLoginScreen();
-            }
-        });
-        
-        // ==================== AUTHENTIFICATION ====================
-        async function handleAuth() {
-            try {
+                // Vérifier l'état de connexion
                 const accounts = msalInstance.getAllAccounts();
-                
                 if (accounts.length > 0) {
-                    console.log('✅ Compte trouvé:', accounts[0].username);
+                    console.log('✅ Utilisateur connecté:', accounts[0].username);
                     displayUserInfo(accounts[0]);
                     await loadDashboard();
                 } else {
                     console.log('🔐 Connexion requise');
                     showLoginScreen();
                 }
+                
             } catch (error) {
-                console.error('❌ Erreur auth:', error);
+                console.error('❌ Erreur initialisation:', error);
                 showLoginScreen();
             }
-        }
+        });
+        
         
         // Afficher l'écran de connexion
         function showLoginScreen() {
@@ -762,16 +749,9 @@
         async function signOut() {
             const accounts = msalInstance.getAllAccounts();
             if (accounts.length > 0) {
-                // Clear le localStorage avant déconnexion
-                localStorage.clear();
-                sessionStorage.clear();
-                
                 await msalInstance.logoutPopup({
-                    account: accounts[0],
-                    postLogoutRedirectUri: window.location.origin
+                    account: accounts[0]
                 });
-                // Forcer un reload complet
-                window.location.href = window.location.origin;
             }
         }
         
