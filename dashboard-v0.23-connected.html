@@ -441,8 +441,13 @@
             
             try {
                 const accessToken = await getAccessToken();
-                if (!accessToken) return;
+                if (!accessToken) {
+                    console.error('No access token');
+                    container.innerHTML = '<div class="loading-text">Erreur d\'authentification. Veuillez vous reconnecter.</div>';
+                    return;
+                }
 
+                console.log('Fetching from SharePoint...');
                 const response = await fetch(
                     `${sharePointConfig.siteUrl}/_api/web/lists/getbytitle('${sharePointConfig.listName}')/items?$select=Title,CLIENT,TYPE_x0020_OS,OS,Processeur,M_x00e9_moire,COMMENTAIRE,MAJ_x0020_CRITIQUE,DISQUE,BACKUP,HYPERVISEUR&$top=1000`,
                     {
@@ -453,11 +458,23 @@
                     }
                 );
 
-                if (!response.ok) throw new Error('Failed to fetch data');
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('SharePoint error:', errorText);
+                    throw new Error(`Failed to fetch data: ${response.status}`);
+                }
                 
                 const data = await response.json();
+                console.log('Data received:', data.value?.length || 0, 'items');
                 
                 // Filter out config entries and process servers
+                if (!data.value || data.value.length === 0) {
+                    console.warn('No data received from SharePoint');
+                    container.innerHTML = '<div class="loading-text">Aucun serveur trouvé dans SharePoint.</div>';
+                    return;
+                }
+                
                 allServers = data.value
                     .filter(item => !item.Title?.toLowerCase().includes('config'))
                     .map(item => ({
@@ -474,13 +491,24 @@
                         severity: calculateSeverity(item)
                     }));
                 
+                console.log('Servers processed:', allServers.length);
+                
+                if (allServers.length === 0) {
+                    container.innerHTML = '<div class="loading-text">Aucun serveur valide trouvé (tous les items sont des configs).</div>';
+                    return;
+                }
+                
                 renderHoneycomb();
                 updateStats();
                 updateLastUpdateTime();
                 
             } catch (error) {
                 console.error('Error loading servers:', error);
-                container.innerHTML = '<div class="loading-text">Erreur de chargement. Veuillez rafraîchir.</div>';
+                container.innerHTML = `<div class="loading-text">
+                    Erreur de chargement: ${error.message}<br/>
+                    Vérifiez la console pour plus de détails.<br/>
+                    <button class="control-btn" onclick="loadServers()">Réessayer</button>
+                </div>`;
             }
         }
 
