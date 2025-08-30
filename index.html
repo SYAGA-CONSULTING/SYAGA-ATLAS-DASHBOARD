@@ -590,11 +590,18 @@
             auth: {
                 clientId: 'f66a8c6c-1037-41b8-be3c-4f6e67c1f49e', // SYAGA-ATLAS-AUTOMATION - BON CLIENT ID
                 authority: 'https://login.microsoftonline.com/6027d81c-ad9b-48f5-9da6-96f1bad11429', // BON TENANT ID
-                redirectUri: window.location.origin + window.location.pathname
+                redirectUri: window.location.href.split('?')[0].split('#')[0] // URL sans params
             },
             cache: {
-                cacheLocation: "localStorage",
-                storeAuthStateInCookie: true
+                cacheLocation: "sessionStorage", // Utiliser sessionStorage pour éviter les conflits
+                storeAuthStateInCookie: true,
+                secureCookies: true
+            },
+            system: {
+                allowNativeBroker: false,
+                windowHashTimeout: 60000,
+                iframeHashTimeout: 60000,
+                loadFrameTimeout: 0
             }
         };
         
@@ -716,21 +723,16 @@
         // Fonction de connexion
         async function signIn() {
             try {
-                const loginResponse = await msalInstance.loginPopup(loginRequest);
-                console.log('✅ Connexion réussie:', loginResponse.account.username);
-                
-                // Masquer l'écran de connexion
-                const loginScreen = document.getElementById('loginScreen');
-                if (loginScreen) loginScreen.style.display = 'none';
-                
-                // Afficher le loading
-                document.getElementById('loading').style.display = 'flex';
-                
-                displayUserInfo(loginResponse.account);
-                await loadDashboard();
+                // Utiliser loginRedirect au lieu de loginPopup pour éviter les problèmes
+                await msalInstance.loginRedirect(loginRequest);
             } catch (error) {
                 console.error('❌ Erreur connexion:', error);
-                alert('Erreur de connexion. Vérifiez vos identifiants.');
+                // Si le popup est bloqué, essayer redirect
+                if (error.errorCode === "popup_window_error") {
+                    await msalInstance.loginRedirect(loginRequest);
+                } else {
+                    alert('Erreur de connexion: ' + error.message);
+                }
             }
         }
         
@@ -749,8 +751,10 @@
         async function signOut() {
             const accounts = msalInstance.getAllAccounts();
             if (accounts.length > 0) {
-                await msalInstance.logoutPopup({
-                    account: accounts[0]
+                // Utiliser logoutRedirect au lieu de logoutPopup
+                await msalInstance.logoutRedirect({
+                    account: accounts[0],
+                    postLogoutRedirectUri: window.location.origin
                 });
             }
         }
