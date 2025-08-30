@@ -643,14 +643,90 @@
                     await loadDashboard();
                 } else {
                     console.log('🔐 Connexion requise');
-                    const loginResponse = await msalInstance.loginPopup(loginRequest);
-                    console.log('✅ Connexion réussie:', loginResponse.account.username);
-                    displayUserInfo(loginResponse.account);
-                    await loadDashboard();
+                    showLoginScreen();
                 }
             } catch (error) {
                 console.error('❌ Erreur auth:', error);
-                addLog('error', 'Erreur authentification: ' + error.message);
+                showLoginScreen();
+            }
+        }
+        
+        // Afficher l'écran de connexion
+        function showLoginScreen() {
+            // Masquer le loading spinner
+            document.getElementById('loading').style.display = 'none';
+            
+            // Masquer le contenu principal
+            const container = document.querySelector('.container');
+            if (container) container.style.display = 'none';
+            
+            // Créer ou afficher l'écran de connexion
+            let loginScreen = document.getElementById('loginScreen');
+            if (!loginScreen) {
+                loginScreen = document.createElement('div');
+                loginScreen.id = 'loginScreen';
+                loginScreen.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999;
+                `;
+                loginScreen.innerHTML = `
+                    <div style="text-align: center; color: white;">
+                        <h1 style="font-size: 3rem; margin-bottom: 1rem;">🚀 ATLAS Dashboard</h1>
+                        <p style="font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9;">Version 0.22 - Orchestration Intelligente</p>
+                        <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; backdrop-filter: blur(10px);">
+                            <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;">🔐 Authentification Microsoft 365 Requise</h2>
+                            <button onclick="signIn()" style="
+                                background: white;
+                                color: #667eea;
+                                padding: 1rem 2rem;
+                                font-size: 1.1rem;
+                                border: none;
+                                border-radius: 10px;
+                                cursor: pointer;
+                                font-weight: bold;
+                                transition: all 0.3s;
+                                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                Se connecter avec Microsoft 365
+                            </button>
+                            <p style="margin-top: 1.5rem; font-size: 0.9rem; opacity: 0.8;">
+                                Utilisez votre compte @syaga.fr pour accéder au dashboard
+                            </p>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(loginScreen);
+            }
+            loginScreen.style.display = 'flex';
+        }
+        
+        // Fonction de connexion
+        async function signIn() {
+            try {
+                const loginResponse = await msalInstance.loginPopup(loginRequest);
+                console.log('✅ Connexion réussie:', loginResponse.account.username);
+                
+                // Masquer l'écran de connexion
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) loginScreen.style.display = 'none';
+                
+                // Afficher le loading
+                document.getElementById('loading').style.display = 'flex';
+                
+                displayUserInfo(loginResponse.account);
+                await loadDashboard();
+            } catch (error) {
+                console.error('❌ Erreur connexion:', error);
+                alert('Erreur de connexion. Vérifiez vos identifiants.');
             }
         }
         
@@ -670,8 +746,11 @@
             const accounts = msalInstance.getAllAccounts();
             if (accounts.length > 0) {
                 await msalInstance.logoutPopup({
-                    account: accounts[0]
+                    account: accounts[0],
+                    postLogoutRedirectUri: window.location.origin
                 });
+                // Recharger la page après déconnexion
+                window.location.reload();
             }
         }
         
@@ -696,7 +775,15 @@
         // ==================== CHARGEMENT DASHBOARD ====================
         async function loadDashboard() {
             console.log('📊 Chargement dashboard...');
+            
+            // Masquer le loading et l'écran de connexion
             document.getElementById('loading').style.display = 'none';
+            const loginScreen = document.getElementById('loginScreen');
+            if (loginScreen) loginScreen.style.display = 'none';
+            
+            // Afficher le container principal
+            const container = document.querySelector('.container');
+            if (container) container.style.display = 'block';
             
             await loadServers();
             startAutoRefresh();
