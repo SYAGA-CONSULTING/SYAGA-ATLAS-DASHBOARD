@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 ATLAS Monitor - Infrastructure & Contraintes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header {
+            background: #2a2a2a;
+            padding: 15px 20px;
+            border-bottom: 3px solid #0078d4;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #0078d4;
+        }
+        
+        .time {
+            font-family: monospace;
+            font-size: 1.2rem;
+            color: #00ff41;
+        }
+        
+        /* Container principal */
+        .main-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 350px;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        /* Section Infrastructure */
+        .infrastructure-section {
+            background: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #0078d4;
+            color: #0078d4;
+        }
+        
+        /* Serveurs */
+        .servers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .server-card {
+            background: #1a1a1a;
+            border: 2px solid #555;
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .server-card.active {
+            border-color: #ffaa00;
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.3);
+        }
+        
+        .server-card.error {
+            border-color: #ff0040;
+            box-shadow: 0 0 20px rgba(255, 0, 64, 0.3);
+        }
+        
+        .server-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-led {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ff41;
+            box-shadow: 0 0 10px currentColor;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-led.warning {
+            background: #ffaa00;
+        }
+        
+        .status-led.error {
+            background: #ff0040;
+        }
+        
+        .status-led.off {
+            background: #666;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .server-info {
+            font-size: 0.85rem;
+            color: #999;
+            margin-bottom: 10px;
+        }
+        
+        .vm-list {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+        }
+        
+        .vm-item {
+            background: #333;
+            padding: 6px 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .vm-item.migrating {
+            background: linear-gradient(90deg, #333 0%, #554400 50%, #333 100%);
+            animation: migrate-pulse 2s infinite;
+        }
+        
+        @keyframes migrate-pulse {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(3px); }
+        }
+        
+        .vm-item.stopped {
+            opacity: 0.5;
+            background: #3a2020;
+        }
+        
+        /* Section Flux & Contraintes */
+        .flows-section {
+            background: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .flow-grid {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .flow-card {
+            background: #1a1a1a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s;
+        }
+        
+        .flow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .flow-title {
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .flow-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .flow-status.active {
+            background: #00ff41;
+            color: #000;
+        }
+        
+        .flow-status.suspended {
+            background: #ff0040;
+            color: #fff;
+        }
+        
+        .flow-status.pending {
+            background: #ffaa00;
+            color: #000;
+        }
+        
+        .flow-connections {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .connection-item {
+            background: #333;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-left: 3px solid #666;
+            transition: all 0.3s;
+        }
+        
+        .connection-item.active {
+            border-left-color: #00ff41;
+            background: #1a3a1a;
+        }
+        
+        .connection-item.suspended {
+            border-left-color: #ff0040;
+            background: #3a1a1a;
+            opacity: 0.6;
+        }
+        
+        .flow-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #666;
+            animation: none;
+        }
+        
+        .flow-indicator.active {
+            background: #00ff41;
+            animation: flow-pulse 1s infinite;
+        }
+        
+        .flow-indicator.suspended {
+            background: #ff0040;
+        }
+        
+        @keyframes flow-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+        
+        /* Panel de contrôle */
+        .control-panel {
+            background: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .constraint-list {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .constraint-item {
+            padding: 10px;
+            margin: 8px 0;
+            background: #333;
+            border-radius: 4px;
+            border-left: 4px solid #666;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .constraint-item.active {
+            border-left-color: #ffaa00;
+            background: #3a3a2a;
+        }
+        
+        .constraint-item.resolved {
+            border-left-color: #00ff41;
+            opacity: 0.7;
+        }
+        
+        .constraint-item.blocking {
+            border-left-color: #ff0040;
+            background: #3a2020;
+        }
+        
+        .action-buttons {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            padding: 12px;
+            background: #333;
+            border: 2px solid #666;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+        
+        .action-btn:hover {
+            background: #444;
+            border-color: #0078d4;
+        }
+        
+        .action-btn.suspend {
+            border-color: #ff0040;
+        }
+        
+        .action-btn.suspend:hover {
+            background: #3a2020;
+            border-color: #ff0040;
+        }
+        
+        .action-btn.resume {
+            border-color: #00ff41;
+        }
+        
+        .action-btn.resume:hover {
+            background: #2a3a2a;
+            border-color: #00ff41;
+        }
+        
+        /* Timeline */
+        .timeline-section {
+            background: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            max-width: 1760px;
+            margin: 0 auto;
+        }
+        
+        .timeline-track {
+            background: #1a1a1a;
+            height: 60px;
+            border-radius: 30px;
+            position: relative;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .timeline-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #0078d4 0%, #00ff41 100%);
+            transition: width 0.5s;
+            border-radius: 30px;
+            opacity: 0.3;
+        }
+        
+        .timeline-steps {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        
+        .timeline-step {
+            background: #333;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 2px solid #666;
+            transition: all 0.3s;
+        }
+        
+        .timeline-step.completed {
+            background: #00ff41;
+            color: #000;
+            border-color: #00ff41;
+        }
+        
+        .timeline-step.active {
+            background: #ffaa00;
+            color: #000;
+            border-color: #ffaa00;
+            animation: timeline-pulse 1s infinite;
+        }
+        
+        @keyframes timeline-pulse {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.1); }
+        }
+        
+        /* Status global */
+        .global-status {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: #2a2a2a;
+            border: 2px solid #0078d4;
+            border-radius: 8px;
+            padding: 15px;
+            min-width: 200px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+        }
+        
+        .status-value {
+            font-weight: bold;
+            color: #0078d4;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">🔍 ATLAS Infrastructure Monitor - LAA</div>
+        <div class="time" id="clock">14:32:45</div>
+    </div>
+    
+    <div class="main-container">
+        <!-- Section Infrastructure -->
+        <div class="infrastructure-section">
+            <h2 class="section-title">📊 Infrastructure Physique</h2>
+            
+            <div class="servers-grid">
+                <!-- HOST01 -->
+                <div class="server-card" id="host01">
+                    <div class="server-name">
+                        <span class="status-led"></span>
+                        LAA-HOST01
+                    </div>
+                    <div class="server-info">
+                        Hyper-V 2022 • 128GB RAM • iLO: OK
+                    </div>
+                    <div class="vm-list">
+                        <div class="vm-item" id="vm-dc">
+                            <span>💾 LAA-DC</span>
+                            <span style="color: #00ff41;">Running</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- HOST02 -->
+                <div class="server-card" id="host02">
+                    <div class="server-name">
+                        <span class="status-led"></span>
+                        LAA-HOST02
+                    </div>
+                    <div class="server-info">
+                        Hyper-V 2022 • 128GB RAM • iLO: OK
+                    </div>
+                    <div class="vm-list">
+                        <div class="vm-item" id="vm-rds">
+                            <span>🖥️ LAA-RDS</span>
+                            <span style="color: #00ff41;">Running</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- HOST03 -->
+                <div class="server-card" id="host03">
+                    <div class="server-name">
+                        <span class="status-led"></span>
+                        LAA-HOST03
+                    </div>
+                    <div class="server-info">
+                        Hyper-V 2022 • 256GB RAM • iLO: OK
+                    </div>
+                    <div class="vm-list">
+                        <div class="vm-item" id="vm-sql">
+                            <span>🗄️ LAA-SQL</span>
+                            <span style="color: #00ff41;">Running</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- HOST04 -->
+                <div class="server-card active" id="host04">
+                    <div class="server-name">
+                        <span class="status-led warning"></span>
+                        LAA-HOST04
+                    </div>
+                    <div class="server-info">
+                        Hyper-V 2022 • 64GB RAM • iLO: UPDATING
+                    </div>
+                    <div class="vm-list">
+                        <div class="vm-item stopped" id="vm-veeam">
+                            <span>💾 LAA-VEEAM01</span>
+                            <span style="color: #ff0040;">Stopped</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Section Flux & Contraintes -->
+        <div class="flows-section">
+            <h2 class="section-title">🔄 Flux & Dépendances</h2>
+            
+            <div class="flow-grid">
+                <!-- Réplication -->
+                <div class="flow-card">
+                    <div class="flow-header">
+                        <div class="flow-title">
+                            <span>🔁</span>
+                            Réplication Hyper-V
+                        </div>
+                        <span class="flow-status active" id="repl-status">ACTIVE</span>
+                    </div>
+                    <div class="flow-connections">
+                        <div class="connection-item active">
+                            <span class="flow-indicator active"></span>
+                            LAA-DC → HOST03 (Replica)
+                        </div>
+                        <div class="connection-item active">
+                            <span class="flow-indicator active"></span>
+                            LAA-RDS → HOST01 (Replica)
+                        </div>
+                        <div class="connection-item active">
+                            <span class="flow-indicator active"></span>
+                            LAA-SQL → HOST01 (Replica)
+                        </div>
+                        <div class="connection-item suspended">
+                            <span class="flow-indicator suspended"></span>
+                            LAA-VEEAM01 → Aucune (Par design)
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Backup -->
+                <div class="flow-card">
+                    <div class="flow-header">
+                        <div class="flow-title">
+                            <span>💾</span>
+                            Backup Veeam
+                        </div>
+                        <span class="flow-status suspended" id="backup-status">SUSPENDED</span>
+                    </div>
+                    <div class="flow-connections">
+                        <div class="connection-item suspended">
+                            <span class="flow-indicator suspended"></span>
+                            LAA-DC → Veeam Repository
+                        </div>
+                        <div class="connection-item suspended">
+                            <span class="flow-indicator suspended"></span>
+                            LAA-RDS → Veeam Repository
+                        </div>
+                        <div class="connection-item suspended">
+                            <span class="flow-indicator suspended"></span>
+                            LAA-SQL → Veeam Repository
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Services Critiques -->
+                <div class="flow-card">
+                    <div class="flow-header">
+                        <div class="flow-title">
+                            <span>⚡</span>
+                            Services Critiques
+                        </div>
+                        <span class="flow-status active" id="services-status">ACTIVE</span>
+                    </div>
+                    <div class="flow-connections">
+                        <div class="connection-item active">
+                            <span class="flow-indicator active"></span>
+                            Active Directory (DC)
+                        </div>
+                        <div class="connection-item active">
+                            <span class="flow-indicator active"></span>
+                            Remote Desktop (RDS)
+                        </div>
+                        <div class="connection-item active">
+                            <span class="flow-indicator active"></span>
+                            SQL Server Database
+                        </div>
+                        <div class="connection-item suspended">
+                            <span class="flow-indicator suspended"></span>
+                            Veeam Backup Service
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel de contrôle -->
+        <div class="control-panel">
+            <h2 class="section-title">⚙️ Contrôle & Contraintes</h2>
+            
+            <div class="constraint-list">
+                <h3 style="margin-bottom: 10px; color: #ffaa00;">⚠️ Contraintes Actives</h3>
+                <div class="constraint-item active">
+                    🔒 HOST04: Pas de réplication pour VEEAM01
+                </div>
+                <div class="constraint-item active">
+                    ⏸️ Backup jobs suspendus pendant update
+                </div>
+                <div class="constraint-item resolved">
+                    ✅ Snapshots créés avant update
+                </div>
+                <div class="constraint-item">
+                    ⏰ Fenêtre maintenance: 14h-18h
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="action-btn suspend" onclick="suspendReplication()">
+                    ⏸️ SUSPENDRE RÉPLICATION
+                </button>
+                <button class="action-btn suspend" onclick="suspendBackup()">
+                    ⏸️ SUSPENDRE BACKUP
+                </button>
+                <button class="action-btn resume" onclick="resumeReplication()">
+                    ▶️ REPRENDRE RÉPLICATION
+                </button>
+                <button class="action-btn resume" onclick="resumeBackup()">
+                    ▶️ REPRENDRE BACKUP
+                </button>
+            </div>
+            
+            <div style="background: #1a1a1a; padding: 15px; border-radius: 8px;">
+                <h3 style="margin-bottom: 10px; color: #0078d4;">📊 Métriques</h3>
+                <div class="status-item">
+                    <span>VMs actives:</span>
+                    <span class="status-value">3/4</span>
+                </div>
+                <div class="status-item">
+                    <span>Réplications:</span>
+                    <span class="status-value">3/3</span>
+                </div>
+                <div class="status-item">
+                    <span>Backup jobs:</span>
+                    <span class="status-value" style="color: #ff0040;">0/3</span>
+                </div>
+                <div class="status-item">
+                    <span>Update progress:</span>
+                    <span class="status-value" style="color: #ffaa00;">45%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Timeline -->
+    <div class="timeline-section">
+        <h3 style="color: #0078d4; margin-bottom: 10px;">📈 Séquence d'exécution</h3>
+        <div class="timeline-track">
+            <div class="timeline-progress" style="width: 35%;"></div>
+            <div class="timeline-steps">
+                <span class="timeline-step completed">Pre-Check</span>
+                <span class="timeline-step completed">Suspend</span>
+                <span class="timeline-step active">HOST04</span>
+                <span class="timeline-step">HOST02</span>
+                <span class="timeline-step">HOST01</span>
+                <span class="timeline-step">HOST03</span>
+                <span class="timeline-step">Resume</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // État du système
+        let state = {
+            replication: true,
+            backup: false,
+            currentHost: 'host04',
+            progress: 45
+        };
+        
+        // Horloge temps réel
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = 
+                now.toTimeString().split(' ')[0];
+        }
+        setInterval(updateClock, 1000);
+        
+        // Gestion des flux
+        function suspendReplication() {
+            state.replication = false;
+            document.getElementById('repl-status').textContent = 'SUSPENDED';
+            document.getElementById('repl-status').className = 'flow-status suspended';
+            
+            // Mettre à jour les connexions
+            document.querySelectorAll('.flow-card:first-child .connection-item:not(:last-child)').forEach(item => {
+                item.className = 'connection-item suspended';
+                item.querySelector('.flow-indicator').className = 'flow-indicator suspended';
+            });
+            
+            // Ajouter contrainte
+            addConstraint('🔴 Réplication suspendue manuellement');
+        }
+        
+        function resumeReplication() {
+            state.replication = true;
+            document.getElementById('repl-status').textContent = 'ACTIVE';
+            document.getElementById('repl-status').className = 'flow-status active';
+            
+            // Réactiver les connexions
+            document.querySelectorAll('.flow-card:first-child .connection-item:not(:last-child)').forEach(item => {
+                item.className = 'connection-item active';
+                item.querySelector('.flow-indicator').className = 'flow-indicator active';
+            });
+        }
+        
+        function suspendBackup() {
+            state.backup = false;
+            document.getElementById('backup-status').textContent = 'SUSPENDED';
+            document.getElementById('backup-status').className = 'flow-status suspended';
+            
+            // Mettre à jour toutes les connexions backup
+            document.querySelectorAll('.flow-card:nth-child(2) .connection-item').forEach(item => {
+                item.className = 'connection-item suspended';
+                item.querySelector('.flow-indicator').className = 'flow-indicator suspended';
+            });
+        }
+        
+        function resumeBackup() {
+            state.backup = true;
+            document.getElementById('backup-status').textContent = 'ACTIVE';
+            document.getElementById('backup-status').className = 'flow-status active';
+            
+            // Réactiver les connexions
+            document.querySelectorAll('.flow-card:nth-child(2) .connection-item').forEach(item => {
+                item.className = 'connection-item active';
+                item.querySelector('.flow-indicator').className = 'flow-indicator active';
+            });
+        }
+        
+        function addConstraint(text) {
+            const list = document.querySelector('.constraint-list');
+            const newConstraint = document.createElement('div');
+            newConstraint.className = 'constraint-item blocking';
+            newConstraint.textContent = text;
+            list.appendChild(newConstraint);
+            
+            // Animation d'apparition
+            setTimeout(() => {
+                newConstraint.className = 'constraint-item active';
+            }, 100);
+        }
+        
+        // Simulation de progression
+        function simulateProgress() {
+            setInterval(() => {
+                if (state.progress < 100 && state.currentHost === 'host04') {
+                    state.progress += Math.random() * 2;
+                    document.querySelector('.timeline-progress').style.width = 
+                        `${Math.min(state.progress * 0.35 + 20, 55)}%`;
+                    
+                    // Mettre à jour métrique
+                    document.querySelector('.status-value[style*="ffaa00"]').textContent = 
+                        `${Math.round(state.progress)}%`;
+                    
+                    if (state.progress >= 100) {
+                        // Passer au host suivant
+                        nextHost();
+                    }
+                }
+            }, 3000);
+        }
+        
+        function nextHost() {
+            // Terminer HOST04
+            document.getElementById('host04').classList.remove('active');
+            document.querySelector('#host04 .status-led').className = 'status-led';
+            document.querySelector('#vm-veeam').classList.remove('stopped');
+            
+            // Commencer HOST02
+            document.getElementById('host02').classList.add('active');
+            document.querySelector('#host02 .status-led').className = 'status-led warning';
+            
+            // Simuler migration
+            document.getElementById('vm-rds').classList.add('migrating');
+            
+            state.currentHost = 'host02';
+            state.progress = 0;
+            
+            // Mettre à jour timeline
+            document.querySelector('.timeline-step.active').className = 'timeline-step completed';
+            document.querySelectorAll('.timeline-step')[3].className = 'timeline-step active';
+        }
+        
+        // Démarrer la simulation
+        simulateProgress();
+        
+        // Animation des indicateurs
+        setInterval(() => {
+            document.querySelectorAll('.flow-indicator.active').forEach(indicator => {
+                // Faire pulser les indicateurs actifs
+                if (Math.random() > 0.7) {
+                    indicator.style.transform = 'scale(1.5)';
+                    setTimeout(() => {
+                        indicator.style.transform = 'scale(1)';
+                    }, 300);
+                }
+            });
+        }, 2000);
+    </script>
+</body>
+</html>
