@@ -363,75 +363,248 @@
             border-color: #00ff41;
         }
         
-        /* Timeline */
+        /* Timeline améliorée - Style Roadbook */
         .timeline-section {
             background: #2a2a2a;
             border: 2px solid #444;
             border-radius: 8px;
-            padding: 15px;
+            padding: 20px;
             position: fixed;
             bottom: 20px;
             left: 20px;
             right: 20px;
             max-width: 1760px;
             margin: 0 auto;
+            height: 220px;
         }
         
-        .timeline-track {
+        /* Indicateurs de progression globaux */
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
             background: #1a1a1a;
-            height: 60px;
-            border-radius: 30px;
+            border-radius: 6px;
+            border: 1px solid #444;
+        }
+        
+        .progress-stat {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .progress-stat-label {
+            font-size: 0.85rem;
+            color: #999;
+        }
+        
+        .progress-stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #0078d4;
+        }
+        
+        .progress-stat-value.time {
+            color: #00ff41;
+        }
+        
+        .progress-stat-value.percent {
+            color: #ffaa00;
+        }
+        
+        .timeline-container {
             position: relative;
-            overflow: hidden;
+            height: 150px;
             margin-top: 10px;
         }
         
-        .timeline-progress {
+        /* Pistes pour les différents flux */
+        .timeline-tracks {
             position: absolute;
-            top: 0;
-            left: 0;
+            width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, #0078d4 0%, #00ff41 100%);
-            transition: width 0.5s;
-            border-radius: 30px;
-            opacity: 0.3;
         }
         
-        .timeline-steps {
+        .timeline-track {
+            position: absolute;
+            width: 100%;
+            height: 30px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .track-label {
+            position: absolute;
+            left: -120px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 110px;
+            text-align: right;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        /* Piste principale */
+        .track-main {
+            top: 0;
+            height: 40px;
+            border: 2px solid #0078d4;
+        }
+        
+        /* Piste réplication */
+        .track-replication {
+            top: 50px;
+            background: linear-gradient(90deg, 
+                #1a1a1a 0%, #1a1a1a 15%, 
+                #3a2020 15%, #3a2020 35%,
+                #1a1a1a 35%, #1a1a1a 50%,
+                #3a2020 50%, #3a2020 65%,
+                #1a1a1a 65%, #1a1a1a 80%,
+                #3a2020 80%, #3a2020 95%,
+                #1a1a1a 95%, #1a1a1a 100%);
+        }
+        
+        /* Piste backup */
+        .track-backup {
+            top: 85px;
+            background: linear-gradient(90deg, 
+                #1a1a1a 0%, #1a1a1a 10%, 
+                #3a2020 10%, #3a2020 98%,
+                #1a1a1a 98%, #1a1a1a 100%);
+        }
+        
+        /* Piste reboot */
+        .track-reboot {
+            top: 120px;
+        }
+        
+        /* Indicateurs d'état sur les pistes */
+        .track-indicator {
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            z-index: 2;
+        }
+        
+        .track-indicator.suspend {
+            background: #ff0040;
+            color: #fff;
+        }
+        
+        .track-indicator.resume {
+            background: #00ff41;
+            color: #000;
+        }
+        
+        .track-indicator.reboot {
+            background: #ffaa00;
+            color: #000;
+        }
+        
+        /* Zones colorées pour les états */
+        .track-zone {
+            position: absolute;
+            height: 100%;
+            opacity: 0.6;
+        }
+        
+        .track-zone.active {
+            background: #00ff41;
+        }
+        
+        .track-zone.suspended {
+            background: #ff0040;
+        }
+        
+        .track-zone.rebooting {
+            background: #ffaa00;
+            animation: reboot-pulse 1s infinite;
+        }
+        
+        @keyframes reboot-pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Marqueurs temporels */
+        .timeline-markers {
+            position: absolute;
+            top: -20px;
             width: 100%;
+            height: 20px;
             display: flex;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 10px;
         }
         
-        .timeline-step {
+        .time-marker {
+            font-size: 0.75rem;
+            color: #999;
+        }
+        
+        /* Ligne de progression actuelle */
+        .progress-line {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: #00ff41;
+            box-shadow: 0 0 10px #00ff41;
+            animation: progress-move 0.5s ease-in-out;
+            z-index: 10;
+        }
+        
+        @keyframes progress-move {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Étapes principales sur la piste principale */
+        .main-steps {
+            position: absolute;
+            width: 100%;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+        }
+        
+        .main-step {
             background: #333;
             padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
             border: 2px solid #666;
             transition: all 0.3s;
+            z-index: 3;
         }
         
-        .timeline-step.completed {
+        .main-step.completed {
             background: #00ff41;
             color: #000;
             border-color: #00ff41;
         }
         
-        .timeline-step.active {
+        .main-step.active {
             background: #ffaa00;
             color: #000;
             border-color: #ffaa00;
-            animation: timeline-pulse 1s infinite;
+            animation: step-pulse 1s infinite;
         }
         
-        @keyframes timeline-pulse {
-            0%, 100% { transform: translateY(-50%) scale(1); }
-            50% { transform: translateY(-50%) scale(1.1); }
+        @keyframes step-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
         
         /* Status global */
@@ -688,19 +861,110 @@
         </div>
     </div>
     
-    <!-- Timeline -->
+    <!-- Timeline Roadbook -->
     <div class="timeline-section">
-        <h3 style="color: #0078d4; margin-bottom: 10px;">📈 Séquence d'exécution</h3>
-        <div class="timeline-track">
-            <div class="timeline-progress" style="width: 35%;"></div>
-            <div class="timeline-steps">
-                <span class="timeline-step completed">Pre-Check</span>
-                <span class="timeline-step completed">Suspend</span>
-                <span class="timeline-step active">HOST04</span>
-                <span class="timeline-step">HOST02</span>
-                <span class="timeline-step">HOST01</span>
-                <span class="timeline-step">HOST03</span>
-                <span class="timeline-step">Resume</span>
+        <!-- Header avec statistiques de progression -->
+        <div class="progress-header">
+            <div class="progress-stat">
+                <span class="progress-stat-label">⏰ TEMPS ÉCOULÉ:</span>
+                <span class="progress-stat-value time" id="elapsed-time">00:32:45</span>
+            </div>
+            <div class="progress-stat">
+                <span class="progress-stat-label">📊 PROGRESSION:</span>
+                <span class="progress-stat-value percent" id="global-progress">35%</span>
+            </div>
+            <div class="progress-stat">
+                <span class="progress-stat-label">📍 POSITION:</span>
+                <span class="progress-stat-value" id="current-position">HOST04 Update (45%)</span>
+            </div>
+            <div class="progress-stat">
+                <span class="progress-stat-label">⏱️ TEMPS RESTANT:</span>
+                <span class="progress-stat-value time" id="remaining-time">01:27:15</span>
+            </div>
+        </div>
+        
+        <div class="timeline-container">
+            <!-- Marqueurs temporels -->
+            <div class="timeline-markers">
+                <span class="time-marker">14:00</span>
+                <span class="time-marker">14:30</span>
+                <span class="time-marker">15:00</span>
+                <span class="time-marker">15:30</span>
+                <span class="time-marker">16:00</span>
+                <span class="time-marker">16:30</span>
+                <span class="time-marker">17:00</span>
+                <span class="time-marker">17:30</span>
+                <span class="time-marker">18:00</span>
+            </div>
+            
+            <!-- Ligne de progression actuelle -->
+            <div class="progress-line" style="left: 35%;"></div>
+            
+            <!-- Pistes des différents flux -->
+            <div class="timeline-tracks" style="margin-left: 130px;">
+                <!-- Piste principale -->
+                <div class="timeline-track track-main">
+                    <span class="track-label" style="color: #0078d4;">🎯 HOSTS</span>
+                    <div class="main-steps">
+                        <span class="main-step completed">Pre</span>
+                        <span class="main-step completed">Suspend</span>
+                        <span class="main-step active">HOST04</span>
+                        <span class="main-step">HOST02</span>
+                        <span class="main-step">HOST01</span>
+                        <span class="main-step">HOST03</span>
+                        <span class="main-step">Resume</span>
+                    </div>
+                </div>
+                
+                <!-- Piste réplication -->
+                <div class="timeline-track track-replication">
+                    <span class="track-label" style="color: #00aaff;">🔁 RÉPLICATION</span>
+                    <!-- Zones colorées pour montrer quand c'est suspendu -->
+                    <div class="track-zone active" style="left: 0; width: 15%;"></div>
+                    <div class="track-zone suspended" style="left: 15%; width: 20%;"></div>
+                    <div class="track-zone active" style="left: 35%; width: 15%;"></div>
+                    <div class="track-zone suspended" style="left: 50%; width: 15%;"></div>
+                    <div class="track-zone active" style="left: 65%; width: 15%;"></div>
+                    <div class="track-zone suspended" style="left: 80%; width: 15%;"></div>
+                    <div class="track-zone active" style="left: 95%; width: 5%;"></div>
+                    
+                    <!-- Indicateurs -->
+                    <span class="track-indicator suspend" style="left: 14%;">⏸️</span>
+                    <span class="track-indicator resume" style="left: 34%;">▶️</span>
+                    <span class="track-indicator suspend" style="left: 49%;">⏸️</span>
+                    <span class="track-indicator resume" style="left: 64%;">▶️</span>
+                    <span class="track-indicator suspend" style="left: 79%;">⏸️</span>
+                    <span class="track-indicator resume" style="left: 94%;">▶️</span>
+                </div>
+                
+                <!-- Piste backup -->
+                <div class="timeline-track track-backup">
+                    <span class="track-label" style="color: #ffaa00;">💾 BACKUP</span>
+                    <!-- Zone suspendue pendant toute l'opération -->
+                    <div class="track-zone active" style="left: 0; width: 10%;"></div>
+                    <div class="track-zone suspended" style="left: 10%; width: 88%;"></div>
+                    <div class="track-zone active" style="left: 98%; width: 2%;"></div>
+                    
+                    <!-- Indicateurs -->
+                    <span class="track-indicator suspend" style="left: 9%;">⏸️ SUSPEND</span>
+                    <span class="track-indicator resume" style="left: 90%;">▶️ RESUME</span>
+                </div>
+                
+                <!-- Piste reboot -->
+                <div class="timeline-track track-reboot">
+                    <span class="track-label" style="color: #ff0040;">🔄 REBOOT</span>
+                    <!-- Zones de reboot pour chaque host -->
+                    <div class="track-zone rebooting" style="left: 30%; width: 5%;"></div>
+                    <div class="track-zone" style="left: 47%; width: 5%;"></div>
+                    <div class="track-zone" style="left: 62%; width: 5%;"></div>
+                    <div class="track-zone" style="left: 77%; width: 5%;"></div>
+                    
+                    <!-- Indicateurs -->
+                    <span class="track-indicator reboot" style="left: 31%;">H04</span>
+                    <span class="track-indicator reboot" style="left: 48%; opacity: 0.5;">H02</span>
+                    <span class="track-indicator reboot" style="left: 63%; opacity: 0.5;">H01</span>
+                    <span class="track-indicator reboot" style="left: 78%; opacity: 0.5;">H03</span>
+                </div>
             </div>
         </div>
     </div>
@@ -711,7 +975,10 @@
             replication: true,
             backup: false,
             currentHost: 'host04',
-            progress: 45
+            progress: 45,
+            globalProgress: 35,
+            startTime: Date.now() - (32 * 60 * 1000 + 45 * 1000), // Simuler 32min45s écoulées
+            estimatedDuration: 120 * 60 * 1000 // 2 heures estimées
         };
         
         // Horloge temps réel
@@ -721,6 +988,58 @@
                 now.toTimeString().split(' ')[0];
         }
         setInterval(updateClock, 1000);
+        
+        // Mise à jour du roadbook
+        function updateRoadbook() {
+            const now = Date.now();
+            const elapsed = now - state.startTime;
+            const remaining = state.estimatedDuration - elapsed;
+            
+            // Temps écoulé
+            const elapsedHours = Math.floor(elapsed / 3600000);
+            const elapsedMinutes = Math.floor((elapsed % 3600000) / 60000);
+            const elapsedSeconds = Math.floor((elapsed % 60000) / 1000);
+            document.getElementById('elapsed-time').textContent = 
+                `${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}:${String(elapsedSeconds).padStart(2, '0')}`;
+            
+            // Temps restant
+            if (remaining > 0) {
+                const remainingHours = Math.floor(remaining / 3600000);
+                const remainingMinutes = Math.floor((remaining % 3600000) / 60000);
+                const remainingSeconds = Math.floor((remaining % 60000) / 1000);
+                document.getElementById('remaining-time').textContent = 
+                    `${String(remainingHours).padStart(2, '0')}:${String(remainingMinutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+            } else {
+                document.getElementById('remaining-time').textContent = '00:00:00';
+            }
+            
+            // Progression globale
+            document.getElementById('global-progress').textContent = `${Math.round(state.globalProgress)}%`;
+            
+            // Position actuelle
+            let position = '';
+            switch(state.currentHost) {
+                case 'host04':
+                    position = `HOST04 Update (${Math.round(state.progress)}%)`;
+                    break;
+                case 'host02':
+                    position = `HOST02 Update (${Math.round(state.progress)}%)`;
+                    break;
+                case 'host01':
+                    position = `HOST01 Update (${Math.round(state.progress)}%)`;
+                    break;
+                case 'host03':
+                    position = `HOST03 Update (${Math.round(state.progress)}%)`;
+                    break;
+                default:
+                    position = 'Pre-checks';
+            }
+            document.getElementById('current-position').textContent = position;
+            
+            // Déplacer la ligne de progression
+            document.querySelector('.progress-line').style.left = `${state.globalProgress}%`;
+        }
+        setInterval(updateRoadbook, 1000);
         
         // Gestion des flux
         function suspendReplication() {
@@ -790,21 +1109,42 @@
         // Simulation de progression
         function simulateProgress() {
             setInterval(() => {
-                if (state.progress < 100 && state.currentHost === 'host04') {
-                    state.progress += Math.random() * 2;
-                    document.querySelector('.timeline-progress').style.width = 
-                        `${Math.min(state.progress * 0.35 + 20, 55)}%`;
-                    
-                    // Mettre à jour métrique
-                    document.querySelector('.status-value[style*="ffaa00"]').textContent = 
-                        `${Math.round(state.progress)}%`;
-                    
-                    if (state.progress >= 100) {
-                        // Passer au host suivant
-                        nextHost();
+                if (state.currentHost !== 'completed') {
+                    // Progression locale de l'host actuel
+                    if (state.progress < 100) {
+                        state.progress += Math.random() * 2;
+                        
+                        // Calculer la progression globale
+                        let baseProgress = 0;
+                        switch(state.currentHost) {
+                            case 'host04': baseProgress = 10; break;
+                            case 'host02': baseProgress = 35; break;
+                            case 'host01': baseProgress = 55; break;
+                            case 'host03': baseProgress = 75; break;
+                        }
+                        state.globalProgress = baseProgress + (state.progress * 0.20);
+                        
+                        // Mettre à jour métrique
+                        const progressElement = document.querySelector('.status-value[style*="ffaa00"]');
+                        if (progressElement) {
+                            progressElement.textContent = `${Math.round(state.progress)}%`;
+                        }
+                        
+                        // Animer le reboot si > 90%
+                        if (state.progress > 90 && state.progress < 95) {
+                            const rebootZone = document.querySelector(`.track-zone.rebooting`);
+                            if (rebootZone) {
+                                rebootZone.style.background = '#ff0040';
+                            }
+                        }
+                        
+                        if (state.progress >= 100) {
+                            // Passer au host suivant
+                            nextHost();
+                        }
                     }
                 }
-            }, 3000);
+            }, 2000);
         }
         
         function nextHost() {
