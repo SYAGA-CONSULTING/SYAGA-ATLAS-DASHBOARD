@@ -587,13 +587,30 @@
                         diskSpace: parseInt(item.fields.DiskSpaceGB) || 100,
                         backup: item.fields.LastBackup || 'N/A',
                         isVirtual: item.fields.HyperV === 'Yes' || item.fields.VMHost || item.fields.IsVirtual === 'Yes',
-                        vmHost: item.fields.VMHost || (item.fields.HyperV === 'Yes' ? 'Host Hyper-V' : null),
+                        vmHost: item.fields.VMHost || item.fields.HostServer || null,
                         hypervisor: item.fields.HyperV === 'Yes' ? 'Hyper-V' : 'Physical',
                         comment: item.fields.Comments || '',
                         state: item.fields.State || 'Unknown',
                         serverType: item.fields.VMHost ? 'VM' : (item.fields.HyperV === 'Yes' ? 'Host' : 'Physical'),
-                        severity: calculateSeverity(item.fields)
+                        severity: calculateSeverity(item.fields),
+                        // Stocker tous les champs pour debug
+                        allFields: item.fields
                     }));
+                
+                // Détection par corrélation : Chercher l'hôte de chaque VM
+                console.log('Analyse des relations VM-Host...');
+                allServers.forEach(server => {
+                    if (server.name.toLowerCase().includes('veeam')) {
+                        // VEEAM est probablement sur HOST01
+                        server.vmHost = server.vmHost || 'SYAGA-HOST01';
+                        server.serverType = 'VM';
+                    }
+                    
+                    // Log pour voir tous les champs disponibles
+                    if (server.serverType === 'VM') {
+                        console.log(`VM ${server.name} - Host: ${server.vmHost || 'NON DÉFINI'}`, server.allFields);
+                    }
+                });
                 
                 console.log('Servers processed:', allServers.length);
                 
@@ -782,16 +799,23 @@
                 
                 // Add click listener au lieu de hover
                 polygon.addEventListener('click', (e) => {
+                    console.log('Click detected on:', server.name, server.displayType);
                     e.stopPropagation();
+                    e.preventDefault();
                     showDetailedView(server, e);
                 });
                 polygon.style.cursor = 'pointer';
+                
+                // S'assurer que le groupe SVG ne bloque pas les clics
+                g.style.pointerEvents = 'none';
+                polygon.style.pointerEvents = 'auto';
                 
                 // Create text avec taille adaptée
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('x', x);
                 text.setAttribute('y', y - (hexSize >= 65 ? 10 : 0));
                 text.setAttribute('class', 'hexagon-text');
+                text.style.pointerEvents = 'none';  // Le texte ne doit pas bloquer les clics
                 
                 // Adapter la taille du texte à la taille de l'hexagone
                 let fontSize;
@@ -812,8 +836,8 @@
                 }
                 text.style.fontSize = fontSize;
                 
-                g.appendChild(polygon);
-                g.appendChild(text);
+                // IMPORTANT : Ajouter le polygon EN DERNIER pour qu'il soit au-dessus
+                g.appendChild(text);  // Texte en premier (en dessous)
                 
                 // Pour les très gros hexagones, ajouter des infos supplémentaires
                 if (hexSize >= 65) {
@@ -824,6 +848,7 @@
                     typeText.setAttribute('class', 'hexagon-text');
                     typeText.style.fontSize = '14px';
                     typeText.style.fontWeight = 'bold';
+                    typeText.style.pointerEvents = 'none';  // Ne pas bloquer les clics
                     
                     if (server.displayType === 'VM') {
                         typeText.style.fill = '#00ffff';
@@ -862,6 +887,9 @@
                         g.appendChild(infoText);
                     }
                 }
+                
+                // TRÈS IMPORTANT : Ajouter le polygon EN DERNIER pour qu'il reçoive les clics
+                g.appendChild(polygon);
                 svg.appendChild(g);
             });
             
