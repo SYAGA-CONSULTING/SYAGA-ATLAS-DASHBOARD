@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎛️ ATLAS NOC - Infrastructure Control Room</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        .noc-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0a 100%);
+        }
+        
+        /* Header avec statuts critiques */
+        .noc-header {
+            background: linear-gradient(90deg, #16213e 0%, #0f3460 100%);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #00ff41;
+            box-shadow: 0 2px 20px rgba(0,255,65,0.3);
+        }
+        
+        .noc-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #00ff41;
+            text-shadow: 0 0 10px rgba(0,255,65,0.5);
+        }
+        
+        .status-indicators {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .status-indicator {
+            padding: 5px 15px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #00ff41;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-light {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-light.green {
+            background: #00ff41;
+            box-shadow: 0 0 10px #00ff41;
+        }
+        
+        .status-light.yellow {
+            background: #ffaa00;
+            box-shadow: 0 0 10px #ffaa00;
+        }
+        
+        .status-light.red {
+            background: #ff0040;
+            box-shadow: 0 0 10px #ff0040;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Zone principale d'infrastructure */
+        .infrastructure-view {
+            flex: 1;
+            padding: 20px;
+            position: relative;
+            overflow: auto;
+        }
+        
+        /* Canvas SVG pour les connexions */
+        .connections-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* Serveurs physiques */
+        .physical-server {
+            position: absolute;
+            width: 200px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border: 2px solid #00ff41;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            z-index: 10;
+            transition: all 0.3s;
+        }
+        
+        .physical-server.updating {
+            border-color: #ffaa00;
+            animation: updating-pulse 1s infinite;
+        }
+        
+        .physical-server.error {
+            border-color: #ff0040;
+        }
+        
+        @keyframes updating-pulse {
+            0%, 100% { box-shadow: 0 4px 20px rgba(255,170,0,0.5); }
+            50% { box-shadow: 0 4px 40px rgba(255,170,0,0.8); }
+        }
+        
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .server-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .ilo-indicator {
+            width: 8px;
+            height: 8px;
+            background: #00ff41;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            animation: blink 3s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 90%, 100% { opacity: 1; }
+            95% { opacity: 0.3; }
+        }
+        
+        /* VMs dans les serveurs */
+        .vm-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .vm-box {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(0,255,65,0.5);
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .vm-box.migrating {
+            background: rgba(255,170,0,0.2);
+            border-color: #ffaa00;
+            animation: migrate 2s infinite;
+        }
+        
+        @keyframes migrate {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(5px); }
+        }
+        
+        .vm-box.stopped {
+            opacity: 0.5;
+            background: rgba(255,0,64,0.1);
+        }
+        
+        /* Flux de données animés */
+        .data-flow {
+            stroke: #00ff41;
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 5 5;
+            animation: flow 2s linear infinite;
+        }
+        
+        .data-flow.replication {
+            stroke: #00aaff;
+        }
+        
+        .data-flow.backup {
+            stroke: #ffaa00;
+        }
+        
+        .data-flow.suspended {
+            stroke: #ff0040;
+            stroke-dasharray: 10 10;
+            animation: none;
+            opacity: 0.3;
+        }
+        
+        @keyframes flow {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -10; }
+        }
+        
+        /* Stockage */
+        .storage-unit {
+            position: absolute;
+            width: 180px;
+            background: linear-gradient(135deg, #2d4a2b 0%, #3d5a3b 100%);
+            border: 2px solid #00ff41;
+            border-radius: 8px;
+            padding: 10px;
+            z-index: 10;
+        }
+        
+        .storage-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .storage-capacity {
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .storage-used {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff41 0%, #00aa41 100%);
+            transition: width 1s;
+        }
+        
+        /* Control Panel */
+        .control-panel {
+            position: fixed;
+            right: 20px;
+            top: 80px;
+            width: 300px;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid #00ff41;
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 100;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .control-header {
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0,255,65,0.3);
+        }
+        
+        .control-section {
+            margin-bottom: 20px;
+        }
+        
+        .control-label {
+            font-size: 0.85rem;
+            color: #00ff41;
+            margin-bottom: 5px;
+        }
+        
+        .control-value {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        
+        .control-button {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0,255,65,0.1);
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 5px;
+            transition: all 0.3s;
+        }
+        
+        .control-button:hover {
+            background: rgba(0,255,65,0.2);
+        }
+        
+        .control-button.danger {
+            border-color: #ff0040;
+            color: #ff0040;
+            background: rgba(255,0,64,0.1);
+        }
+        
+        /* Timeline séquence */
+        .sequence-timeline {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            background: rgba(0,0,0,0.95);
+            border-top: 2px solid #00ff41;
+            padding: 15px;
+            z-index: 100;
+        }
+        
+        .timeline-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #00ff41;
+        }
+        
+        .timeline-track {
+            height: 60px;
+            background: rgba(0,255,65,0.1);
+            border: 1px solid rgba(0,255,65,0.3);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .timeline-step {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 5px 10px;
+            background: rgba(0,255,65,0.2);
+            border: 1px solid #00ff41;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+        
+        .timeline-step.active {
+            background: rgba(255,170,0,0.3);
+            border-color: #ffaa00;
+            animation: timeline-pulse 1s infinite;
+        }
+        
+        .timeline-step.completed {
+            background: rgba(0,255,65,0.3);
+            border-color: #00ff41;
+        }
+        
+        @keyframes timeline-pulse {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.05); }
+        }
+        
+        .timeline-progress {
+            position: absolute;
+            bottom: 10px;
+            left: 15px;
+            right: 15px;
+            height: 4px;
+            background: rgba(0,255,65,0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .timeline-progress-bar {
+            height: 100%;
+            background: #00ff41;
+            transition: width 0.5s;
+            box-shadow: 0 0 10px #00ff41;
+        }
+        
+        /* Alertes */
+        .alert-popup {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,0,64,0.9);
+            border: 2px solid #ff0040;
+            border-radius: 8px;
+            padding: 15px 25px;
+            z-index: 1000;
+            animation: alert-slide 0.5s;
+        }
+        
+        @keyframes alert-slide {
+            from { top: -100px; opacity: 0; }
+            to { top: 100px; opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="noc-container">
+        <!-- Header NOC -->
+        <div class="noc-header">
+            <div class="noc-title">🎛️ ATLAS NOC - LAA Infrastructure Control</div>
+            <div class="status-indicators">
+                <div class="status-indicator">
+                    <div class="status-light green"></div>
+                    <span>Network: OK</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-light yellow"></div>
+                    <span>Update: In Progress</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-light green"></div>
+                    <span>iLO: Connected</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-light green"></div>
+                    <span>Backup: Active</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Vue infrastructure principale -->
+        <div class="infrastructure-view" id="infrastructure">
+            <!-- Couche SVG pour les connexions -->
+            <svg class="connections-layer" id="connections">
+                <!-- Connexions de réplication -->
+                <path id="repl-dc-host03" class="data-flow replication" d="M 210 150 Q 350 150 410 250" />
+                <path id="repl-rds-host01" class="data-flow replication" d="M 410 150 Q 350 150 210 250" />
+                <path id="repl-sql-host01" class="data-flow replication" d="M 610 250 Q 500 200 210 250" />
+                
+                <!-- Connexions de backup -->
+                <path id="backup-dc" class="data-flow backup" d="M 210 180 Q 400 400 810 350" />
+                <path id="backup-rds" class="data-flow backup" d="M 410 180 Q 500 400 810 380" />
+                <path id="backup-sql" class="data-flow backup" d="M 610 280 Q 700 400 810 410" />
+                
+                <!-- Marker pour les flèches -->
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#00ff41" />
+                    </marker>
+                </defs>
+            </svg>
+            
+            <!-- Serveur LAA-HOST01 -->
+            <div class="physical-server" style="top: 100px; left: 100px;" id="host01">
+                <div class="server-header">
+                    <span class="server-name">LAA-HOST01</span>
+                    <div class="server-status">
+                        <span class="ilo-indicator" title="iLO Connected"></span>
+                        <span style="font-size: 0.7rem;">iLO</span>
+                    </div>
+                </div>
+                <div style="font-size: 0.75rem; color: #00ff41; margin-bottom: 5px;">
+                    Hyper-V 2022 • 128GB RAM
+                </div>
+                <div class="vm-container">
+                    <div class="vm-box" id="vm-dc">
+                        <span>💾 LAA-DC</span>
+                        <span style="font-size: 0.7rem;">Running</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Serveur LAA-HOST02 -->
+            <div class="physical-server" style="top: 100px; left: 350px;" id="host02">
+                <div class="server-header">
+                    <span class="server-name">LAA-HOST02</span>
+                    <div class="server-status">
+                        <span class="ilo-indicator" title="iLO Connected"></span>
+                        <span style="font-size: 0.7rem;">iLO</span>
+                    </div>
+                </div>
+                <div style="font-size: 0.75rem; color: #00ff41; margin-bottom: 5px;">
+                    Hyper-V 2022 • 128GB RAM
+                </div>
+                <div class="vm-container">
+                    <div class="vm-box" id="vm-rds">
+                        <span>🖥️ LAA-RDS</span>
+                        <span style="font-size: 0.7rem;">Running</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Serveur LAA-HOST03 -->
+            <div class="physical-server" style="top: 200px; left: 500px;" id="host03">
+                <div class="server-header">
+                    <span class="server-name">LAA-HOST03</span>
+                    <div class="server-status">
+                        <span class="ilo-indicator" title="iLO Connected"></span>
+                        <span style="font-size: 0.7rem;">iLO</span>
+                    </div>
+                </div>
+                <div style="font-size: 0.75rem; color: #00ff41; margin-bottom: 5px;">
+                    Hyper-V 2022 • 256GB RAM
+                </div>
+                <div class="vm-container">
+                    <div class="vm-box" id="vm-sql">
+                        <span>🗄️ LAA-SQL</span>
+                        <span style="font-size: 0.7rem;">Running</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Serveur LAA-HOST04 (Veeam) -->
+            <div class="physical-server updating" style="top: 100px; left: 750px;" id="host04">
+                <div class="server-header">
+                    <span class="server-name">LAA-HOST04</span>
+                    <div class="server-status">
+                        <span class="ilo-indicator" style="background: #ffaa00;" title="iLO - Updating"></span>
+                        <span style="font-size: 0.7rem;">iLO</span>
+                    </div>
+                </div>
+                <div style="font-size: 0.75rem; color: #ffaa00; margin-bottom: 5px;">
+                    Hyper-V 2022 • UPDATING...
+                </div>
+                <div class="vm-container">
+                    <div class="vm-box stopped" id="vm-veeam">
+                        <span>💾 LAA-VEEAM01</span>
+                        <span style="font-size: 0.7rem; color: #ff0040;">Stopped</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stockage Veeam -->
+            <div class="storage-unit" style="top: 350px; left: 750px;">
+                <div class="storage-header">
+                    <span>💾</span>
+                    <span>Veeam Repository</span>
+                </div>
+                <div style="font-size: 0.75rem; margin-bottom: 10px;">
+                    Local Storage • 20TB
+                </div>
+                <div class="storage-capacity">
+                    <div class="storage-used" style="width: 65%;"></div>
+                </div>
+                <div style="font-size: 0.7rem; margin-top: 5px; text-align: right;">
+                    13TB / 20TB (65%)
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panneau de contrôle -->
+        <div class="control-panel">
+            <div class="control-header">⚙️ CONTROL PANEL</div>
+            
+            <div class="control-section">
+                <div class="control-label">Current Operation:</div>
+                <div class="control-value">LAA-HOST04 Windows Update</div>
+                <div class="control-label">Status:</div>
+                <div class="control-value" style="color: #ffaa00;">Installing KB5030211 (45%)</div>
+            </div>
+            
+            <div class="control-section">
+                <div class="control-label">Active Constraints:</div>
+                <div class="control-value" style="font-size: 0.85rem;">
+                    ⚠️ Veeam jobs suspended<br>
+                    ⚠️ No replication for VEEAM01<br>
+                    ✅ DC/RDS/SQL replicated
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <div class="control-label">iLO Status:</div>
+                <button class="control-button" onclick="checkILO()">🔍 Check All iLO</button>
+                <button class="control-button" onclick="powerStatus()">⚡ Power Status</button>
+                <button class="control-button danger" onclick="forceReboot()">🔄 Force Reboot</button>
+            </div>
+            
+            <div class="control-section">
+                <div class="control-label">Flow Control:</div>
+                <button class="control-button" onclick="suspendReplication()">⏸️ Suspend Replication</button>
+                <button class="control-button" onclick="suspendBackup()">⏸️ Suspend Backup</button>
+                <button class="control-button" onclick="resumeAll()">▶️ Resume All Flows</button>
+            </div>
+        </div>
+        
+        <!-- Timeline de séquence -->
+        <div class="sequence-timeline">
+            <div class="timeline-header">📊 EXECUTION SEQUENCE</div>
+            <div class="timeline-track">
+                <div class="timeline-step completed" style="left: 5%;">Pre-Check</div>
+                <div class="timeline-step completed" style="left: 20%;">Suspend Backup</div>
+                <div class="timeline-step active" style="left: 35%;">HOST04 Update</div>
+                <div class="timeline-step" style="left: 50%;">HOST02 Update</div>
+                <div class="timeline-step" style="left: 65%;">HOST01 Update</div>
+                <div class="timeline-step" style="left: 80%;">HOST03 Update</div>
+                <div class="timeline-step" style="left: 92%;">Resume All</div>
+            </div>
+            <div class="timeline-progress">
+                <div class="timeline-progress-bar" style="width: 38%;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // État du système
+        let systemState = {
+            replicationActive: true,
+            backupActive: false,  // Suspendu pendant update
+            currentHost: 'host04',
+            updateProgress: 45,
+            iloConnected: {
+                host01: true,
+                host02: true,
+                host03: true,
+                host04: true
+            }
+        };
+        
+        // Simulation temps réel
+        function startRealTimeMonitoring() {
+            // Mise à jour progression
+            setInterval(() => {
+                if (systemState.updateProgress < 100) {
+                    systemState.updateProgress += Math.random() * 2;
+                    updateProgress();
+                }
+            }, 3000);
+            
+            // Animation des flux
+            setInterval(() => {
+                updateDataFlows();
+            }, 100);
+            
+            // Check iLO status
+            setInterval(() => {
+                checkILOStatus();
+            }, 5000);
+        }
+        
+        function updateProgress() {
+            const progressBar = document.querySelector('.timeline-progress-bar');
+            const progress = Math.min(systemState.updateProgress, 100);
+            progressBar.style.width = `${progress * 0.38 + 35}%`;
+            
+            // Mettre à jour le panneau de contrôle
+            const statusDiv = document.querySelector('.control-value');
+            if (progress < 100) {
+                statusDiv.textContent = `Installing KB5030211 (${Math.round(progress)}%)`;
+                statusDiv.style.color = '#ffaa00';
+            } else {
+                statusDiv.textContent = 'Update completed - Rebooting...';
+                statusDiv.style.color = '#00ff41';
+                simulateReboot();
+            }
+        }
+        
+        function updateDataFlows() {
+            // Mettre à jour les flux de réplication
+            const replFlows = document.querySelectorAll('.data-flow.replication');
+            replFlows.forEach(flow => {
+                if (systemState.replicationActive) {
+                    flow.classList.remove('suspended');
+                } else {
+                    flow.classList.add('suspended');
+                }
+            });
+            
+            // Mettre à jour les flux de backup
+            const backupFlows = document.querySelectorAll('.data-flow.backup');
+            backupFlows.forEach(flow => {
+                if (systemState.backupActive) {
+                    flow.classList.remove('suspended');
+                } else {
+                    flow.classList.add('suspended');
+                }
+            });
+        }
+        
+        function checkILOStatus() {
+            // Simuler la vérification iLO
+            Object.keys(systemState.iloConnected).forEach(host => {
+                const indicator = document.querySelector(`#${host} .ilo-indicator`);
+                if (indicator) {
+                    if (systemState.iloConnected[host]) {
+                        indicator.style.background = host === 'host04' ? '#ffaa00' : '#00ff41';
+                    } else {
+                        indicator.style.background = '#ff0040';
+                    }
+                }
+            });
+        }
+        
+        function suspendReplication() {
+            systemState.replicationActive = false;
+            showAlert('⏸️ Replication suspended for all VMs');
+            
+            // Animer la suspension
+            document.querySelectorAll('.data-flow.replication').forEach(flow => {
+                flow.classList.add('suspended');
+            });
+        }
+        
+        function suspendBackup() {
+            systemState.backupActive = false;
+            showAlert('⏸️ Backup jobs suspended');
+            
+            // Animer la suspension
+            document.querySelectorAll('.data-flow.backup').forEach(flow => {
+                flow.classList.add('suspended');
+            });
+        }
+        
+        function resumeAll() {
+            systemState.replicationActive = true;
+            systemState.backupActive = true;
+            showAlert('▶️ All flows resumed');
+            
+            // Réactiver tous les flux
+            document.querySelectorAll('.data-flow').forEach(flow => {
+                flow.classList.remove('suspended');
+            });
+        }
+        
+        function checkILO() {
+            showAlert('🔍 Checking iLO status on all hosts...');
+            
+            // Simuler la vérification
+            setTimeout(() => {
+                let status = 'iLO Status:\n';
+                Object.keys(systemState.iloConnected).forEach(host => {
+                    status += `${host.toUpperCase()}: ${systemState.iloConnected[host] ? 'Connected' : 'Disconnected'}\n`;
+                });
+                console.log(status);
+                showAlert('✅ iLO check completed - All connected');
+            }, 2000);
+        }
+        
+        function powerStatus() {
+            showAlert('⚡ Checking power status via iLO...');
+            
+            setTimeout(() => {
+                showAlert('✅ All hosts powered ON - PSU redundancy OK');
+            }, 1500);
+        }
+        
+        function forceReboot() {
+            if (confirm('⚠️ Force reboot LAA-HOST04 via iLO?')) {
+                showAlert('🔄 Sending iLO reboot command...');
+                
+                // Simuler le reboot
+                setTimeout(() => {
+                    document.getElementById('host04').classList.add('error');
+                    showAlert('⚠️ HOST04 rebooting - Waiting for reconnection...');
+                    
+                    setTimeout(() => {
+                        document.getElementById('host04').classList.remove('error');
+                        document.getElementById('host04').classList.remove('updating');
+                        showAlert('✅ HOST04 back online');
+                    }, 5000);
+                }, 2000);
+            }
+        }
+        
+        function simulateReboot() {
+            const host = document.getElementById('host04');
+            const vm = document.getElementById('vm-veeam');
+            
+            // Simuler la perte de connexion
+            host.classList.add('error');
+            systemState.iloConnected.host04 = false;
+            
+            setTimeout(() => {
+                // Reconnexion
+                host.classList.remove('error');
+                host.classList.remove('updating');
+                vm.classList.remove('stopped');
+                systemState.iloConnected.host04 = true;
+                
+                // Passer au serveur suivant
+                moveToNextHost();
+            }, 8000);
+        }
+        
+        function moveToNextHost() {
+            // Réactiver HOST04
+            document.getElementById('host04').classList.remove('updating');
+            
+            // Commencer HOST02
+            document.getElementById('host02').classList.add('updating');
+            systemState.currentHost = 'host02';
+            systemState.updateProgress = 0;
+            
+            // Simuler la migration de VM
+            const vmRds = document.getElementById('vm-rds');
+            vmRds.classList.add('migrating');
+            
+            showAlert('🔄 Starting LAA-HOST02 update - Migrating LAA-RDS to HOST01');
+            
+            setTimeout(() => {
+                // Déplacer visuellement la VM
+                vmRds.classList.remove('migrating');
+                showAlert('✅ LAA-RDS migrated successfully');
+            }, 3000);
+        }
+        
+        function showAlert(message) {
+            // Retirer l'alerte existante
+            const existing = document.querySelector('.alert-popup');
+            if (existing) existing.remove();
+            
+            const alert = document.createElement('div');
+            alert.className = 'alert-popup';
+            alert.textContent = message;
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 3000);
+        }
+        
+        // Démarrer le monitoring
+        document.addEventListener('DOMContentLoaded', () => {
+            startRealTimeMonitoring();
+            
+            // État initial
+            suspendBackup();  // Backup déjà suspendu pour l'update
+            
+            console.log('🎛️ ATLAS NOC initialized');
+            console.log('📊 Monitoring LAA infrastructure');
+            console.log('🔍 iLO integration active');
+        });
+        
+        // Raccourcis clavier
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' && e.ctrlKey) {
+                e.preventDefault();
+                resumeAll();
+            } else if (e.key === 's' && e.ctrlKey) {
+                e.preventDefault();
+                suspendReplication();
+            } else if (e.key === 'i' && e.ctrlKey) {
+                e.preventDefault();
+                checkILO();
+            }
+        });
+    </script>
+</body>
+</html>
