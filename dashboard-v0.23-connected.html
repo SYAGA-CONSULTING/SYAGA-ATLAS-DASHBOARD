@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔷 ATLAS v0.23 - Honeycomb Monitor (Live SharePoint)</title>
+    
+    <!-- MSAL Authentication -->
+    <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0e1418;
+            color: #d1d1d1;
+            min-height: 100vh;
+        }
+        
+        /* Zabbix exact widget style */
+        .dashboard-widget {
+            margin: 20px;
+            background: #1b1f22;
+            border: 1px solid #282e33;
+            border-radius: 4px;
+        }
+        
+        .dashboard-widget-head {
+            background: linear-gradient(to bottom, #2a3135 0%, #1e2225 100%);
+            border-bottom: 1px solid #282e33;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dashboard-widget-head h4 {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .filter-btn {
+            background: #2a3135;
+            border: 1px solid #404449;
+            color: #d1d1d1;
+            padding: 4px 12px;
+            border-radius: 3px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn:hover {
+            background: #353b41;
+        }
+        
+        .filter-btn.active {
+            background: #0275b8;
+            border-color: #0275b8;
+            color: white;
+        }
+        
+        .dashboard-widget-content {
+            padding: 20px;
+            min-height: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Honeycomb container */
+        #honeycomb-container {
+            width: 100%;
+            height: 450px;
+            position: relative;
+        }
+        
+        .honeycomb-svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Hexagon styles */
+        .hexagon {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .hexagon:hover {
+            filter: brightness(1.3);
+        }
+        
+        .hexagon-text {
+            fill: white;
+            font-size: 11px;
+            text-anchor: middle;
+            pointer-events: none;
+            font-weight: 500;
+        }
+        
+        /* Severity colors - Zabbix exact */
+        .severity-ok { fill: #35bf8d; }
+        .severity-info { fill: #0275b8; }
+        .severity-warning { fill: #ffc859; }
+        .severity-average { fill: #ff9e5e; }
+        .severity-high { fill: #e97659; }
+        .severity-disaster { fill: #e45959; }
+        
+        /* Overlay dialogue - Zabbix exact style */
+        .overlay-dialogue {
+            position: absolute;
+            background: #1b1f22;
+            border: 1px solid #404449;
+            border-radius: 4px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            min-width: 350px;
+        }
+        
+        .overlay-dialogue.show {
+            display: block;
+        }
+        
+        .overlay-dialogue h3 {
+            color: #ffffff;
+            font-size: 14px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #282e33;
+        }
+        
+        .overlay-dialogue-content {
+            font-size: 12px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(40,46,51,0.5);
+        }
+        
+        .info-label {
+            color: #888;
+        }
+        
+        .info-value {
+            color: #d1d1d1;
+            font-weight: 500;
+        }
+        
+        .info-value.critical {
+            color: #e45959;
+        }
+        
+        .info-value.warning {
+            color: #ffc859;
+        }
+        
+        .info-value.good {
+            color: #35bf8d;
+        }
+        
+        /* Stats bar */
+        .stats-bar {
+            background: #1b1f22;
+            border-top: 1px solid #282e33;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stat-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-count {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+        }
+        
+        /* Loading spinner */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #0275b8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #888;
+            font-size: 14px;
+        }
+        
+        /* Header controls */
+        .header-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .control-btn {
+            background: #2a3135;
+            border: 1px solid #404449;
+            color: #d1d1d1;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .control-btn:hover {
+            background: #353b41;
+        }
+        
+        .control-btn.active {
+            background: #0275b8;
+            border-color: #0275b8;
+            color: white;
+        }
+        
+        .last-update {
+            color: #888;
+            font-size: 11px;
+            padding: 8px 16px;
+            background: #1b1f22;
+            border: 1px solid #282e33;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-controls">
+        <span class="last-update" id="lastUpdate">Dernière MAJ: --:--:--</span>
+        <button class="control-btn" onclick="toggleAutoRefresh()" id="autoRefreshBtn">
+            🔄 Auto-refresh: ON
+        </button>
+        <button class="control-btn" onclick="loadServers()">
+            🔄 Rafraîchir
+        </button>
+    </div>
+
+    <div class="dashboard-widget">
+        <div class="dashboard-widget-head">
+            <h4>🔷 Honeycomb Monitor - Vue Globale Infrastructure</h4>
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="setFilter('all')">Tous</button>
+                <button class="filter-btn" onclick="setFilter('problems')">Problèmes</button>
+                <button class="filter-btn" onclick="setFilter('updates')">MAJ Critiques</button>
+            </div>
+        </div>
+        
+        <div class="dashboard-widget-content">
+            <div id="honeycomb-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Connexion à SharePoint...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-bar" id="statsBar">
+            <div class="stat-item">
+                <div class="stat-color" style="background: #35bf8d;"></div>
+                <div class="stat-info">
+                    <span class="stat-count" id="countOk">0</span>
+                    <span class="stat-label">OK</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-color" style="background: #ffc859;"></div>
+                <div class="stat-info">
+                    <span class="stat-count" id="countWarning">0</span>
+                    <span class="stat-label">Attention</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-color" style="background: #e97659;"></div>
+                <div class="stat-info">
+                    <span class="stat-count" id="countHigh">0</span>
+                    <span class="stat-label">Élevé</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-color" style="background: #e45959;"></div>
+                <div class="stat-info">
+                    <span class="stat-count" id="countDisaster">0</span>
+                    <span class="stat-label">Critique</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-info">
+                    <span class="stat-count" id="totalServers">0</span>
+                    <span class="stat-label">Serveurs Total</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Overlay dialogue -->
+    <div class="overlay-dialogue" id="overlay">
+        <h3 id="overlayTitle">Server Details</h3>
+        <div class="overlay-dialogue-content" id="overlayContent">
+            <!-- Content will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        // MSAL Configuration
+        const msalConfig = {
+            auth: {
+                clientId: 'f66a8c6c-1037-41b8-be3c-4f6e67c1f49e',
+                authority: 'https://login.microsoftonline.com/6027d81c-ad9b-48f5-9da6-96f1bad11429',
+                redirectUri: window.location.href.split('?')[0].split('#')[0]
+            },
+            cache: {
+                cacheLocation: "sessionStorage",
+                storeAuthStateInCookie: false
+            }
+        };
+
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        
+        // SharePoint configuration
+        const sharePointConfig = {
+            siteUrl: 'https://syagaconsulting.sharepoint.com/sites/SERVEUR-UPDATE',
+            listName: 'SERVEUR UPDATE'
+        };
+        
+        let allServers = [];
+        let currentFilter = 'all';
+        let autoRefreshInterval = null;
+        let autoRefreshEnabled = true;
+
+        // Initialize
+        async function initializeApp() {
+            try {
+                const accounts = msalInstance.getAllAccounts();
+                if (accounts.length > 0) {
+                    msalInstance.setActiveAccount(accounts[0]);
+                    await loadServers();
+                    startAutoRefresh();
+                } else {
+                    await login();
+                }
+            } catch (error) {
+                console.error('Initialization error:', error);
+                await login();
+            }
+        }
+
+        // Login
+        async function login() {
+            try {
+                await msalInstance.loginRedirect({
+                    scopes: ["User.Read", "Sites.Read.All"]
+                });
+            } catch (error) {
+                console.error('Login error:', error);
+            }
+        }
+
+        // Get access token
+        async function getAccessToken() {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length === 0) {
+                await login();
+                return null;
+            }
+
+            const request = {
+                scopes: ["Sites.Read.All"],
+                account: accounts[0]
+            };
+
+            try {
+                const response = await msalInstance.acquireTokenSilent(request);
+                return response.accessToken;
+            } catch (error) {
+                const response = await msalInstance.acquireTokenPopup(request);
+                return response.accessToken;
+            }
+        }
+
+        // Load servers from SharePoint
+        async function loadServers() {
+            const container = document.getElementById('honeycomb-container');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">Chargement des serveurs...</div></div>';
+            
+            try {
+                const accessToken = await getAccessToken();
+                if (!accessToken) return;
+
+                const response = await fetch(
+                    `${sharePointConfig.siteUrl}/_api/web/lists/getbytitle('${sharePointConfig.listName}')/items?$select=Title,CLIENT,TYPE_x0020_OS,OS,Processeur,M_x00e9_moire,COMMENTAIRE,MAJ_x0020_CRITIQUE,DISQUE,BACKUP,HYPERVISEUR&$top=1000`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Accept': 'application/json'
+                        }
+                    }
+                );
+
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const data = await response.json();
+                
+                // Filter out config entries and process servers
+                allServers = data.value
+                    .filter(item => !item.Title?.toLowerCase().includes('config'))
+                    .map(item => ({
+                        name: item.Title || 'Unknown',
+                        client: item.CLIENT || 'N/A',
+                        os: item.OS || 'N/A',
+                        processor: item.Processeur || 'N/A',
+                        memory: item.M_x00e9_moire || 'N/A',
+                        criticalUpdates: parseInt(item.MAJ_x0020_CRITIQUE) || 0,
+                        diskSpace: parseInt(item.DISQUE) || 100,
+                        backup: item.BACKUP || 'N/A',
+                        hypervisor: item.HYPERVISEUR || 'N/A',
+                        comment: item.COMMENTAIRE || '',
+                        severity: calculateSeverity(item)
+                    }));
+                
+                renderHoneycomb();
+                updateStats();
+                updateLastUpdateTime();
+                
+            } catch (error) {
+                console.error('Error loading servers:', error);
+                container.innerHTML = '<div class="loading-text">Erreur de chargement. Veuillez rafraîchir.</div>';
+            }
+        }
+
+        // Calculate severity based on server metrics
+        function calculateSeverity(server) {
+            const criticalUpdates = parseInt(server.MAJ_x0020_CRITIQUE) || 0;
+            const diskSpace = parseInt(server.DISQUE) || 100;
+            
+            if (criticalUpdates > 50 || diskSpace < 10) return 'disaster';
+            if (criticalUpdates > 30 || diskSpace < 20) return 'high';
+            if (criticalUpdates > 20 || diskSpace < 30) return 'average';
+            if (criticalUpdates > 10 || diskSpace < 40) return 'warning';
+            if (criticalUpdates > 0 || diskSpace < 50) return 'info';
+            return 'ok';
+        }
+
+        // Create hexagon SVG path
+        function createHexagon(x, y, size) {
+            const points = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i - Math.PI / 6;
+                const px = x + size * Math.cos(angle);
+                const py = y + size * Math.sin(angle);
+                points.push(`${px},${py}`);
+            }
+            return points.join(' ');
+        }
+
+        // Render honeycomb visualization
+        function renderHoneycomb() {
+            const container = document.getElementById('honeycomb-container');
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            
+            // Filter servers based on current filter
+            let serversToShow = allServers;
+            if (currentFilter === 'problems') {
+                serversToShow = allServers.filter(s => 
+                    s.severity === 'disaster' || s.severity === 'high' || s.severity === 'average'
+                );
+            } else if (currentFilter === 'updates') {
+                serversToShow = allServers.filter(s => s.criticalUpdates > 10);
+            }
+            
+            // Create SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'honeycomb-svg');
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            
+            // Calculate hexagon layout
+            const hexSize = 35;
+            const hexHeight = hexSize * 2;
+            const hexWidth = hexSize * Math.sqrt(3);
+            const cols = Math.floor(width / (hexWidth * 0.75));
+            const rows = Math.ceil(serversToShow.length / cols);
+            
+            // Center the honeycomb
+            const totalWidth = cols * hexWidth * 0.75;
+            const totalHeight = rows * hexHeight * 0.866;
+            const offsetX = (width - totalWidth) / 2 + hexSize;
+            const offsetY = (height - totalHeight) / 2 + hexSize;
+            
+            // Draw hexagons
+            serversToShow.forEach((server, index) => {
+                const row = Math.floor(index / cols);
+                const col = index % cols;
+                
+                const x = offsetX + col * hexWidth * 0.75;
+                const y = offsetY + row * hexHeight * 0.866 + (col % 2 ? hexHeight * 0.433 : 0);
+                
+                // Create group
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                // Create hexagon
+                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                polygon.setAttribute('points', createHexagon(x, y, hexSize));
+                polygon.setAttribute('class', `hexagon severity-${server.severity}`);
+                polygon.setAttribute('stroke', '#282e33');
+                polygon.setAttribute('stroke-width', '1');
+                
+                // Add event listeners
+                polygon.addEventListener('mouseenter', (e) => showOverlay(server, e));
+                polygon.addEventListener('mouseleave', hideOverlay);
+                
+                // Create text
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', y);
+                text.setAttribute('class', 'hexagon-text');
+                text.textContent = server.name.length > 12 ? 
+                    server.name.substring(0, 10) + '...' : 
+                    server.name;
+                
+                g.appendChild(polygon);
+                g.appendChild(text);
+                svg.appendChild(g);
+            });
+            
+            container.innerHTML = '';
+            container.appendChild(svg);
+        }
+
+        // Show overlay with server details
+        function showOverlay(server, event) {
+            const overlay = document.getElementById('overlay');
+            const title = document.getElementById('overlayTitle');
+            const content = document.getElementById('overlayContent');
+            
+            title.textContent = `🖥️ ${server.name}`;
+            
+            const diskClass = server.diskSpace < 20 ? 'critical' : 
+                            server.diskSpace < 40 ? 'warning' : 'good';
+            const updateClass = server.criticalUpdates > 30 ? 'critical' : 
+                              server.criticalUpdates > 10 ? 'warning' : 'good';
+            
+            content.innerHTML = `
+                <div class="info-row">
+                    <span class="info-label">Client:</span>
+                    <span class="info-value">${server.client}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">OS:</span>
+                    <span class="info-value">${server.os}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Processeur:</span>
+                    <span class="info-value">${server.processor}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Mémoire:</span>
+                    <span class="info-value">${server.memory}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">MAJ Critiques:</span>
+                    <span class="info-value ${updateClass}">${server.criticalUpdates}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Espace Disque:</span>
+                    <span class="info-value ${diskClass}">${server.diskSpace}%</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Backup:</span>
+                    <span class="info-value">${server.backup}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Hyperviseur:</span>
+                    <span class="info-value">${server.hypervisor}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Sévérité:</span>
+                    <span class="info-value severity-${server.severity}">${server.severity.toUpperCase()}</span>
+                </div>
+                ${server.comment ? `
+                <div class="info-row">
+                    <span class="info-label">Commentaire:</span>
+                    <span class="info-value">${server.comment}</span>
+                </div>
+                ` : ''}
+            `;
+            
+            // Position overlay
+            const rect = event.target.getBoundingClientRect();
+            overlay.style.left = rect.right + 10 + 'px';
+            overlay.style.top = rect.top + 'px';
+            
+            // Adjust if overlay goes off screen
+            if (rect.right + 360 > window.innerWidth) {
+                overlay.style.left = (rect.left - 360) + 'px';
+            }
+            
+            overlay.classList.add('show');
+        }
+
+        // Hide overlay
+        function hideOverlay() {
+            document.getElementById('overlay').classList.remove('show');
+        }
+
+        // Update statistics
+        function updateStats() {
+            const stats = {
+                ok: 0,
+                info: 0,
+                warning: 0,
+                average: 0,
+                high: 0,
+                disaster: 0
+            };
+            
+            allServers.forEach(server => {
+                stats[server.severity]++;
+            });
+            
+            document.getElementById('countOk').textContent = stats.ok + stats.info;
+            document.getElementById('countWarning').textContent = stats.warning + stats.average;
+            document.getElementById('countHigh').textContent = stats.high;
+            document.getElementById('countDisaster').textContent = stats.disaster;
+            document.getElementById('totalServers').textContent = allServers.length;
+        }
+
+        // Set filter
+        function setFilter(filter) {
+            currentFilter = filter;
+            
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Re-render honeycomb
+            if (allServers.length > 0) {
+                renderHoneycomb();
+            }
+        }
+
+        // Update last update time
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('fr-FR');
+            document.getElementById('lastUpdate').textContent = `Dernière MAJ: ${timeString}`;
+        }
+
+        // Toggle auto-refresh
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (autoRefreshEnabled) {
+                btn.textContent = '🔄 Auto-refresh: ON';
+                btn.classList.remove('active');
+                startAutoRefresh();
+            } else {
+                btn.textContent = '🔄 Auto-refresh: OFF';
+                btn.classList.add('active');
+                stopAutoRefresh();
+            }
+        }
+
+        // Start auto-refresh
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            if (autoRefreshEnabled) {
+                autoRefreshInterval = setInterval(() => {
+                    loadServers();
+                }, 30000); // Refresh every 30 seconds
+            }
+        }
+
+        // Stop auto-refresh
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        // Handle redirect promise
+        msalInstance.handleRedirectPromise()
+            .then(response => {
+                if (response) {
+                    msalInstance.setActiveAccount(response.account);
+                }
+                initializeApp();
+            })
+            .catch(error => {
+                console.error('Redirect error:', error);
+                initializeApp();
+            });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (allServers.length > 0) {
+                renderHoneycomb();
+            }
+        });
+    </script>
+</body>
+</html>
