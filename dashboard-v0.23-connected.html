@@ -312,6 +312,25 @@
         </div>
         
         <div class="stats-bar" id="statsBar">
+            <!-- Légende des types de serveurs -->
+            <div class="stat-item" style="border-right: 1px solid #282e33; padding-right: 20px; margin-right: 10px;">
+                <div style="display: flex; flex-direction: column; gap: 5px; font-size: 11px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; border: 2px solid #35bf8d; border-radius: 3px;"></div>
+                        <span style="color: #35bf8d;">Physical</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; border: 2px dashed #0275b8; border-radius: 3px;"></div>
+                        <span style="color: #0275b8;">VM</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; border: 3px solid #ffc859; border-radius: 3px;"></div>
+                        <span style="color: #ffc859;">Host</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statistiques de sévérité -->
             <div class="stat-item">
                 <div class="stat-color" style="background: #35bf8d;"></div>
                 <div class="stat-info">
@@ -498,9 +517,12 @@
                         criticalUpdates: parseInt(item.fields.PendingUpdates) || 0,
                         diskSpace: parseInt(item.fields.DiskSpaceGB) || 100,
                         backup: item.fields.LastBackup || 'N/A',
+                        isVirtual: item.fields.HyperV === 'Yes' || item.fields.VMHost || item.fields.IsVirtual === 'Yes',
+                        vmHost: item.fields.VMHost || (item.fields.HyperV === 'Yes' ? 'Host Hyper-V' : null),
                         hypervisor: item.fields.HyperV === 'Yes' ? 'Hyper-V' : 'Physical',
                         comment: item.fields.Comments || '',
                         state: item.fields.State || 'Unknown',
+                        serverType: item.fields.VMHost ? 'VM' : (item.fields.HyperV === 'Yes' ? 'Host' : 'Physical'),
                         severity: calculateSeverity(item.fields)
                     }));
                 
@@ -574,11 +596,39 @@
             svg.setAttribute('class', 'honeycomb-svg');
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
             
-            // Calculate hexagon layout
-            const hexSize = 35;
+            // Adapter la taille des hexagones en fonction du nombre de serveurs
+            let hexSize;
+            const serverCount = serversToShow.length;
+            
+            if (serverCount <= 2) {
+                hexSize = 80;  // Très gros pour 1-2 serveurs
+            } else if (serverCount <= 5) {
+                hexSize = 65;  // Gros pour 3-5 serveurs
+            } else if (serverCount <= 10) {
+                hexSize = 55;  // Moyen pour 6-10 serveurs
+            } else if (serverCount <= 20) {
+                hexSize = 45;  // Petit-moyen pour 11-20 serveurs
+            } else if (serverCount <= 50) {
+                hexSize = 35;  // Petit pour 21-50 serveurs
+            } else {
+                hexSize = 25;  // Très petit pour 50+ serveurs
+            }
+            
             const hexHeight = hexSize * 2;
             const hexWidth = hexSize * Math.sqrt(3);
-            const cols = Math.floor(width / (hexWidth * 0.75));
+            
+            // Calculer le nombre optimal de colonnes
+            let cols;
+            if (serverCount <= 3) {
+                cols = serverCount;  // Une seule ligne pour 1-3 serveurs
+            } else if (serverCount <= 6) {
+                cols = 3;  // 2 lignes max pour 4-6 serveurs
+            } else if (serverCount <= 12) {
+                cols = 4;  // 3 lignes max pour 7-12 serveurs
+            } else {
+                cols = Math.min(Math.floor(width / (hexWidth * 0.75)), Math.ceil(Math.sqrt(serverCount * 1.5)));
+            }
+            
             const rows = Math.ceil(serversToShow.length / cols);
             
             // Center the honeycomb
@@ -598,28 +648,101 @@
                 // Create group
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 
-                // Create hexagon
+                // Create hexagon avec style différent pour VM/Physical
                 const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
                 polygon.setAttribute('points', createHexagon(x, y, hexSize));
                 polygon.setAttribute('class', `hexagon severity-${server.severity}`);
-                polygon.setAttribute('stroke', '#282e33');
-                polygon.setAttribute('stroke-width', '1');
+                
+                // Style différent pour VM vs Physical
+                if (server.serverType === 'VM') {
+                    polygon.setAttribute('stroke', '#0275b8');  // Bordure bleue pour VM
+                    polygon.setAttribute('stroke-width', '2');
+                    polygon.setAttribute('stroke-dasharray', '5,2');  // Bordure en pointillés
+                } else if (server.serverType === 'Host') {
+                    polygon.setAttribute('stroke', '#ffc859');  // Bordure dorée pour Host Hyper-V
+                    polygon.setAttribute('stroke-width', '3');
+                } else {
+                    polygon.setAttribute('stroke', '#35bf8d');  // Bordure verte pour Physical
+                    polygon.setAttribute('stroke-width', '2');
+                }
                 
                 // Add event listeners
                 polygon.addEventListener('mouseenter', (e) => showOverlay(server, e));
                 polygon.addEventListener('mouseleave', hideOverlay);
                 
-                // Create text
+                // Create text avec taille adaptée
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('x', x);
-                text.setAttribute('y', y);
+                text.setAttribute('y', y - (hexSize >= 65 ? 10 : 0));
                 text.setAttribute('class', 'hexagon-text');
-                text.textContent = server.name.length > 12 ? 
-                    server.name.substring(0, 10) + '...' : 
-                    server.name;
+                
+                // Adapter la taille du texte à la taille de l'hexagone
+                let fontSize;
+                if (hexSize >= 65) {
+                    fontSize = '16px';
+                    text.textContent = server.name;  // Nom complet pour les gros hexagones
+                    text.style.fontWeight = 'bold';
+                } else if (hexSize >= 45) {
+                    fontSize = '13px';
+                    text.textContent = server.name.length > 15 ? 
+                        server.name.substring(0, 13) + '...' : 
+                        server.name;
+                } else {
+                    fontSize = '11px';
+                    text.textContent = server.name.length > 12 ? 
+                        server.name.substring(0, 10) + '...' : 
+                        server.name;
+                }
+                text.style.fontSize = fontSize;
                 
                 g.appendChild(polygon);
                 g.appendChild(text);
+                
+                // Pour les très gros hexagones, ajouter des infos supplémentaires
+                if (hexSize >= 65) {
+                    // Type de serveur (VM/Physical/Host)
+                    const typeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    typeText.setAttribute('x', x);
+                    typeText.setAttribute('y', y + 10);
+                    typeText.setAttribute('class', 'hexagon-text');
+                    typeText.style.fontSize = '12px';
+                    typeText.style.opacity = '0.9';
+                    typeText.style.fontWeight = 'bold';
+                    
+                    if (server.serverType === 'VM') {
+                        typeText.style.fill = '#0275b8';
+                        typeText.textContent = '🖥️ VM';
+                    } else if (server.serverType === 'Host') {
+                        typeText.style.fill = '#ffc859';
+                        typeText.textContent = '🏠 Host Hyper-V';
+                    } else {
+                        typeText.style.fill = '#35bf8d';
+                        typeText.textContent = '🖲️ Physical';
+                    }
+                    g.appendChild(typeText);
+                    
+                    // Si c'est une VM, afficher l'hôte
+                    if (server.vmHost) {
+                        const hostText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        hostText.setAttribute('x', x);
+                        hostText.setAttribute('y', y + 25);
+                        hostText.setAttribute('class', 'hexagon-text');
+                        hostText.style.fontSize = '11px';
+                        hostText.style.opacity = '0.7';
+                        hostText.textContent = `Sur: ${server.vmHost}`;
+                        g.appendChild(hostText);
+                    } else {
+                        // Sinon afficher les MAJ
+                        const infoText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        infoText.setAttribute('x', x);
+                        infoText.setAttribute('y', y + 25);
+                        infoText.setAttribute('class', 'hexagon-text');
+                        infoText.style.fontSize = '11px';
+                        infoText.style.opacity = '0.7';
+                        infoText.textContent = `${server.criticalUpdates} MAJ`;
+                        g.appendChild(infoText);
+                    }
+                }
                 svg.appendChild(g);
             });
             
@@ -641,6 +764,20 @@
                               server.criticalUpdates > 10 ? 'warning' : 'good';
             
             content.innerHTML = `
+                <div class="info-row" style="background: rgba(255,255,255,0.05); padding: 6px; margin: -5px -5px 5px -5px; border-radius: 3px;">
+                    <span class="info-label">Type:</span>
+                    <span class="info-value" style="font-weight: bold; color: ${
+                        server.serverType === 'VM' ? '#0275b8' : 
+                        server.serverType === 'Host' ? '#ffc859' : '#35bf8d'
+                    }">${server.serverType === 'VM' ? '🖥️ Machine Virtuelle' : 
+                         server.serverType === 'Host' ? '🏠 Host Hyper-V' : '🖲️ Serveur Physique'}</span>
+                </div>
+                ${server.vmHost ? `
+                <div class="info-row" style="background: rgba(2,117,184,0.1); padding: 4px;">
+                    <span class="info-label">Hôte physique:</span>
+                    <span class="info-value" style="font-weight: bold;">${server.vmHost}</span>
+                </div>
+                ` : ''}
                 <div class="info-row">
                     <span class="info-label">Client:</span>
                     <span class="info-value">${server.client}</span>
@@ -648,6 +785,10 @@
                 <div class="info-row">
                     <span class="info-label">OS:</span>
                     <span class="info-value">${server.os}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">État:</span>
+                    <span class="info-value">${server.state}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Processeur:</span>
@@ -663,15 +804,11 @@
                 </div>
                 <div class="info-row">
                     <span class="info-label">Espace Disque:</span>
-                    <span class="info-value ${diskClass}">${server.diskSpace}%</span>
+                    <span class="info-value ${diskClass}">${server.diskSpace} GB libre</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Backup:</span>
                     <span class="info-value">${server.backup}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Hyperviseur:</span>
-                    <span class="info-value">${server.hypervisor}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Sévérité:</span>
