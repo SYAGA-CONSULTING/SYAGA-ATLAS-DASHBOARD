@@ -190,6 +190,79 @@
             border-color: #5c7cfa;
             color: #ffffff;
         }
+        
+        /* Zabbix exact tooltip style */
+        .overlay-dialogue {
+            position: absolute;
+            background: #1f252a;
+            border: 1px solid #444a51;
+            border-radius: 2px;
+            padding: 0;
+            z-index: 10000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            display: none;
+            min-width: 200px;
+        }
+        
+        .overlay-dialogue.visible {
+            display: block;
+        }
+        
+        .overlay-dialogue-header {
+            background: linear-gradient(to bottom, #2b3139 0%, #1f252a 100%);
+            border-bottom: 1px solid #444a51;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #f2f2f2;
+        }
+        
+        .overlay-dialogue-body {
+            padding: 12px;
+            background: #0e1418;
+        }
+        
+        .overlay-dialogue table {
+            width: 100%;
+            font-size: 12px;
+            color: #d1d3d4;
+        }
+        
+        .overlay-dialogue td {
+            padding: 4px 0;
+            vertical-align: top;
+        }
+        
+        .overlay-dialogue td:first-child {
+            color: #768895;
+            padding-right: 15px;
+            white-space: nowrap;
+        }
+        
+        .overlay-dialogue td:last-child {
+            color: #f2f2f2;
+            word-break: break-word;
+        }
+        
+        .overlay-dialogue .status-ok {
+            color: #43A047;
+            font-weight: 600;
+        }
+        
+        .overlay-dialogue .status-warning {
+            color: #FFC859;
+            font-weight: 600;
+        }
+        
+        .overlay-dialogue .status-high {
+            color: #E97659;
+            font-weight: 600;
+        }
+        
+        .overlay-dialogue .status-disaster {
+            color: #E45959;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -241,6 +314,18 @@
         </main>
     </div>
     
+    <!-- Zabbix-style tooltip -->
+    <div id="tooltip" class="overlay-dialogue">
+        <div class="overlay-dialogue-header">Détails du serveur</div>
+        <div class="overlay-dialogue-body">
+            <table>
+                <tbody id="tooltip-content">
+                    <!-- Content will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
     <script>
         // Configuration exacte Zabbix
         const CELL_SIZE = 50;  // Taille d'un hexagone
@@ -263,10 +348,18 @@
                         id: `${client}-SRV${String(i).padStart(2, '0')}`,
                         client: client,
                         name: `${client.substring(0, 3)}-${i}`,
+                        fullName: `${client}-SERVER-${String(i).padStart(2, '0')}`,
                         updates: hasUpdates ? Math.floor(Math.random() * 10) : 0,
                         status: hasUpdates 
                             ? (Math.random() > 0.5 ? 'warning' : 'high')
-                            : 'ok'
+                            : 'ok',
+                        ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+                        os: 'Windows Server 2022',
+                        lastCheck: new Date().toLocaleString('fr-FR'),
+                        uptime: Math.floor(Math.random() * 30) + ' jours',
+                        cpu: Math.floor(Math.random() * 100),
+                        memory: Math.floor(Math.random() * 100),
+                        disk: Math.floor(Math.random() * 100)
                     });
                 }
             });
@@ -357,7 +450,9 @@
                 text2.textContent = server.updates;
                 g.appendChild(text2);
                 
-                // Événement click
+                // Événements hover et click
+                g.addEventListener('mouseenter', (e) => showTooltip(e, server));
+                g.addEventListener('mouseleave', hideTooltip);
                 g.addEventListener('click', () => {
                     console.log(`Clicked on ${server.id}`);
                 });
@@ -366,6 +461,97 @@
             });
             
             updateStats();
+        }
+        
+        // Afficher le tooltip Zabbix-style
+        function showTooltip(event, server) {
+            const tooltip = document.getElementById('tooltip');
+            const content = document.getElementById('tooltip-content');
+            
+            // Obtenir le texte du statut
+            let statusText = 'OK';
+            let statusClass = 'status-ok';
+            if (server.status === 'warning') {
+                statusText = 'Avertissement';
+                statusClass = 'status-warning';
+            } else if (server.status === 'high') {
+                statusText = 'Élevé';
+                statusClass = 'status-high';
+            } else if (server.status === 'disaster') {
+                statusText = 'Catastrophe';
+                statusClass = 'status-disaster';
+            }
+            
+            // Créer le contenu du tooltip
+            content.innerHTML = `
+                <tr>
+                    <td>Serveur:</td>
+                    <td><strong>${server.fullName}</strong></td>
+                </tr>
+                <tr>
+                    <td>Client:</td>
+                    <td>${server.client}</td>
+                </tr>
+                <tr>
+                    <td>Adresse IP:</td>
+                    <td>${server.ip}</td>
+                </tr>
+                <tr>
+                    <td>Système:</td>
+                    <td>${server.os}</td>
+                </tr>
+                <tr>
+                    <td>État:</td>
+                    <td class="${statusClass}">${statusText}</td>
+                </tr>
+                <tr>
+                    <td>Mises à jour:</td>
+                    <td><strong>${server.updates}</strong> en attente</td>
+                </tr>
+                <tr>
+                    <td>CPU:</td>
+                    <td>${server.cpu}%</td>
+                </tr>
+                <tr>
+                    <td>Mémoire:</td>
+                    <td>${server.memory}%</td>
+                </tr>
+                <tr>
+                    <td>Disque:</td>
+                    <td>${server.disk}%</td>
+                </tr>
+                <tr>
+                    <td>Uptime:</td>
+                    <td>${server.uptime}</td>
+                </tr>
+                <tr>
+                    <td>Dernière vérif:</td>
+                    <td>${server.lastCheck}</td>
+                </tr>
+            `;
+            
+            // Positionner le tooltip
+            const rect = event.target.getBoundingClientRect();
+            tooltip.style.left = (rect.right + 10) + 'px';
+            tooltip.style.top = rect.top + 'px';
+            
+            // Ajuster si le tooltip sort de l'écran
+            setTimeout(() => {
+                const tooltipRect = tooltip.getBoundingClientRect();
+                if (tooltipRect.right > window.innerWidth) {
+                    tooltip.style.left = (rect.left - tooltipRect.width - 10) + 'px';
+                }
+                if (tooltipRect.bottom > window.innerHeight) {
+                    tooltip.style.top = (window.innerHeight - tooltipRect.height - 10) + 'px';
+                }
+            }, 1);
+            
+            tooltip.classList.add('visible');
+        }
+        
+        // Cacher le tooltip
+        function hideTooltip() {
+            document.getElementById('tooltip').classList.remove('visible');
         }
         
         // Mettre à jour les statistiques
