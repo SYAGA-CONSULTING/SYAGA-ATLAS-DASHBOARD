@@ -765,14 +765,21 @@
                 
                 // Déterminer le type réel basé sur le nom ou autres indices
                 let actualType = 'Physical';  // Par défaut
-                if (server.name.toLowerCase().includes('vm') || 
-                    server.name.toLowerCase().includes('veeam') ||
-                    server.isVirtual || 
-                    server.vmHost) {
+                
+                // Détection spécifique pour vos serveurs
+                const nameLower = server.name.toLowerCase();
+                if (nameLower.includes('veeam') || nameLower.includes('vm')) {
                     actualType = 'VM';
-                } else if (server.name.toLowerCase().includes('host') || 
-                           server.hypervisor === 'Hyper-V') {
+                    console.log(`${server.name} détecté comme VM`);
+                } else if (nameLower.includes('host')) {
                     actualType = 'Host';
+                    console.log(`${server.name} détecté comme Host`);
+                } else if (server.isVirtual || server.vmHost) {
+                    actualType = 'VM';
+                    console.log(`${server.name} détecté comme VM (isVirtual ou vmHost défini)`);
+                } else if (server.hypervisor === 'Hyper-V') {
+                    actualType = 'Host';
+                    console.log(`${server.name} détecté comme Host (Hyper-V)`);
                 }
                 
                 // Style TRÈS différent et visible pour VM vs Physical
@@ -836,8 +843,9 @@
                 }
                 text.style.fontSize = fontSize;
                 
-                // IMPORTANT : Ajouter le polygon EN DERNIER pour qu'il soit au-dessus
-                g.appendChild(text);  // Texte en premier (en dessous)
+                // Ajouter le polygon en premier pour qu'il soit visible
+                g.appendChild(polygon);
+                g.appendChild(text);  // Texte par-dessus
                 
                 // Pour les très gros hexagones, ajouter des infos supplémentaires
                 if (hexSize >= 65) {
@@ -888,8 +896,24 @@
                     }
                 }
                 
-                // TRÈS IMPORTANT : Ajouter le polygon EN DERNIER pour qu'il reçoive les clics
-                g.appendChild(polygon);
+                // Ajouter un rectangle invisible au-dessus pour capturer les clics
+                const clickRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                const bounds = hexSize * 1.5;
+                clickRect.setAttribute('x', x - bounds/2);
+                clickRect.setAttribute('y', y - bounds/2);
+                clickRect.setAttribute('width', bounds);
+                clickRect.setAttribute('height', bounds);
+                clickRect.setAttribute('fill', 'transparent');
+                clickRect.setAttribute('stroke', 'none');
+                clickRect.style.cursor = 'pointer';
+                clickRect.addEventListener('click', (e) => {
+                    console.log('Click on rect for:', server.name);
+                    e.stopPropagation();
+                    e.preventDefault();
+                    showDetailedView(server, { target: polygon });
+                });
+                g.appendChild(clickRect);
+                
                 svg.appendChild(g);
             });
             
