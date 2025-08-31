@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- NO CACHE FOR DEBUG -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 ATLAS v0.23 - Unified Dashboard</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        
+        /* Header with Navigation */
+        .header {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header-top {
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .version-badge {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            padding: 0 2rem;
+            gap: 0.5rem;
+        }
+        
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: none;
+            border-radius: 12px 12px 0 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .nav-tab.active {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+        
+        /* Main Content Area */
+        .content-area {
+            padding: 2rem;
+        }
+        
+        /* Tab Panels */
+        .tab-panel {
+            display: none;
+        }
+        
+        .tab-panel.active {
+            display: block;
+        }
+        
+        /* Dashboard Overview Grid */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .overview-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .overview-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .card-icon {
+            font-size: 2rem;
+        }
+        
+        .card-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-ok {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .status-warning {
+            background: rgba(251, 146, 60, 0.2);
+            color: #fb923c;
+        }
+        
+        .status-critical {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-subtitle {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .actions-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .action-button {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            text-align: center;
+        }
+        
+        .action-button:hover {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+            transform: translateY(-2px);
+        }
+        
+        .action-icon {
+            font-size: 1.5rem;
+        }
+        
+        .action-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        /* Activity Timeline */
+        .timeline-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        
+        .timeline-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .timeline-item {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+        
+        .timeline-time {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            min-width: 60px;
+        }
+        
+        .timeline-content {
+            flex: 1;
+        }
+        
+        .timeline-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .timeline-description {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .timeline-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            display: inline-block;
+            margin-top: 0.25rem;
+        }
+        
+        /* Iframe for embedded views */
+        .embedded-view {
+            width: 100%;
+            height: calc(100vh - 200px);
+            border: none;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Global Status Bar */
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.875rem;
+        }
+        
+        .status-value {
+            font-weight: 600;
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-top">
+            <div class="logo">
+                <span>🚀 ATLAS</span>
+                <span class="version-badge">v0.23 Unified</span>
+            </div>
+            <div class="user-info">
+                <span>sebastien.questier@syaga.fr</span>
+                <button style="background: none; border: 1px solid white; color: white; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">
+                    ⚙️ Paramètres
+                </button>
+            </div>
+        </div>
+        
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="switchTab('overview')">
+                <span>🏠</span>
+                <span>Vue d'ensemble</span>
+            </div>
+            <div class="nav-tab" onclick="switchTab('infrastructure')">
+                <span>🔷</span>
+                <span>Infrastructure</span>
+            </div>
+            <div class="nav-tab" onclick="switchTab('hyperv')">
+                <span>💻</span>
+                <span>Hyper-V</span>
+            </div>
+            <div class="nav-tab" onclick="switchTab('updates')">
+                <span>🔄</span>
+                <span>Windows Update</span>
+            </div>
+            <div class="nav-tab" onclick="switchTab('veeam')">
+                <span>🛡️</span>
+                <span>Veeam B&R</span>
+            </div>
+            <div class="nav-tab" onclick="switchTab('orchestration')">
+                <span>🎯</span>
+                <span>Orchestration</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Content Area -->
+    <div class="content-area">
+        
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-panel active">
+            
+            <!-- Overview Cards -->
+            <div class="overview-grid">
+                <div class="overview-card" onclick="switchTab('infrastructure')">
+                    <div class="card-header">
+                        <div class="card-icon">🖥️</div>
+                        <div class="card-status status-ok">OK</div>
+                    </div>
+                    <div class="card-title">Infrastructure</div>
+                    <div class="card-value">48</div>
+                    <div class="card-subtitle">Serveurs actifs</div>
+                </div>
+                
+                <div class="overview-card" onclick="switchTab('hyperv')">
+                    <div class="card-header">
+                        <div class="card-icon">💻</div>
+                        <div class="card-status status-warning">Warning</div>
+                    </div>
+                    <div class="card-title">Hyper-V</div>
+                    <div class="card-value">37</div>
+                    <div class="card-subtitle">VMs en cours • 2 réplications en retard</div>
+                </div>
+                
+                <div class="overview-card" onclick="switchTab('updates')">
+                    <div class="card-header">
+                        <div class="card-icon">🔄</div>
+                        <div class="card-status status-critical">Critical</div>
+                    </div>
+                    <div class="card-title">Windows Update</div>
+                    <div class="card-value">12</div>
+                    <div class="card-subtitle">Mises à jour en attente</div>
+                </div>
+                
+                <div class="overview-card" onclick="switchTab('veeam')">
+                    <div class="card-header">
+                        <div class="card-icon">🛡️</div>
+                        <div class="card-status status-ok">OK</div>
+                    </div>
+                    <div class="card-title">Veeam Backup</div>
+                    <div class="card-value">89%</div>
+                    <div class="card-subtitle">Taux de réussite (24h)</div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <div class="actions-header">
+                    <span>⚡</span>
+                    <span>Actions rapides</span>
+                </div>
+                <div class="actions-grid">
+                    <button class="action-button" onclick="startOrchestration()">
+                        <div class="action-icon">🚀</div>
+                        <div class="action-label">Démarrer Orchestration</div>
+                    </button>
+                    <button class="action-button" onclick="pauseAllBackups()">
+                        <div class="action-icon">⏸️</div>
+                        <div class="action-label">Pause Sauvegardes</div>
+                    </button>
+                    <button class="action-button" onclick="migrateVM()">
+                        <div class="action-icon">📦</div>
+                        <div class="action-label">Migrer VM</div>
+                    </button>
+                    <button class="action-button" onclick="runHealthCheck()">
+                        <div class="action-icon">🏥</div>
+                        <div class="action-label">Health Check</div>
+                    </button>
+                    <button class="action-button" onclick="exportReports()">
+                        <div class="action-icon">📊</div>
+                        <div class="action-label">Export Rapports</div>
+                    </button>
+                    <button class="action-button" onclick="openTicket()">
+                        <div class="action-icon">🎫</div>
+                        <div class="action-label">Nouveau Ticket</div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Activity Timeline -->
+            <div class="timeline-section">
+                <div class="timeline-header">
+                    <span>📋</span>
+                    <span>Activité récente</span>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-time">14:45</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Backup LAA-Production terminé</div>
+                        <div class="timeline-description">Sauvegarde complète réussie (287 GB)</div>
+                        <span class="timeline-badge status-ok">Succès</span>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-time">14:30</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Migration VM SYAGA-WEB01</div>
+                        <div class="timeline-description">Migration de HOST01 vers HOST02</div>
+                        <span class="timeline-badge status-ok">Complété</span>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-time">13:15</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Windows Update BUQUET-DC01</div>
+                        <div class="timeline-description">KB5030211 installé, redémarrage en attente</div>
+                        <span class="timeline-badge status-warning">En attente</span>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-time">12:00</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Alerte espace disque UAI-SQL01</div>
+                        <div class="timeline-description">Disque C: 95% utilisé</div>
+                        <span class="timeline-badge status-critical">Critique</span>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-time">11:30</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Orchestration complétée</div>
+                        <div class="timeline-description">5 serveurs mis à jour avec succès</div>
+                        <span class="timeline-badge status-ok">Succès</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Infrastructure Tab -->
+        <div id="infrastructure" class="tab-panel">
+            <iframe src="dashboard-v0.23-connected.html" class="embedded-view"></iframe>
+        </div>
+        
+        <!-- Hyper-V Tab -->
+        <div id="hyperv" class="tab-panel">
+            <iframe src="dashboard-hyperv.html" class="embedded-view"></iframe>
+        </div>
+        
+        <!-- Windows Update Tab -->
+        <div id="updates" class="tab-panel">
+            <iframe src="dashboard-windowsupdate.html" class="embedded-view"></iframe>
+        </div>
+        
+        <!-- Veeam Tab -->
+        <div id="veeam" class="tab-panel">
+            <iframe src="dashboard-veeam.html" class="embedded-view"></iframe>
+        </div>
+        
+        <!-- Orchestration Tab -->
+        <div id="orchestration" class="tab-panel">
+            <div class="quick-actions">
+                <div class="actions-header">
+                    <span>🎯</span>
+                    <span>Orchestration avancée</span>
+                </div>
+                <div class="actions-grid">
+                    <button class="action-button" onclick="planMaintenance()">
+                        <div class="action-icon">📅</div>
+                        <div class="action-label">Planifier Maintenance</div>
+                    </button>
+                    <button class="action-button" onclick="simulateFailover()">
+                        <div class="action-icon">🔄</div>
+                        <div class="action-label">Simuler Failover</div>
+                    </button>
+                    <button class="action-button" onclick="autoRemediate()">
+                        <div class="action-icon">🔧</div>
+                        <div class="action-label">Auto-Remédiation</div>
+                    </button>
+                    <button class="action-button" onclick="loadBalance()">
+                        <div class="action-icon">⚖️</div>
+                        <div class="action-label">Équilibrage Charge</div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Orchestration Status -->
+            <div class="timeline-section">
+                <div class="timeline-header">
+                    <span>🎼</span>
+                    <span>Orchestrations en cours</span>
+                </div>
+                
+                <div style="text-align: center; padding: 3rem; color: rgba(255, 255, 255, 0.6);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+                    <div>Aucune orchestration en cours</div>
+                    <button class="action-button" style="margin: 2rem auto; display: inline-flex;" onclick="startOrchestration()">
+                        <div class="action-icon">🚀</div>
+                        <div class="action-label">Démarrer une orchestration</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Global Status Bar -->
+    <div class="status-bar">
+        <div class="status-item">
+            <span class="status-label">Statut global:</span>
+            <span class="status-value" style="color: #22c55e;">✅ Opérationnel</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Serveurs:</span>
+            <span class="status-value">48/48</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Alertes:</span>
+            <span class="status-value" style="color: #fb923c;">⚠️ 3</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Dernière sync:</span>
+            <span class="status-value">15:46:12</span>
+            <div class="spinner" style="margin-left: 0.5rem;"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all panels
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            // Remove active from all tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected panel
+            document.getElementById(tabName).classList.add('active');
+            
+            // Mark tab as active
+            event.currentTarget.classList.add('active');
+        }
+        
+        // Quick Actions
+        function startOrchestration() {
+            if (confirm('🚀 Démarrer l\'orchestration complète ?')) {
+                alert('✅ Orchestration démarrée - Consultez l\'onglet Windows Update pour le suivi');
+                switchTab('updates');
+            }
+        }
+        
+        function pauseAllBackups() {
+            if (confirm('⏸️ Mettre en pause toutes les sauvegardes ?')) {
+                alert('✅ Sauvegardes mises en pause pour 2 heures');
+            }
+        }
+        
+        function migrateVM() {
+            const vm = prompt('💻 Nom de la VM à migrer:');
+            if (vm) {
+                alert(`🚀 Migration de ${vm} planifiée`);
+            }
+        }
+        
+        function runHealthCheck() {
+            alert('🏥 Health Check en cours... Résultats dans 30 secondes');
+        }
+        
+        function exportReports() {
+            alert('📊 Export des rapports en cours... Téléchargement automatique');
+        }
+        
+        function openTicket() {
+            alert('🎫 Ouverture du système de tickets...');
+        }
+        
+        function planMaintenance() {
+            alert('📅 Ouverture du planificateur de maintenance...');
+        }
+        
+        function simulateFailover() {
+            if (confirm('⚠️ Simuler un failover complet ?')) {
+                alert('🔄 Simulation de failover lancée - Mode lecture seule');
+            }
+        }
+        
+        function autoRemediate() {
+            alert('🔧 Analyse des problèmes et remédiation automatique...');
+        }
+        
+        function loadBalance() {
+            alert('⚖️ Analyse de la charge et redistribution des VMs...');
+        }
+        
+        // Auto-refresh
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0];
+            document.querySelector('.status-bar .status-value:last-of-type').textContent = timeStr;
+        }, 1000);
+    </script>
+</body>
+</html>

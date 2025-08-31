@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- NO CACHE FOR DEBUG -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔷 ATLAS v0.23 - Honeycomb Monitor (Live SharePoint)</title>
+    
+    <!-- DÉSACTIVATION TOTALE DU CACHE POUR DEBUG -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Clear-Site-Data" content="cache">
+    <meta name="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <!-- Force reload des ressources avec timestamp unique -->
+    
+    <!-- MSAL Authentication avec anti-cache -->
+    <script>
+        // Forcer le rechargement de la page si elle vient du cache
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+        
+        // Ajouter timestamp à toutes les requêtes
+        const antiCacheTimestamp = new Date().getTime();
+    </script>
+    <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0e1418;
+            color: #d1d1d1;
+            min-height: 100vh;
+        }
+        
+        /* Zabbix exact widget style */
+        .dashboard-widget {
+            margin: 20px;
+            background: #1b1f22;
+            border: 1px solid #282e33;
+            border-radius: 4px;
+        }
+        
+        .dashboard-widget-head {
+            background: linear-gradient(to bottom, #2a3135 0%, #1e2225 100%);
+            border-bottom: 1px solid #282e33;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dashboard-widget-head h4 {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .filter-btn {
+            background: #2a3135;
+            border: 1px solid #404449;
+            color: #d1d1d1;
+            padding: 4px 12px;
+            border-radius: 3px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn:hover {
+            background: #353b41;
+        }
+        
+        .filter-btn.active {
+            background: #0275b8;
+            border-color: #0275b8;
+            color: white;
+        }
+        
+        .dashboard-widget-content {
+            padding: 20px;
+            min-height: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Honeycomb container */
+        #honeycomb-container {
+            width: 100%;
+            height: 450px;
+            position: relative;
+        }
+        
+        .honeycomb-svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Hexagon styles */
+        .hexagon {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .hexagon:hover {
+            filter: brightness(1.3);
+        }
+        
+        .hexagon-text {
+            fill: white;
+            font-size: 11px;
+            text-anchor: middle;
+            pointer-events: none;
+            font-weight: 500;
+        }
+        
+        /* Severity colors - Zabbix exact */
+        .severity-ok { fill: #35bf8d; }
+        .severity-info { fill: #0275b8; }
+        .severity-warning { fill: #ffc859; }
+        .severity-average { fill: #ff9e5e; }
+        .severity-high { fill: #e97659; }
+        .severity-disaster { fill: #e45959; }
+        
+        /* Overlay dialogue - Style amélioré pour clic */
+        .overlay-dialogue {
+            position: fixed;
+            background: #1b1f22;
+            border: 2px solid #0275b8;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(2,117,184,0.3);
+            z-index: 1000;
+            display: none;
+            min-width: 400px;
+            max-width: 500px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: slideIn 0.3s ease;
+        }
+        
+        .overlay-dialogue.show {
+            display: block;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -45%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+        
+        .overlay-dialogue h3 {
+            color: #ffffff;
+            font-size: 14px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #282e33;
+        }
+        
+        .overlay-dialogue-content {
+            font-size: 12px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(40,46,51,0.5);
+        }
+        
+        .info-label {
+            color: #888;
+        }
+        
+        .info-value {
+            color: #d1d1d1;
+            font-weight: 500;
+        }
+        
+        .info-value.critical {
+            color: #e45959;
+        }
+        
+        .info-value.warning {
+            color: #ffc859;
+        }
+        
+        .info-value.good {
+            color: #35bf8d;
+        }
+        
+        /* Stats bar */
+        .stats-bar {
+            background: #1b1f22;
+            border-top: 1px solid #282e33;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stat-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-count {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+        }
+        
+        /* Loading spinner */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #0275b8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #888;
+            font-size: 14px;
+        }
+        
+        /* Header controls */
+        .header-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .control-btn {
+            background: #2a3135;
+            border: 1px solid #404449;
+            color: #d1d1d1;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .control-btn:hover {
+            background: #353b41;
+        }
+        
+        .control-btn.active {
+            background: #0275b8;
+            border-color: #0275b8;
+            color: white;
+        }
+        
+        .last-update {
+            color: #888;
+            font-size: 11px;
+            padding: 8px 16px;
+            background: #1b1f22;
+            border: 1px solid #282e33;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-controls">
+        <span class="last-update" id="versionInfo" style="background: #e45959; color: white; font-weight: bold;">
+            ⚠️ NO CACHE MODE - v0.23
+        </span>
+        <span class="last-update" id="lastUpdate">Dernière MAJ: --:--:--</span>
+        <button class="control-btn" onclick="toggleAutoRefresh()" id="autoRefreshBtn">
+            🔄 Auto-refresh: ON
+        </button>
+        <button class="control-btn" onclick="loadServers()">
+            🔄 Rafraîchir
+        </button>
+        <button class="control-btn" onclick="location.reload(true)" style="background: #e45959;">
+            🔃 Force Reload (Ctrl+F5)
+        </button>
+    </div>
+
+    <div class="dashboard-widget">
+        <div class="dashboard-widget-head">
+            <h4>🔷 Honeycomb Monitor - Vue Globale Infrastructure</h4>
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="setFilter('all')">Tous</button>
+                <button class="filter-btn" onclick="setFilter('problems')">Problèmes</button>
+                <button class="filter-btn" onclick="setFilter('updates')">MAJ Critiques</button>
+            </div>
+        </div>
+        
+        <div class="dashboard-widget-content">
+            <div id="honeycomb-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Connexion à SharePoint...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-bar" id="statsBar">
+            <!-- Légende des types de serveurs -->
+            <div class="stat-item" style="border-right: 1px solid #282e33; padding-right: 20px; margin-right: 10px;">
+                <div style="display: flex; flex-direction: column; gap: 5px; font-size: 11px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; border: 4px solid #00ff00; border-radius: 3px; box-shadow: 0 0 5px rgba(0,255,0,0.5);"></div>
+                        <span style="color: #00ff00; font-weight: bold;">🖥️ Physical</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; border: 4px dashed #00ffff; border-radius: 3px; box-shadow: 0 0 5px rgba(0,255,255,0.5);"></div>
+                        <span style="color: #00ffff; font-weight: bold;">💻 VM</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; border: 5px solid #ffaa00; border-radius: 3px; box-shadow: 0 0 5px rgba(255,170,0,0.5);"></div>
+                        <span style="color: #ffaa00; font-weight: bold;">🏠 Host</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statistiques de sévérité -->
+            <div class="stat-item">
+                <div class="stat-color" style="background: #35bf8d;"></div>
+                <div class="stat-info">
+                    <span class="stat-count" id="countOk">0</span>
+                    <span class="stat-label">OK</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-color" style="background: #ffc859;"></div>
+                <div class="stat-info">
+                    <span class="stat-count" id="countWarning">0</span>
+                    <span class="stat-label">Attention</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-color" style="background: #e97659;"></div>
+                <div class="stat-info">
+                    <span class="stat-count" id="countHigh">0</span>
+                    <span class="stat-label">Élevé</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-color" style="background: #e45959;"></div>
+                <div class="stat-info">
+                    <span class="stat-count" id="countDisaster">0</span>
+                    <span class="stat-label">Critique</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-info">
+                    <span class="stat-count" id="totalServers">0</span>
+                    <span class="stat-label">Serveurs Total</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fond sombre pour focus -->
+    <div id="overlayBackdrop" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; z-index: 999;" onclick="closeDetailedView()"></div>
+    
+    <!-- Overlay dialogue avec bouton fermer -->
+    <div class="overlay-dialogue" id="overlay">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #282e33; padding-bottom: 10px; margin-bottom: 15px;">
+            <h3 id="overlayTitle" style="margin: 0; font-size: 18px;">Server Details</h3>
+            <button onclick="closeDetailedView()" style="background: #e45959; border: none; color: white; font-size: 20px; cursor: pointer; padding: 2px 8px; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.background='#ff6b6b'" onmouseout="this.style.background='#e45959'">&times;</button>
+        </div>
+        <div class="overlay-dialogue-content" id="overlayContent" style="margin-top: 10px;">
+            <!-- Content will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        // MSAL Configuration
+        const msalConfig = {
+            auth: {
+                clientId: 'f66a8c6c-1037-41b8-be3c-4f6e67c1f49e',
+                authority: 'https://login.microsoftonline.com/6027d81c-ad9b-48f5-9da6-96f1bad11429',
+                redirectUri: window.location.href.split('?')[0].split('#')[0] // URL dynamique
+            },
+            cache: {
+                cacheLocation: "sessionStorage",  // Pas de localStorage pour éviter le cache persistant
+                storeAuthStateInCookie: false,
+                secureCookies: false
+            },
+            system: {
+                allowNativeBroker: false,  // Désactiver le cache natif
+                windowHashTimeout: 3000
+            }
+        };
+
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        
+        // SharePoint configuration - Utilise ATLAS-Servers qui fonctionne
+        const SHAREPOINT_CONFIG = {
+            siteId: "syagacons.sharepoint.com,4cce268e-9cb7-4829-8c1c-3c85faa1810d,8cb3611e-c4aa-4105-b55d-2247e4fac8c8",
+            listId: "94dc7ad4-740f-4c1f-b99c-107e01c8f70b",
+            listUrl: "https://syagacons.sharepoint.com/Lists/ATLAS-Servers",
+            baseUrl: "https://graph.microsoft.com/v1.0/sites/syagacons.sharepoint.com,4cce268e-9cb7-4829-8c1c-3c85faa1810d,8cb3611e-c4aa-4105-b55d-2247e4fac8c8"
+        };
+        
+        let allServers = [];
+        let currentFilter = 'all';
+        let autoRefreshInterval = null;
+        let autoRefreshEnabled = true;
+
+        // Afficher la version avec timestamp
+        document.getElementById('versionInfo').innerHTML = `⚠️ NO CACHE - v0.23.${antiCacheTimestamp}`;
+        
+        // Log pour debug
+        console.log('%c🚫 CACHE DÉSACTIVÉ - Mode Debug', 'background: #e45959; color: white; font-size: 16px; padding: 5px;');
+        console.log(`Version: v0.23.${antiCacheTimestamp}`);
+        console.log('Force reload: Ctrl+F5 ou bouton Force Reload');
+        
+        // Initialize
+        async function initializeApp() {
+            console.log('Initializing app (NO CACHE)...');
+            try {
+                const accounts = msalInstance.getAllAccounts();
+                if (accounts.length > 0) {
+                    msalInstance.setActiveAccount(accounts[0]);
+                    await loadServers();
+                    startAutoRefresh();
+                } else {
+                    await login();
+                }
+            } catch (error) {
+                console.error('Initialization error:', error);
+                await login();
+            }
+        }
+
+        // Login
+        async function login() {
+            try {
+                await msalInstance.loginRedirect({
+                    scopes: ["User.Read", "Sites.Read.All"]
+                });
+            } catch (error) {
+                console.error('Login error:', error);
+            }
+        }
+
+        // Get access token
+        async function getAccessToken() {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length === 0) {
+                await login();
+                return null;
+            }
+
+            const request = {
+                scopes: ["Sites.Read.All", "Sites.ReadWrite.All"],
+                account: accounts[0]
+            };
+
+            try {
+                const response = await msalInstance.acquireTokenSilent(request);
+                return response.accessToken;
+            } catch (error) {
+                const response = await msalInstance.acquireTokenPopup(request);
+                return response.accessToken;
+            }
+        }
+
+        // Load servers from SharePoint using Microsoft Graph
+        async function loadServers() {
+            const container = document.getElementById('honeycomb-container');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">Chargement des serveurs...</div></div>';
+            
+            try {
+                const accessToken = await getAccessToken();
+                if (!accessToken) {
+                    console.error('No access token');
+                    container.innerHTML = '<div class="loading-text">Erreur d\'authentification. Veuillez vous reconnecter.</div>';
+                    return;
+                }
+
+                console.log('Fetching from ATLAS-Servers list (NO CACHE)...');
+                
+                // Ajouter timestamp pour éviter le cache
+                const graphUrl = `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items?$expand=fields&$top=100&nocache=${Date.now()}`;
+                
+                const listResponse = await fetch(graphUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    },
+                    cache: 'no-store'  // Force fetch sans cache
+                });
+
+                console.log('List response status:', listResponse.status);
+                if (!listResponse.ok) {
+                    const errorText = await listResponse.text();
+                    console.error('Graph API error:', errorText);
+                    throw new Error(`Failed to fetch list: ${listResponse.status}`);
+                }
+                
+                const data = await listResponse.json();
+                console.log('Data received:', data.value?.length || 0, 'items');
+                
+                // Filter out config entries and process servers
+                if (!data.value || data.value.length === 0) {
+                    console.warn('No data received from SharePoint');
+                    container.innerHTML = '<div class="loading-text">Aucun serveur trouvé dans SharePoint.</div>';
+                    return;
+                }
+                
+                // Filtrer les vraies entrées serveurs (exclure CONFIG)
+                const serverItems = data.value.filter(item => 
+                    item.fields && 
+                    item.fields.Hostname !== 'CONFIG' && 
+                    item.fields.Hostname !== 'UPDATE_CONFIG' &&
+                    item.fields.Title !== 'AGENT_CONFIG' &&
+                    item.fields.Title !== 'UPDATE_CONFIG'
+                );
+                
+                allServers = serverItems
+                    .map(item => ({
+                        name: item.fields.Hostname || item.fields.Title || 'Unknown',
+                        client: item.fields.Client || 'SYAGA',
+                        os: item.fields.OS || 'Windows Server',
+                        processor: item.fields.CPUUsage ? `CPU: ${item.fields.CPUUsage}%` : 'N/A',
+                        memory: item.fields.MemoryUsage ? `RAM: ${item.fields.MemoryUsage}%` : 'N/A',
+                        criticalUpdates: parseInt(item.fields.PendingUpdates) || 0,
+                        diskSpace: parseInt(item.fields.DiskSpaceGB) || 100,
+                        backup: item.fields.LastBackup || 'N/A',
+                        isVirtual: item.fields.HyperV === 'Yes' || item.fields.VMHost || item.fields.IsVirtual === 'Yes',
+                        vmHost: item.fields.VMHost || item.fields.HostServer || null,
+                        hypervisor: item.fields.HyperV === 'Yes' ? 'Hyper-V' : 'Physical',
+                        comment: item.fields.Comments || '',
+                        state: item.fields.State || 'Unknown',
+                        serverType: item.fields.VMHost ? 'VM' : (item.fields.HyperV === 'Yes' ? 'Host' : 'Physical'),
+                        severity: calculateSeverity(item.fields),
+                        // Stocker tous les champs pour debug
+                        allFields: item.fields
+                    }));
+                
+                // Détection par corrélation : Chercher l'hôte de chaque VM
+                console.log('Analyse des relations VM-Host...');
+                allServers.forEach(server => {
+                    if (server.name.toLowerCase().includes('veeam')) {
+                        // VEEAM est probablement sur HOST01
+                        server.vmHost = server.vmHost || 'SYAGA-HOST01';
+                        server.serverType = 'VM';
+                    }
+                    
+                    // Log pour voir tous les champs disponibles
+                    if (server.serverType === 'VM') {
+                        console.log(`VM ${server.name} - Host: ${server.vmHost || 'NON DÉFINI'}`, server.allFields);
+                    }
+                });
+                
+                console.log('Servers processed:', allServers.length);
+                
+                if (allServers.length === 0) {
+                    container.innerHTML = '<div class="loading-text">Aucun serveur valide trouvé (tous les items sont des configs).</div>';
+                    return;
+                }
+                
+                renderHoneycomb();
+                updateStats();
+                updateLastUpdateTime();
+                
+            } catch (error) {
+                console.error('Error loading servers:', error);
+                container.innerHTML = `<div class="loading-text">
+                    Erreur de chargement: ${error.message}<br/>
+                    Vérifiez la console pour plus de détails.<br/>
+                    <button class="control-btn" onclick="loadServers()">Réessayer</button>
+                </div>`;
+            }
+        }
+
+        // Calculate severity based on server metrics
+        function calculateSeverity(fields) {
+            const criticalUpdates = parseInt(fields.PendingUpdates) || 0;
+            const diskSpace = parseInt(fields.DiskSpaceGB) || 100;
+            const cpuUsage = parseInt(fields.CPUUsage) || 0;
+            const memoryUsage = parseInt(fields.MemoryUsage) || 0;
+            
+            // Conditions critiques
+            if (criticalUpdates > 50 || diskSpace < 10 || cpuUsage > 90 || memoryUsage > 90) return 'disaster';
+            if (criticalUpdates > 30 || diskSpace < 20 || cpuUsage > 80 || memoryUsage > 80) return 'high';
+            if (criticalUpdates > 20 || diskSpace < 30 || cpuUsage > 70 || memoryUsage > 70) return 'average';
+            if (criticalUpdates > 10 || diskSpace < 40 || cpuUsage > 60 || memoryUsage > 60) return 'warning';
+            if (criticalUpdates > 0 || diskSpace < 50 || cpuUsage > 50 || memoryUsage > 50) return 'info';
+            return 'ok';
+        }
+
+        // Create hexagon SVG path
+        function createHexagon(x, y, size) {
+            const points = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i - Math.PI / 6;
+                const px = x + size * Math.cos(angle);
+                const py = y + size * Math.sin(angle);
+                points.push(`${px},${py}`);
+            }
+            return points.join(' ');
+        }
+
+        // Render honeycomb visualization
+        function renderHoneycomb() {
+            const container = document.getElementById('honeycomb-container');
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            
+            // Filter servers based on current filter
+            let serversToShow = allServers;
+            if (currentFilter === 'problems') {
+                serversToShow = allServers.filter(s => 
+                    s.severity === 'disaster' || s.severity === 'high' || s.severity === 'average'
+                );
+            } else if (currentFilter === 'updates') {
+                serversToShow = allServers.filter(s => s.criticalUpdates > 10);
+            }
+            
+            // Create SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'honeycomb-svg');
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            
+            // Ajouter des gradients pour les VMs
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            
+            // Gradient pour VM OK
+            const vmGradientOk = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+            vmGradientOk.setAttribute('id', 'vm-gradient-ok');
+            vmGradientOk.innerHTML = `
+                <stop offset="0%" style="stop-color:#35bf8d;stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:#0275b8;stop-opacity:0.5" />
+            `;
+            defs.appendChild(vmGradientOk);
+            
+            // Gradient pour VM Warning
+            const vmGradientWarning = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+            vmGradientWarning.setAttribute('id', 'vm-gradient-warning');
+            vmGradientWarning.innerHTML = `
+                <stop offset="0%" style="stop-color:#ffc859;stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:#0275b8;stop-opacity:0.5" />
+            `;
+            defs.appendChild(vmGradientWarning);
+            
+            svg.appendChild(defs);
+            
+            // Adapter la taille des hexagones en fonction du nombre de serveurs
+            let hexSize;
+            const serverCount = serversToShow.length;
+            
+            if (serverCount <= 2) {
+                hexSize = 80;  // Très gros pour 1-2 serveurs
+            } else if (serverCount <= 5) {
+                hexSize = 65;  // Gros pour 3-5 serveurs
+            } else if (serverCount <= 10) {
+                hexSize = 55;  // Moyen pour 6-10 serveurs
+            } else if (serverCount <= 20) {
+                hexSize = 45;  // Petit-moyen pour 11-20 serveurs
+            } else if (serverCount <= 50) {
+                hexSize = 35;  // Petit pour 21-50 serveurs
+            } else {
+                hexSize = 25;  // Très petit pour 50+ serveurs
+            }
+            
+            const hexHeight = hexSize * 2;
+            const hexWidth = hexSize * Math.sqrt(3);
+            
+            // Calculer le nombre optimal de colonnes
+            let cols;
+            if (serverCount <= 3) {
+                cols = serverCount;  // Une seule ligne pour 1-3 serveurs
+            } else if (serverCount <= 6) {
+                cols = 3;  // 2 lignes max pour 4-6 serveurs
+            } else if (serverCount <= 12) {
+                cols = 4;  // 3 lignes max pour 7-12 serveurs
+            } else {
+                cols = Math.min(Math.floor(width / (hexWidth * 0.75)), Math.ceil(Math.sqrt(serverCount * 1.5)));
+            }
+            
+            const rows = Math.ceil(serversToShow.length / cols);
+            
+            // Center the honeycomb
+            const totalWidth = cols * hexWidth * 0.75;
+            const totalHeight = rows * hexHeight * 0.866;
+            const offsetX = (width - totalWidth) / 2 + hexSize;
+            const offsetY = (height - totalHeight) / 2 + hexSize;
+            
+            // Draw hexagons avec meilleur espacement
+            serversToShow.forEach((server, index) => {
+                const row = Math.floor(index / cols);
+                const col = index % cols;
+                
+                // Augmenter l'espacement entre les hexagones
+                const spacing = hexSize >= 65 ? 1.5 : 1.2;  // Plus d'espace pour les gros hexagones
+                const x = offsetX + col * hexWidth * spacing;
+                const y = offsetY + row * hexHeight * spacing;
+                
+                // Create group
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('data-server', server.name);  // Pour debug
+                
+                // Create hexagon avec style TRÈS différent pour VM/Physical
+                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                polygon.setAttribute('points', createHexagon(x, y, hexSize));
+                polygon.setAttribute('data-server', server.name);  // Pour identifier
+                
+                // Déterminer le type réel basé sur le nom ou autres indices
+                let actualType = 'Physical';  // Par défaut
+                
+                // Détection spécifique pour vos serveurs
+                const nameLower = server.name.toLowerCase();
+                if (nameLower.includes('veeam') || nameLower.includes('vm')) {
+                    actualType = 'VM';
+                    console.log(`${server.name} détecté comme VM`);
+                } else if (nameLower.includes('host')) {
+                    actualType = 'Host';
+                    console.log(`${server.name} détecté comme Host`);
+                } else if (server.isVirtual || server.vmHost) {
+                    actualType = 'VM';
+                    console.log(`${server.name} détecté comme VM (isVirtual ou vmHost défini)`);
+                } else if (server.hypervisor === 'Hyper-V') {
+                    actualType = 'Host';
+                    console.log(`${server.name} détecté comme Host (Hyper-V)`);
+                }
+                
+                // Style TRÈS différent et visible pour VM vs Physical
+                if (actualType === 'VM') {
+                    polygon.setAttribute('fill', `url(#vm-gradient-${server.severity})`);
+                    polygon.setAttribute('stroke', '#00ffff');  // Cyan brillant pour VM
+                    polygon.setAttribute('stroke-width', '4');
+                    polygon.setAttribute('stroke-dasharray', '10,5');  // Gros pointillés
+                    polygon.style.filter = 'drop-shadow(0 0 10px rgba(0,255,255,0.5))';  // Lueur cyan
+                } else if (actualType === 'Host') {
+                    polygon.setAttribute('class', `hexagon severity-${server.severity}`);
+                    polygon.setAttribute('stroke', '#ffaa00');  // Orange brillant pour Host
+                    polygon.setAttribute('stroke-width', '5');
+                    polygon.style.filter = 'drop-shadow(0 0 10px rgba(255,170,0,0.5))';  // Lueur orange
+                } else {
+                    polygon.setAttribute('class', `hexagon severity-${server.severity}`);
+                    polygon.setAttribute('stroke', '#00ff00');  // Vert brillant pour Physical
+                    polygon.setAttribute('stroke-width', '4');
+                    polygon.style.filter = 'drop-shadow(0 0 10px rgba(0,255,0,0.3))';  // Lueur verte
+                }
+                
+                // Stocker le type pour l'affichage
+                server.displayType = actualType;
+                
+                // Enlever le listener du polygon qui ne marche pas
+                // On va utiliser uniquement le rectangle invisible
+                
+                // Create text avec taille adaptée
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', y - (hexSize >= 65 ? 10 : 0));
+                text.setAttribute('class', 'hexagon-text');
+                text.style.pointerEvents = 'none';  // Le texte ne doit pas bloquer les clics
+                
+                // Adapter la taille du texte à la taille de l'hexagone
+                let fontSize;
+                if (hexSize >= 65) {
+                    fontSize = '16px';
+                    text.textContent = server.name;  // Nom complet pour les gros hexagones
+                    text.style.fontWeight = 'bold';
+                } else if (hexSize >= 45) {
+                    fontSize = '13px';
+                    text.textContent = server.name.length > 15 ? 
+                        server.name.substring(0, 13) + '...' : 
+                        server.name;
+                } else {
+                    fontSize = '11px';
+                    text.textContent = server.name.length > 12 ? 
+                        server.name.substring(0, 10) + '...' : 
+                        server.name;
+                }
+                text.style.fontSize = fontSize;
+                
+                // Ajouter le polygon en premier pour qu'il soit visible
+                g.appendChild(polygon);
+                g.appendChild(text);  // Texte par-dessus
+                
+                // Pour les très gros hexagones, ajouter des infos supplémentaires
+                if (hexSize >= 65) {
+                    // Type de serveur (VM/Physical/Host) - Utiliser displayType
+                    const typeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    typeText.setAttribute('x', x);
+                    typeText.setAttribute('y', y + 10);
+                    typeText.setAttribute('class', 'hexagon-text');
+                    typeText.style.fontSize = '14px';
+                    typeText.style.fontWeight = 'bold';
+                    typeText.style.pointerEvents = 'none';  // Ne pas bloquer les clics
+                    
+                    if (server.displayType === 'VM') {
+                        typeText.style.fill = '#00ffff';
+                        typeText.style.filter = 'drop-shadow(0 0 3px rgba(0,255,255,0.8))';
+                        typeText.textContent = '💻 MACHINE VIRTUELLE';
+                    } else if (server.displayType === 'Host') {
+                        typeText.style.fill = '#ffaa00';
+                        typeText.style.filter = 'drop-shadow(0 0 3px rgba(255,170,0,0.8))';
+                        typeText.textContent = '🏠 HOST HYPER-V';
+                    } else {
+                        typeText.style.fill = '#00ff00';
+                        typeText.style.filter = 'drop-shadow(0 0 3px rgba(0,255,0,0.8))';
+                        typeText.textContent = '🖥️ SERVEUR PHYSIQUE';
+                    }
+                    g.appendChild(typeText);
+                    
+                    // Si c'est une VM, afficher l'hôte
+                    if (server.vmHost) {
+                        const hostText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        hostText.setAttribute('x', x);
+                        hostText.setAttribute('y', y + 25);
+                        hostText.setAttribute('class', 'hexagon-text');
+                        hostText.style.fontSize = '11px';
+                        hostText.style.opacity = '0.7';
+                        hostText.textContent = `Sur: ${server.vmHost}`;
+                        g.appendChild(hostText);
+                    } else {
+                        // Sinon afficher les MAJ
+                        const infoText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        infoText.setAttribute('x', x);
+                        infoText.setAttribute('y', y + 25);
+                        infoText.setAttribute('class', 'hexagon-text');
+                        infoText.style.fontSize = '11px';
+                        infoText.style.opacity = '0.7';
+                        infoText.textContent = `${server.criticalUpdates} MAJ`;
+                        g.appendChild(infoText);
+                    }
+                }
+                
+                // Créer un hexagone invisible pour les clics (même forme que le visible)
+                const clickPoly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                clickPoly.setAttribute('points', createHexagon(x, y, hexSize * 1.1)); // Un peu plus grand
+                clickPoly.setAttribute('fill', 'transparent');
+                clickPoly.setAttribute('stroke', 'transparent');
+                clickPoly.style.cursor = 'pointer';
+                clickPoly.setAttribute('data-server-click', server.name);
+                
+                // Événement de clic sur l'hexagone invisible
+                clickPoly.onclick = function(e) {
+                    console.log('🔴 CLICK DETECTED ON:', server.name, 'Type:', actualType);
+                    console.log('Event target:', e.target);
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    // Appeler directement showDetailedView
+                    showDetailedView(server, { target: polygon });
+                    return false;
+                };
+                
+                // Ajouter EN DERNIER pour qu'il soit au-dessus
+                g.appendChild(clickPoly);
+                
+                console.log(`✅ Click zone ajoutée pour ${server.name}`);
+                
+                svg.appendChild(g);
+            });
+            
+            container.innerHTML = '';
+            container.appendChild(svg);
+            
+            // Debug : vérifier les zones de clic
+            console.log('🔍 Vérification des zones de clic:');
+            const clickZones = svg.querySelectorAll('[data-server-click]');
+            console.log(`Nombre de zones de clic créées: ${clickZones.length}`);
+            clickZones.forEach(zone => {
+                console.log(`- Zone de clic pour: ${zone.getAttribute('data-server-click')}`);
+            });
+        }
+
+        // Variables pour le zoom et la sélection
+        let selectedServer = null;
+        let originalTransform = null;
+        
+        // Show detailed view with zoom effect
+        function showDetailedView(server, event) {
+            // Si on clique sur le même serveur, fermer
+            if (selectedServer === server) {
+                closeDetailedView();
+                return;
+            }
+            
+            selectedServer = server;
+            
+            // Effet de zoom sur l'hexagone
+            const hexagon = event.target;
+            const rect = hexagon.getBoundingClientRect();
+            const svg = hexagon.ownerSVGElement;
+            
+            // Sauvegarder la transformation originale
+            originalTransform = hexagon.getAttribute('transform') || '';
+            
+            // Appliquer un zoom progressif
+            hexagon.style.transition = 'all 0.3s ease';
+            hexagon.setAttribute('transform', `${originalTransform} scale(1.3)`);
+            hexagon.style.filter = 'drop-shadow(0 0 20px rgba(255,255,255,0.8))';
+            
+            // Afficher le fond et le panneau de détails
+            document.getElementById('overlayBackdrop').style.display = 'block';
+            showOverlay(server, event);
+        }
+        
+        // Fermer la vue détaillée
+        function closeDetailedView() {
+            if (selectedServer) {
+                // Trouver l'hexagone sélectionné et restaurer sa taille
+                const hexagons = document.querySelectorAll('polygon');
+                hexagons.forEach(hex => {
+                    hex.setAttribute('transform', '');
+                    hex.style.filter = '';
+                });
+                
+                selectedServer = null;
+                document.getElementById('overlayBackdrop').style.display = 'none';
+                hideOverlay();
+            }
+        }
+        
+        // Fermer quand on clique ailleurs
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('polygon') && !e.target.closest('.overlay-dialogue')) {
+                closeDetailedView();
+            }
+        });
+        
+        // Show overlay with server details (modifié pour rester ouvert)
+        function showOverlay(server, event) {
+            const overlay = document.getElementById('overlay');
+            const title = document.getElementById('overlayTitle');
+            const content = document.getElementById('overlayContent');
+            
+            title.textContent = `🖥️ ${server.name}`;
+            
+            const diskClass = server.diskSpace < 20 ? 'critical' : 
+                            server.diskSpace < 40 ? 'warning' : 'good';
+            const updateClass = server.criticalUpdates > 30 ? 'critical' : 
+                              server.criticalUpdates > 10 ? 'warning' : 'good';
+            
+            content.innerHTML = `
+                <div class="info-row" style="background: rgba(255,255,255,0.05); padding: 6px; margin: -5px -5px 5px -5px; border-radius: 3px;">
+                    <span class="info-label">Type:</span>
+                    <span class="info-value" style="font-weight: bold; color: ${
+                        server.serverType === 'VM' ? '#0275b8' : 
+                        server.serverType === 'Host' ? '#ffc859' : '#35bf8d'
+                    }">${server.serverType === 'VM' ? '🖥️ Machine Virtuelle' : 
+                         server.serverType === 'Host' ? '🏠 Host Hyper-V' : '🖲️ Serveur Physique'}</span>
+                </div>
+                ${server.vmHost ? `
+                <div class="info-row" style="background: rgba(2,117,184,0.1); padding: 4px;">
+                    <span class="info-label">Hôte physique:</span>
+                    <span class="info-value" style="font-weight: bold;">${server.vmHost}</span>
+                </div>
+                ` : ''}
+                <div class="info-row">
+                    <span class="info-label">Client:</span>
+                    <span class="info-value">${server.client}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">OS:</span>
+                    <span class="info-value">${server.os}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">État:</span>
+                    <span class="info-value">${server.state}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Processeur:</span>
+                    <span class="info-value">${server.processor}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Mémoire:</span>
+                    <span class="info-value">${server.memory}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">MAJ Critiques:</span>
+                    <span class="info-value ${updateClass}">${server.criticalUpdates}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Espace Disque:</span>
+                    <span class="info-value ${diskClass}">${server.diskSpace} GB libre</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Backup:</span>
+                    <span class="info-value">${server.backup}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Sévérité:</span>
+                    <span class="info-value severity-${server.severity}">${server.severity.toUpperCase()}</span>
+                </div>
+                ${server.comment ? `
+                <div class="info-row">
+                    <span class="info-label">Commentaire:</span>
+                    <span class="info-value">${server.comment}</span>
+                </div>
+                ` : ''}
+            `;
+            
+            // L'overlay est maintenant centré grâce au CSS (position: fixed avec transform)
+            overlay.classList.add('show');
+        }
+
+        // Hide overlay
+        function hideOverlay() {
+            document.getElementById('overlay').classList.remove('show');
+        }
+
+        // Update statistics
+        function updateStats() {
+            const stats = {
+                ok: 0,
+                info: 0,
+                warning: 0,
+                average: 0,
+                high: 0,
+                disaster: 0
+            };
+            
+            allServers.forEach(server => {
+                stats[server.severity]++;
+            });
+            
+            document.getElementById('countOk').textContent = stats.ok + stats.info;
+            document.getElementById('countWarning').textContent = stats.warning + stats.average;
+            document.getElementById('countHigh').textContent = stats.high;
+            document.getElementById('countDisaster').textContent = stats.disaster;
+            document.getElementById('totalServers').textContent = allServers.length;
+        }
+
+        // Set filter
+        function setFilter(filter) {
+            currentFilter = filter;
+            
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Re-render honeycomb
+            if (allServers.length > 0) {
+                renderHoneycomb();
+            }
+        }
+
+        // Update last update time
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('fr-FR');
+            document.getElementById('lastUpdate').textContent = `Dernière MAJ: ${timeString}`;
+        }
+
+        // Toggle auto-refresh
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (autoRefreshEnabled) {
+                btn.textContent = '🔄 Auto-refresh: ON';
+                btn.classList.remove('active');
+                startAutoRefresh();
+            } else {
+                btn.textContent = '🔄 Auto-refresh: OFF';
+                btn.classList.add('active');
+                stopAutoRefresh();
+            }
+        }
+
+        // Start auto-refresh
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            if (autoRefreshEnabled) {
+                autoRefreshInterval = setInterval(() => {
+                    loadServers();
+                }, 30000); // Refresh every 30 seconds
+            }
+        }
+
+        // Stop auto-refresh
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        // Handle redirect promise
+        msalInstance.handleRedirectPromise()
+            .then(response => {
+                if (response) {
+                    msalInstance.setActiveAccount(response.account);
+                }
+                initializeApp();
+            })
+            .catch(error => {
+                console.error('Redirect error:', error);
+                initializeApp();
+            });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (allServers.length > 0) {
+                renderHoneycomb();
+            }
+        });
+        
+        // Fermer avec Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDetailedView();
+            }
+        });
+    </script>
+</body>
+</html>

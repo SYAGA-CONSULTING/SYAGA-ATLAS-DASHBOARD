@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- NO CACHE FOR DEBUG -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ ATLAS v0.23 - Veeam Backup & Replication</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a472a 0%, #2e7d32 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .version-badge {
+            background: #4caf50;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+        
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+        }
+        
+        /* Stats Overview */
+        .stats-overview {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.875rem;
+        }
+        
+        /* Job Status Section */
+        .section {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .section-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* Job Cards */
+        .job-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .job-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .job-name {
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .job-type {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+        
+        /* Progress Bar */
+        .progress-bar {
+            height: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #4caf50;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-fill.warning {
+            background: #ff9800;
+        }
+        
+        .progress-fill.error {
+            background: #f44336;
+        }
+        
+        /* Job Details */
+        .job-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 0.25rem;
+        }
+        
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+        
+        .status-warning {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+            border: 1px solid rgba(255, 152, 0, 0.5);
+        }
+        
+        .status-error {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.5);
+        }
+        
+        .status-running {
+            background: rgba(33, 150, 243, 0.2);
+            color: #2196f3;
+            border: 1px solid rgba(33, 150, 243, 0.5);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Repository Status */
+        .repo-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .repo-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .repo-icon {
+            font-size: 2rem;
+        }
+        
+        .repo-info {
+            flex: 1;
+        }
+        
+        .repo-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .repo-path {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .storage-info {
+            text-align: right;
+        }
+        
+        .storage-used {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .storage-total {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .action-btn {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-5px);
+        }
+        
+        /* Alerts */
+        .alert-banner {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            padding: 1rem 1.5rem;
+            margin: 1rem 2rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .alert-icon {
+            font-size: 1.5rem;
+        }
+        
+        .alert-text {
+            flex: 1;
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .alert-description {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <span>🛡️ ATLAS v0.23</span>
+            <span class="version-badge">Veeam B&R</span>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <button onclick="window.location.href='dashboard-v0.23-connected.html'" style="background: none; border: 1px solid white; color: white; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">
+                🏠 Dashboard
+            </button>
+            <button onclick="window.location.href='dashboard-hyperv.html'" style="background: none; border: 1px solid white; color: white; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">
+                💻 Hyper-V
+            </button>
+            <button onclick="window.location.href='dashboard-windowsupdate.html'" style="background: none; border: 1px solid white; color: white; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">
+                🔄 Updates
+            </button>
+        </div>
+    </div>
+    
+    <!-- Alert Banner -->
+    <div class="alert-banner">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-text">
+            <div class="alert-title">Attention: Job en échec</div>
+            <div class="alert-description">Le job "UAI-Backup" a échoué à 02:15. Espace disque insuffisant sur le repository.</div>
+        </div>
+        <button class="action-btn" style="position: static;">
+            Voir détails
+        </button>
+    </div>
+    
+    <!-- Stats Overview -->
+    <div class="stats-overview">
+        <div class="stat-card">
+            <div class="stat-value">23</div>
+            <div class="stat-label">Jobs Actifs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: #4caf50;">19</div>
+            <div class="stat-label">Succès (24h)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: #ff9800;">3</div>
+            <div class="stat-label">Avertissements</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: #f44336;">1</div>
+            <div class="stat-label">Échecs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">4.7 TB</div>
+            <div class="stat-label">Données Protégées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">89%</div>
+            <div class="stat-label">Taux de Réussite</div>
+        </div>
+    </div>
+    
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+        
+        <!-- Jobs en cours -->
+        <div class="section">
+            <div class="section-header">
+                <span>🔄</span>
+                <span>Jobs en cours</span>
+            </div>
+            
+            <div class="job-card">
+                <div class="job-header">
+                    <div class="job-name">
+                        <span>💾</span>
+                        <span>LAA-Production</span>
+                    </div>
+                    <div class="status-badge status-running">
+                        <span>⏳</span>
+                        <span>En cours</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 67%;"></div>
+                </div>
+                <div class="job-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Progression</span>
+                        <span>67% (3.2 GB / 4.8 GB)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Vitesse</span>
+                        <span>124 MB/s</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Temps restant</span>
+                        <span>~12 min</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="job-card">
+                <div class="job-header">
+                    <div class="job-name">
+                        <span>🔄</span>
+                        <span>SYAGA-Replication</span>
+                    </div>
+                    <div class="status-badge status-running">
+                        <span>⏳</span>
+                        <span>En cours</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 35%;"></div>
+                </div>
+                <div class="job-details">
+                    <div class="detail-item">
+                        <span class="detail-label">VM</span>
+                        <span>SYAGA-DC01</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Destination</span>
+                        <span>SYAGA-HOST02</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Temps restant</span>
+                        <span>~25 min</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Jobs récents -->
+        <div class="section">
+            <div class="section-header">
+                <span>📋</span>
+                <span>Jobs récents</span>
+            </div>
+            
+            <div class="job-card">
+                <div class="job-header">
+                    <div class="job-name">
+                        <span>✅</span>
+                        <span>PHARMABEST-Backup</span>
+                    </div>
+                    <div class="status-badge status-success">
+                        <span>✅</span>
+                        <span>Succès</span>
+                    </div>
+                </div>
+                <div class="job-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Terminé</span>
+                        <span>03:45</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Durée</span>
+                        <span>45 min</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Taille</span>
+                        <span>287 GB</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="job-card">
+                <div class="job-header">
+                    <div class="job-name">
+                        <span>⚠️</span>
+                        <span>BUQUET-Backup</span>
+                    </div>
+                    <div class="status-badge status-warning">
+                        <span>⚠️</span>
+                        <span>Avertissement</span>
+                    </div>
+                </div>
+                <div class="job-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Terminé</span>
+                        <span>02:30</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Message</span>
+                        <span>VM verrouillée</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Retry</span>
+                        <span>2/3</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="job-card">
+                <div class="job-header">
+                    <div class="job-name">
+                        <span>❌</span>
+                        <span>UAI-Backup</span>
+                    </div>
+                    <div class="status-badge status-error">
+                        <span>❌</span>
+                        <span>Échec</span>
+                    </div>
+                </div>
+                <div class="job-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Échec à</span>
+                        <span>02:15</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Erreur</span>
+                        <span>Espace insuffisant</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Action</span>
+                        <span>Intervention requise</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Repositories -->
+        <div class="section">
+            <div class="section-header">
+                <span>💿</span>
+                <span>Repositories</span>
+            </div>
+            
+            <div class="repo-grid">
+                <div class="repo-card">
+                    <div class="repo-icon">🗄️</div>
+                    <div class="repo-info">
+                        <div class="repo-name">Repository Principal</div>
+                        <div class="repo-path">\\SYAGA-NAS01\Backups</div>
+                    </div>
+                    <div class="storage-info">
+                        <div class="storage-used">12.4 TB</div>
+                        <div class="storage-total">/ 20 TB (62%)</div>
+                    </div>
+                </div>
+                
+                <div class="repo-card">
+                    <div class="repo-icon">☁️</div>
+                    <div class="repo-info">
+                        <div class="repo-name">Cloud Repository</div>
+                        <div class="repo-path">Azure Blob Storage</div>
+                    </div>
+                    <div class="storage-info">
+                        <div class="storage-used">8.7 TB</div>
+                        <div class="storage-total">/ Illimité</div>
+                    </div>
+                </div>
+                
+                <div class="repo-card" style="border-color: rgba(255, 152, 0, 0.5);">
+                    <div class="repo-icon">⚠️</div>
+                    <div class="repo-info">
+                        <div class="repo-name">Repository Secondaire</div>
+                        <div class="repo-path">\\SYAGA-BACKUP02\Data</div>
+                    </div>
+                    <div class="storage-info">
+                        <div class="storage-used" style="color: #ff9800;">4.8 TB</div>
+                        <div class="storage-total">/ 5 TB (96%)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tape Jobs -->
+        <div class="section">
+            <div class="section-header">
+                <span>📼</span>
+                <span>Tape & Archive</span>
+            </div>
+            
+            <div class="job-card">
+                <div class="job-header">
+                    <div class="job-name">
+                        <span>📼</span>
+                        <span>Monthly Archive</span>
+                    </div>
+                    <div class="job-type">TAPE</div>
+                </div>
+                <div class="job-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Prochaine</span>
+                        <span>01/09 00:00</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Dernière</span>
+                        <span>01/08 - Succès</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Retention</span>
+                        <span>7 ans</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="job-card">
+                <div class="job-header">
+                    <div class="job-name">
+                        <span>🗄️</span>
+                        <span>GFS Policy</span>
+                    </div>
+                    <div class="job-type">ARCHIVE</div>
+                </div>
+                <div class="job-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Weekly</span>
+                        <span>4 semaines</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Monthly</span>
+                        <span>12 mois</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Yearly</span>
+                        <span>7 ans</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="action-btn" onclick="pauseAllJobs()">
+            <span>⏸️</span>
+            <span>Pause tous les jobs</span>
+        </button>
+        <button class="action-btn" onclick="runActiveFullBackup()">
+            <span>💾</span>
+            <span>Active Full Backup</span>
+        </button>
+        <button class="action-btn" onclick="cleanupRepository()">
+            <span>🧹</span>
+            <span>Nettoyer Repository</span>
+        </button>
+        <button class="action-btn" onclick="verifyBackups()">
+            <span>✔️</span>
+            <span>Vérifier intégrité</span>
+        </button>
+        <button class="action-btn" onclick="exportReport()">
+            <span>📊</span>
+            <span>Export rapport</span>
+        </button>
+    </div>
+    
+    <script>
+        // Simulation functions
+        function pauseAllJobs() {
+            if (confirm('⏸️ Mettre en pause tous les jobs Veeam ?')) {
+                alert('✅ Tous les jobs ont été mis en pause');
+            }
+        }
+        
+        function runActiveFullBackup() {
+            if (confirm('💾 Lancer un Active Full Backup maintenant ?')) {
+                alert('🚀 Active Full Backup démarré');
+            }
+        }
+        
+        function cleanupRepository() {
+            if (confirm('🧹 Nettoyer les anciens points de restauration ?')) {
+                alert('✅ Nettoyage en cours... 2.3 TB seront libérés');
+            }
+        }
+        
+        function verifyBackups() {
+            alert('🔍 Vérification de l\'intégrité des sauvegardes lancée');
+        }
+        
+        function exportReport() {
+            alert('📊 Export du rapport Veeam en cours...');
+        }
+        
+        // Auto-refresh simulation
+        setInterval(() => {
+            // Update progress bars
+            document.querySelectorAll('.progress-fill').forEach(bar => {
+                if (bar.parentElement.parentElement.querySelector('.status-running')) {
+                    let width = parseFloat(bar.style.width);
+                    if (width < 100) {
+                        bar.style.width = Math.min(width + Math.random() * 2, 100) + '%';
+                    }
+                }
+            });
+        }, 3000);
+    </script>
+</body>
+</html>

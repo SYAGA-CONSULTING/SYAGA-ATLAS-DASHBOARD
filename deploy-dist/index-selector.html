@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 ATLAS v0.23 - Sélecteur de Version</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+        }
+        
+        .selector-container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 3rem;
+        }
+        
+        .versions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .version-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            display: block;
+        }
+        
+        .version-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .version-card.primary {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            border: none;
+        }
+        
+        .version-card.primary:hover {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+        
+        .version-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .version-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .version-desc {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        
+        .badge.new {
+            background: #f59e0b;
+        }
+        
+        .badge.live {
+            background: #10b981;
+        }
+        
+        .badge.demo {
+            background: #8b5cf6;
+        }
+        
+        .info-box {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="selector-container">
+        <h1>🚀 ATLAS Dashboard v0.23</h1>
+        <p class="subtitle">Smart Matrix - Orchestration Multi-Client</p>
+        
+        <div class="versions-grid">
+            <!-- Version Production -->
+            <a href="index.html" class="version-card primary">
+                <div class="version-icon">🔥</div>
+                <div class="version-title">Production</div>
+                <div class="version-desc">
+                    Dashboard v0.22 connecté à SharePoint avec données temps réel
+                </div>
+                <span class="badge live">LIVE</span>
+            </a>
+            
+            <!-- Version Static -->
+            <a href="dashboard-v0.23-static.html" class="version-card">
+                <div class="version-icon">📊</div>
+                <div class="version-title">Static v0.23</div>
+                <div class="version-desc">
+                    Prototype visuel de la nouvelle interface Smart Matrix
+                </div>
+                <span class="badge new">NEW</span>
+            </a>
+            
+            <!-- Version Simulée -->
+            <a href="dashboard-v0.23-simulated.html" class="version-card">
+                <div class="version-icon">🎮</div>
+                <div class="version-title">Simulée v0.23</div>
+                <div class="version-desc">
+                    Version interactive avec animations et simulations temps réel
+                </div>
+                <span class="badge demo">DEMO</span>
+            </a>
+            
+            <!-- Version Backup -->
+            <a href="index-v0.21-backup.html" class="version-card">
+                <div class="version-icon">💾</div>
+                <div class="version-title">Backup v0.21</div>
+                <div class="version-desc">
+                    Version de secours stable pour rollback si nécessaire
+                </div>
+                <span class="badge">BACKUP</span>
+            </a>
+        </div>
+        
+        <div class="info-box">
+            <strong>💡 Info:</strong> Le dashboard v0.23 introduit la vue Smart Matrix pour gérer jusqu'à 1000 serveurs simultanément. 
+            Testez d'abord la version simulée pour découvrir les nouvelles interactions !
+        </div>
+    </div>
+</body>
+</html>

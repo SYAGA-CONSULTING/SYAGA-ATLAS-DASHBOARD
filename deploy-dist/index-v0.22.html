@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- NO CACHE FOR DEBUG -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 ATLAS Dashboard v0.23 - Smart Matrix Multi-Client</title>
+    
+    <!-- ANTI-CACHE TOTAL -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- MSAL pour Azure AD Auth -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <!-- VERSION 0.23 -->
+    <script>
+        console.log('🚀 ATLAS v0.23 - Smart Matrix Multi-Client:', new Date().toISOString());
+        const currentVersion = 'v0.23';
+        if (localStorage.getItem('dashboardVersion') !== currentVersion) {
+            localStorage.setItem('dashboardVersion', currentVersion);
+            console.log('🆕 Version 0.23 avec Smart Matrix et multi-versions');
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+        }
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .version-badge {
+            background: #10b981;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+        
+        .realtime-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        /* Panneau d'orchestration */
+        .orchestration-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .orchestration-header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .orchestration-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .orch-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .orch-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        .orch-btn-primary {
+            background: rgba(16, 185, 129, 0.9);
+            border-color: #10b981;
+        }
+        
+        .orch-btn-danger {
+            background: rgba(239, 68, 68, 0.9);
+            border-color: #ef4444;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .card-header {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .server-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .server-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            border-left: 4px solid #ccc;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .server-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .server-card.healthy { border-left-color: #10b981; }
+        .server-card.warning { border-left-color: #f59e0b; }
+        .server-card.critical { border-left-color: #ef4444; }
+        .server-card.installing { 
+            border-left-color: #3b82f6; 
+            animation: installing 2s infinite;
+        }
+        
+        @keyframes installing {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .server-header {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .server-order {
+            background: #667eea;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 50%;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .server-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        
+        .server-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .btn {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        
+        .status-badge {
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .status-ok { background: #d1fae5; color: #065f46; }
+        .status-warning { background: #fed7aa; color: #92400e; }
+        .status-error { background: #fee2e2; color: #991b1b; }
+        .status-installing { background: #dbeafe; color: #1e40af; }
+        
+        /* Timeline d'orchestration */
+        .orchestration-timeline {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem;
+            border-left: 3px solid #e5e7eb;
+            margin-left: 1rem;
+            position: relative;
+        }
+        
+        .timeline-item.active {
+            border-left-color: #3b82f6;
+            background: #eff6ff;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .timeline-item.completed {
+            border-left-color: #10b981;
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            left: -8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e5e7eb;
+        }
+        
+        .timeline-item.active .timeline-dot {
+            background: #3b82f6;
+            animation: pulse 2s infinite;
+        }
+        
+        .timeline-item.completed .timeline-dot {
+            background: #10b981;
+        }
+        
+        .timeline-content {
+            margin-left: 1rem;
+            flex: 1;
+        }
+        
+        .timeline-server {
+            font-weight: bold;
+            margin-bottom: 0.2rem;
+        }
+        
+        .timeline-status {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .timeline-time {
+            font-size: 0.75rem;
+            color: #999;
+        }
+        
+        /* Console de logs */
+        .log-console {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 1rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            padding: 0.3rem 0;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .log-entry.info { color: #60a5fa; }
+        .log-entry.success { color: #34d399; }
+        .log-entry.warning { color: #fbbf24; }
+        .log-entry.error { color: #f87171; }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .close {
+            font-size: 2rem;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .close:hover {
+            color: #333;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .stats-grid,
+            .server-grid,
+            .orchestration-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading initial -->
+    <div id="loading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Header -->
+    <div class="header" id="mainHeader" style="display: none;">
+        <div class="logo">
+            <span>🚀 ATLAS Dashboard</span>
+            <span class="version-badge">v0.22</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div id="userInfo" style="display: flex; align-items: center; gap: 0.5rem;">
+                <!-- Info utilisateur sera injecté ici -->
+            </div>
+            <div class="realtime-indicator">
+                <span class="pulse-dot">●</span>
+                <span id="lastUpdate">En attente...</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container" style="display: none;">
+        <!-- Panneau d'orchestration principal -->
+        <div class="orchestration-panel">
+            <div class="orchestration-header">
+                <span>🎯 Centre d'Orchestration</span>
+                <span id="orchestrationStatus">Prêt</span>
+            </div>
+            <div class="orchestration-controls">
+                <div class="orch-btn orch-btn-primary" onclick="startOrchestration()">
+                    <div style="font-size: 2rem;">🚀</div>
+                    <div style="font-weight: bold;">Démarrer Orchestration</div>
+                    <div style="font-size: 0.8rem; opacity: 0.9;">MAJ séquentielle intelligente</div>
+                </div>
+                <div class="orch-btn" onclick="checkAllUpdates()">
+                    <div style="font-size: 2rem;">🔍</div>
+                    <div style="font-weight: bold;">Analyser MAJ</div>
+                    <div style="font-size: 0.8rem; opacity: 0.9;">Scan tous les serveurs</div>
+                </div>
+                <div class="orch-btn" onclick="scheduleUpdate()">
+                    <div style="font-size: 2rem;">📅</div>
+                    <div style="font-weight: bold;">Planifier</div>
+                    <div style="font-size: 0.8rem; opacity: 0.9;">Programmer les MAJ</div>
+                </div>
+                <div class="orch-btn orch-btn-danger" onclick="emergencyStop()">
+                    <div style="font-size: 2rem;">🛑</div>
+                    <div style="font-weight: bold;">Arrêt Urgence</div>
+                    <div style="font-size: 0.8rem; opacity: 0.9;">Stopper tout</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistiques globales -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalServers">0</div>
+                <div class="stat-label">Serveurs Total</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <div class="stat-value" id="healthyServers">0</div>
+                <div class="stat-label">Serveurs OK</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <div class="stat-value" id="pendingUpdates">0</div>
+                <div class="stat-label">MAJ en attente</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                <div class="stat-value" id="criticalServers">0</div>
+                <div class="stat-label">Alertes Critiques</div>
+            </div>
+        </div>
+        
+        <!-- Timeline d'orchestration -->
+        <div class="orchestration-timeline" id="orchestrationTimeline" style="display: none;">
+            <div class="card-header">
+                <span>📊 Progression Orchestration</span>
+                <button class="btn btn-primary" onclick="pauseOrchestration()">⏸️ Pause</button>
+            </div>
+            <div id="timelineContent">
+                <!-- Timeline dynamique -->
+            </div>
+        </div>
+        
+        <!-- Liste des serveurs -->
+        <div class="card">
+            <div class="card-header">
+                <span>🖥️ État des Serveurs</span>
+                <button class="btn btn-success" onclick="refreshAll()">🔄 Actualiser</button>
+            </div>
+            <div class="server-grid" id="serverGrid">
+                <!-- Serveurs chargés dynamiquement -->
+            </div>
+        </div>
+        
+        <!-- Console de logs -->
+        <div class="card">
+            <div class="card-header">
+                <span>📝 Console de Logs</span>
+                <button class="btn btn-primary" onclick="clearLogs()">🗑️ Vider</button>
+            </div>
+            <div class="log-console" id="logConsole">
+                <!-- Logs dynamiques -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal pour actions -->
+    <div id="actionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modalTitle">Action</span>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div id="modalBody">
+                <!-- Contenu dynamique -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ==================== CONFIGURATION ====================
+        const msalConfig = {
+            auth: {
+                clientId: 'f66a8c6c-1037-41b8-be3c-4f6e67c1f49e', // SYAGA-ATLAS-AUTOMATION - BON CLIENT ID
+                authority: 'https://login.microsoftonline.com/6027d81c-ad9b-48f5-9da6-96f1bad11429', // BON TENANT ID
+                redirectUri: window.location.href.split('?')[0].split('#')[0] // URL dynamique
+            },
+            cache: {
+                cacheLocation: "sessionStorage", // Utiliser sessionStorage pour éviter les conflits
+                storeAuthStateInCookie: true,
+                secureCookies: true
+            },
+            system: {
+                allowNativeBroker: false,
+                windowHashTimeout: 60000,
+                iframeHashTimeout: 60000,
+                loadFrameTimeout: 0
+            }
+        };
+        
+        const loginRequest = {
+            scopes: ["User.Read", "Sites.Read.All", "Sites.ReadWrite.All"]
+        };
+        
+        // Configuration SharePoint ATLAS - LES BONS IDs !
+        const SHAREPOINT_CONFIG = {
+            siteId: "syagacons.sharepoint.com,4cce268e-9cb7-4829-8c1c-3c85faa1810d,8cb3611e-c4aa-4105-b55d-2247e4fac8c8",
+            listId: "94dc7ad4-740f-4c1f-b99c-107e01c8f70b",
+            listUrl: "https://syagacons.sharepoint.com/Lists/ATLAS-Servers",
+            baseUrl: "https://graph.microsoft.com/v1.0/sites/syagacons.sharepoint.com,4cce268e-9cb7-4829-8c1c-3c85faa1810d,8cb3611e-c4aa-4105-b55d-2247e4fac8c8"
+        };
+        
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        
+        // ==================== VARIABLES GLOBALES ====================
+        let servers = [];
+        let orchestrationActive = false;
+        let orchestrationQueue = [];
+        let currentOrchestrationIndex = 0;
+        let autoRefreshInterval = null;
+        
+        // ==================== INITIALISATION ====================
+        window.addEventListener('load', async () => {
+            console.log('🚀 ATLAS Dashboard v0.22 - Initialisation');
+            
+            try {
+                await msalInstance.initialize();
+                
+                // Gérer le retour après connexion
+                const response = await msalInstance.handleRedirectPromise();
+                if (response && response.account) {
+                    console.log('✅ Retour de connexion détecté:', response.account.username);
+                    msalInstance.setActiveAccount(response.account);
+                }
+                
+                // Vérifier l'état de connexion
+                const accounts = msalInstance.getAllAccounts();
+                if (accounts.length > 0) {
+                    console.log('✅ Utilisateur connecté:', accounts[0].username);
+                    displayUserInfo(accounts[0]);
+                    await loadDashboard();
+                } else {
+                    console.log('🔐 Connexion requise');
+                    showLoginScreen();
+                }
+                
+            } catch (error) {
+                console.error('❌ Erreur initialisation:', error);
+                showLoginScreen();
+            }
+        });
+        
+        
+        // Afficher l'écran de connexion
+        function showLoginScreen() {
+            // Masquer TOUT avant d'afficher l'écran de connexion
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('mainHeader').style.display = 'none';
+            
+            // Masquer le contenu principal
+            const container = document.querySelector('.container');
+            if (container) container.style.display = 'none';
+            
+            // Vider userInfo
+            document.getElementById('userInfo').innerHTML = '';
+            
+            // Créer ou afficher l'écran de connexion
+            let loginScreen = document.getElementById('loginScreen');
+            if (!loginScreen) {
+                loginScreen = document.createElement('div');
+                loginScreen.id = 'loginScreen';
+                loginScreen.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999;
+                `;
+                loginScreen.innerHTML = `
+                    <div style="text-align: center; color: white;">
+                        <h1 style="font-size: 3rem; margin-bottom: 1rem;">🚀 ATLAS Dashboard</h1>
+                        <p style="font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9;">Version 0.22 - Orchestration Intelligente</p>
+                        <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; backdrop-filter: blur(10px);">
+                            <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;">🔐 Authentification Microsoft 365 Requise</h2>
+                            <button onclick="signIn()" style="
+                                background: white;
+                                color: #667eea;
+                                padding: 1rem 2rem;
+                                font-size: 1.1rem;
+                                border: none;
+                                border-radius: 10px;
+                                cursor: pointer;
+                                font-weight: bold;
+                                transition: all 0.3s;
+                                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                Se connecter avec Microsoft 365
+                            </button>
+                            <p style="margin-top: 1.5rem; font-size: 0.9rem; opacity: 0.8;">
+                                Utilisez votre compte @syaga.fr pour accéder au dashboard
+                            </p>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(loginScreen);
+            }
+            loginScreen.style.display = 'flex';
+        }
+        
+        // Fonction de connexion
+        async function signIn() {
+            try {
+                // Utiliser loginRedirect au lieu de loginPopup pour éviter les problèmes
+                await msalInstance.loginRedirect(loginRequest);
+            } catch (error) {
+                console.error('❌ Erreur connexion:', error);
+                // Si le popup est bloqué, essayer redirect
+                if (error.errorCode === "popup_window_error") {
+                    await msalInstance.loginRedirect(loginRequest);
+                } else {
+                    alert('Erreur de connexion: ' + error.message);
+                }
+            }
+        }
+        
+        // Afficher les informations utilisateur
+        function displayUserInfo(account) {
+            const userInfoDiv = document.getElementById('userInfo');
+            userInfoDiv.innerHTML = `
+                <span style="color: #666; font-size: 0.9rem;">👤 ${account.username}</span>
+                <button class="btn btn-danger" onclick="signOut()" style="padding: 0.3rem 0.8rem; font-size: 0.85rem;">
+                    Déconnexion
+                </button>
+            `;
+        }
+        
+        // Fonction de déconnexion
+        async function signOut() {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length > 0) {
+                // Utiliser logoutRedirect au lieu de logoutPopup
+                await msalInstance.logoutRedirect({
+                    account: accounts[0],
+                    postLogoutRedirectUri: window.location.origin
+                });
+            }
+        }
+        
+        async function getAccessToken() {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length === 0) throw new Error('Non authentifié');
+            
+            const request = {
+                ...loginRequest,
+                account: accounts[0]
+            };
+            
+            try {
+                const response = await msalInstance.acquireTokenSilent(request);
+                return response.accessToken;
+            } catch (error) {
+                const response = await msalInstance.acquireTokenPopup(request);
+                return response.accessToken;
+            }
+        }
+        
+        // ==================== CHARGEMENT DASHBOARD ====================
+        async function loadDashboard() {
+            console.log('📊 Chargement dashboard...');
+            
+            // Masquer le loading et l'écran de connexion
+            document.getElementById('loading').style.display = 'none';
+            const loginScreen = document.getElementById('loginScreen');
+            if (loginScreen) loginScreen.style.display = 'none';
+            
+            // Afficher le header et le container principal
+            document.getElementById('mainHeader').style.display = 'flex';
+            const container = document.querySelector('.container');
+            if (container) container.style.display = 'block';
+            
+            await loadServers();
+            startAutoRefresh();
+            
+            addLog('success', '✅ Dashboard v0.22 chargé avec succès');
+        }
+        
+        // ==================== CHARGEMENT SERVEURS ====================
+        async function loadServers() {
+            try {
+                const token = await getAccessToken();
+                
+                // Utiliser les BONS IDs de SharePoint !
+                const graphUrl = `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items?$expand=fields&$top=100`;
+                
+                const response = await fetch(graphUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+                
+                const data = await response.json();
+                
+                // Filtrer les vraies entrées serveurs (comme dans v0.21)
+                const allItems = data.value || [];
+                const serverItems = allItems.filter(item => 
+                    item.fields && 
+                    item.fields.Hostname !== 'CONFIG' && 
+                    item.fields.Hostname !== 'UPDATE_CONFIG' &&
+                    item.fields.Title !== 'AGENT_CONFIG' &&
+                    item.fields.Title !== 'UPDATE_CONFIG'
+                );
+                
+                servers = serverItems.map(item => ({
+                    id: item.id,
+                    ...item.fields
+                }));
+                
+                // Trier par ordre d'orchestration
+                servers.sort((a, b) => (a.UpdateOrder || 999) - (b.UpdateOrder || 999));
+                
+                updateDisplay();
+                updateStats();
+                
+                console.log(`✅ ${servers.length} serveurs chargés`);
+            } catch (error) {
+                console.error('Erreur chargement:', error);
+                addLog('error', 'Erreur chargement serveurs: ' + error.message);
+            }
+        }
+        
+        // ==================== AFFICHAGE ====================
+        function updateDisplay() {
+            const grid = document.getElementById('serverGrid');
+            grid.innerHTML = '';
+            
+            servers.forEach((server, index) => {
+                const statusClass = getStatusClass(server.State);
+                const card = document.createElement('div');
+                card.className = `server-card ${statusClass}`;
+                card.onclick = () => showServerDetails(server);
+                
+                card.innerHTML = `
+                    <div class="server-header">
+                        <span>${server.Hostname || server.Title}</span>
+                        <span class="server-order" title="Ordre d'orchestration">${server.UpdateOrder || '?'}</span>
+                    </div>
+                    <div class="server-info">
+                        <div>📍 IP: ${server.IP || 'N/A'}</div>
+                        <div>💼 Rôle: ${server.Role || 'N/A'}</div>
+                        <div>💾 Disque: ${server.DiskSpaceGB || 0} GB libre</div>
+                        <div>🔄 MAJ: ${server.PendingUpdates || 0}</div>
+                    </div>
+                    <div style="margin: 0.5rem 0;">
+                        <span class="status-badge status-${statusClass}">
+                            ${server.State || 'Unknown'}
+                        </span>
+                        ${server.HypervEnabled ? `
+                            <span class="status-badge status-${getReplicationStatus(server.HypervStatus)}">
+                                HV: ${server.HypervStatus || 'Unknown'}
+                            </span>
+                        ` : ''}
+                        ${server.VeeamEnabled ? `
+                            <span class="status-badge status-${getBackupStatus(server.VeeamStatus)}">
+                                Veeam: ${server.VeeamStatus || 'Unknown'}
+                            </span>
+                        ` : ''}
+                    </div>
+                    <div class="server-actions">
+                        <button class="btn btn-success" onclick="event.stopPropagation(); startServerUpdate('${server.Hostname}')">
+                            🚀 MAJ
+                        </button>
+                        <button class="btn btn-warning" onclick="event.stopPropagation(); rebootServer('${server.Hostname}')">
+                            🔄 Reboot
+                        </button>
+                        <button class="btn btn-primary" onclick="event.stopPropagation(); checkServerUpdates('${server.Hostname}')">
+                            🔍 Scan
+                        </button>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        function updateStats() {
+            const total = servers.length;
+            const healthy = servers.filter(s => s.State === 'OK').length;
+            const pending = servers.reduce((sum, s) => sum + (s.PendingUpdates || 0), 0);
+            const critical = servers.filter(s => s.State === 'Error' || s.State === 'Critical').length;
+            
+            document.getElementById('totalServers').textContent = total;
+            document.getElementById('healthyServers').textContent = healthy;
+            document.getElementById('pendingUpdates').textContent = pending;
+            document.getElementById('criticalServers').textContent = critical;
+        }
+        
+        // ==================== ORCHESTRATION ====================
+        async function startOrchestration() {
+            if (orchestrationActive) {
+                addLog('warning', '⚠️ Orchestration déjà en cours');
+                return;
+            }
+            
+            if (!confirm('Démarrer l\'orchestration complète des mises à jour ?')) return;
+            
+            orchestrationActive = true;
+            orchestrationQueue = servers.filter(s => s.PendingUpdates > 0);
+            currentOrchestrationIndex = 0;
+            
+            document.getElementById('orchestrationStatus').textContent = 'En cours...';
+            document.getElementById('orchestrationTimeline').style.display = 'block';
+            
+            addLog('info', `🚀 Orchestration démarrée - ${orchestrationQueue.length} serveurs à traiter`);
+            
+            await processNextOrchestration();
+        }
+        
+        async function processNextOrchestration() {
+            if (!orchestrationActive || currentOrchestrationIndex >= orchestrationQueue.length) {
+                completeOrchestration();
+                return;
+            }
+            
+            const server = orchestrationQueue[currentOrchestrationIndex];
+            updateOrchestrationTimeline();
+            
+            addLog('info', `🔄 Traitement ${server.Hostname} (${currentOrchestrationIndex + 1}/${orchestrationQueue.length})`);
+            
+            try {
+                await updateServerFlag(server.Hostname, 'StartUpdates', true);
+                
+                // Attendre que le serveur passe en Installing
+                await waitForServerState(server.Hostname, 'Installing', 60000);
+                
+                // Attendre que le serveur revienne à OK
+                await waitForServerState(server.Hostname, 'OK', 1800000); // 30 minutes max
+                
+                addLog('success', `✅ ${server.Hostname} mis à jour avec succès`);
+                
+                currentOrchestrationIndex++;
+                await processNextOrchestration();
+                
+            } catch (error) {
+                addLog('error', `❌ Erreur orchestration ${server.Hostname}: ${error.message}`);
+                
+                if (confirm(`Erreur sur ${server.Hostname}. Continuer l'orchestration ?`)) {
+                    currentOrchestrationIndex++;
+                    await processNextOrchestration();
+                } else {
+                    pauseOrchestration();
+                }
+            }
+        }
+        
+        async function waitForServerState(hostname, expectedState, timeout) {
+            const startTime = Date.now();
+            
+            while (Date.now() - startTime < timeout) {
+                await loadServers();
+                const server = servers.find(s => s.Hostname === hostname);
+                
+                if (server && server.State === expectedState) {
+                    return true;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Check toutes les 5 secondes
+            }
+            
+            throw new Error(`Timeout en attendant l'état ${expectedState}`);
+        }
+        
+        function updateOrchestrationTimeline() {
+            const timeline = document.getElementById('timelineContent');
+            timeline.innerHTML = '';
+            
+            orchestrationQueue.forEach((server, index) => {
+                const status = index < currentOrchestrationIndex ? 'completed' :
+                              index === currentOrchestrationIndex ? 'active' : '';
+                
+                const item = document.createElement('div');
+                item.className = `timeline-item ${status}`;
+                
+                item.innerHTML = `
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-server">${server.Hostname}</div>
+                        <div class="timeline-status">
+                            ${status === 'completed' ? '✅ Terminé' :
+                              status === 'active' ? '🔄 En cours...' :
+                              '⏳ En attente'}
+                        </div>
+                        <div class="timeline-time">
+                            ${server.PendingUpdates || 0} mises à jour
+                        </div>
+                    </div>
+                `;
+                
+                timeline.appendChild(item);
+            });
+        }
+        
+        function completeOrchestration() {
+            orchestrationActive = false;
+            document.getElementById('orchestrationStatus').textContent = 'Terminé';
+            addLog('success', '🎉 Orchestration complète terminée');
+            
+            setTimeout(() => {
+                document.getElementById('orchestrationTimeline').style.display = 'none';
+            }, 5000);
+        }
+        
+        function pauseOrchestration() {
+            orchestrationActive = false;
+            document.getElementById('orchestrationStatus').textContent = 'En pause';
+            addLog('warning', '⏸️ Orchestration mise en pause');
+        }
+        
+        async function emergencyStop() {
+            if (!confirm('⚠️ ARRÊT D\'URGENCE - Stopper toutes les opérations ?')) return;
+            
+            orchestrationActive = false;
+            addLog('error', '🛑 ARRÊT D\'URGENCE ACTIVÉ');
+            
+            try {
+                for (const server of servers) {
+                    await updateServerFlag(server.Hostname, 'StartUpdates', false);
+                }
+                
+                addLog('success', '✅ Toutes les opérations arrêtées');
+            } catch (error) {
+                addLog('error', '❌ Erreur arrêt urgence: ' + error.message);
+            }
+        }
+        
+        // ==================== ACTIONS SERVEUR ====================
+        async function updateServerFlag(hostname, flag, value) {
+            try {
+                const token = await getAccessToken();
+                
+                const server = servers.find(s => s.Hostname === hostname);
+                if (!server) throw new Error('Serveur non trouvé');
+                
+                const updateData = {
+                    [flag]: value,
+                    LastContact: new Date().toISOString()
+                };
+                
+                const response = await fetch(
+                    `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items/${server.id}/fields`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(updateData)
+                    }
+                );
+                
+                if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+                
+                addLog('success', `✅ ${hostname}: ${flag} = ${value}`);
+            } catch (error) {
+                console.error('Erreur update flag:', error);
+                addLog('error', `❌ Erreur ${hostname}: ${error.message}`);
+                throw error;
+            }
+        }
+        
+        async function startServerUpdate(hostname) {
+            addLog('info', `🚀 Démarrage MAJ sur ${hostname}`);
+            await updateServerFlag(hostname, 'StartUpdates', true);
+        }
+        
+        async function rebootServer(hostname) {
+            if (!confirm(`Redémarrer ${hostname} ?`)) return;
+            addLog('warning', `🔄 Redémarrage ${hostname}`);
+            await updateServerFlag(hostname, 'ForceReboot', true);
+        }
+        
+        async function checkServerUpdates(hostname) {
+            addLog('info', `🔍 Analyse des MAJ sur ${hostname}`);
+            await updateServerFlag(hostname, 'CheckUpdates', true);
+        }
+        
+        async function checkAllUpdates() {
+            addLog('info', '🔍 Analyse globale des mises à jour...');
+            
+            for (const server of servers) {
+                await updateServerFlag(server.Hostname, 'CheckUpdates', true);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Délai entre serveurs
+            }
+            
+            addLog('success', '✅ Analyse terminée');
+        }
+        
+        function scheduleUpdate() {
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <h3>📅 Planifier les mises à jour</h3>
+                <div style="margin: 1rem 0;">
+                    <label>Date et heure:</label>
+                    <input type="datetime-local" id="scheduleTime" style="width: 100%; padding: 0.5rem;">
+                </div>
+                <div style="margin: 1rem 0;">
+                    <label>Serveurs:</label>
+                    <select id="scheduleServers" multiple style="width: 100%; height: 150px; padding: 0.5rem;">
+                        ${servers.map(s => `<option value="${s.Hostname}">${s.Hostname}</option>`).join('')}
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="confirmSchedule()">Confirmer</button>
+            `;
+            
+            document.getElementById('modalTitle').textContent = 'Planification';
+            document.getElementById('actionModal').style.display = 'block';
+        }
+        
+        function confirmSchedule() {
+            const time = document.getElementById('scheduleTime').value;
+            const selected = Array.from(document.getElementById('scheduleServers').selectedOptions)
+                                  .map(opt => opt.value);
+            
+            addLog('info', `📅 Planification: ${selected.length} serveurs pour ${time}`);
+            closeModal();
+        }
+        
+        // ==================== DÉTAILS SERVEUR ====================
+        function showServerDetails(server) {
+            const modalBody = document.getElementById('modalBody');
+            
+            modalBody.innerHTML = `
+                <h3>${server.Hostname}</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0;">
+                    <div>
+                        <strong>État:</strong> ${server.State || 'Unknown'}<br>
+                        <strong>IP:</strong> ${server.IP || 'N/A'}<br>
+                        <strong>Rôle:</strong> ${server.Role || 'N/A'}<br>
+                        <strong>OS:</strong> ${server.OSVersion || 'N/A'}
+                    </div>
+                    <div>
+                        <strong>CPU:</strong> ${server.CPUUsage || 0}%<br>
+                        <strong>RAM:</strong> ${server.MemoryUsage || 0}%<br>
+                        <strong>Disque:</strong> ${server.DiskSpaceGB || 0} GB libre<br>
+                        <strong>MAJ en attente:</strong> ${server.PendingUpdates || 0}
+                    </div>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <strong>Dernier contact:</strong> ${server.LastContact ? new Date(server.LastContact).toLocaleString() : 'Jamais'}<br>
+                    <strong>Dernière MAJ:</strong> ${server.LastUpdate ? new Date(server.LastUpdate).toLocaleString() : 'Jamais'}
+                </div>
+                <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                    <button class="btn btn-success" onclick="startServerUpdate('${server.Hostname}'); closeModal();">
+                        🚀 Lancer MAJ
+                    </button>
+                    <button class="btn btn-warning" onclick="rebootServer('${server.Hostname}'); closeModal();">
+                        🔄 Redémarrer
+                    </button>
+                    <button class="btn btn-danger" onclick="forceRepair('${server.Hostname}'); closeModal();">
+                        🔧 Réparer
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('modalTitle').textContent = 'Détails du serveur';
+            document.getElementById('actionModal').style.display = 'block';
+        }
+        
+        async function forceRepair(hostname) {
+            addLog('warning', `🔧 Réparation forcée sur ${hostname}`);
+            await updateServerFlag(hostname, 'ForceRepair', true);
+        }
+        
+        // ==================== HELPERS ====================
+        function getStatusClass(state) {
+            switch(state) {
+                case 'OK': return 'healthy';
+                case 'Updates_Available': return 'warning';
+                case 'Installing': return 'installing';
+                case 'Error':
+                case 'Critical': return 'critical';
+                default: return 'warning';
+            }
+        }
+        
+        function getReplicationStatus(status) {
+            switch(status) {
+                case 'Healthy': return 'ok';
+                case 'Warning': return 'warning';
+                case 'Critical':
+                case 'Error': return 'error';
+                default: return 'warning';
+            }
+        }
+        
+        function getBackupStatus(status) {
+            switch(status) {
+                case 'Success': return 'ok';
+                case 'Warning': return 'warning';
+                case 'Failed': return 'error';
+                default: return 'warning';
+            }
+        }
+        
+        // ==================== LOGS ====================
+        function addLog(type, message) {
+            const logConsole = document.getElementById('logConsole');
+            // Vérifier que la console existe avant d'ajouter des logs
+            if (!logConsole) {
+                console.log(`[${type}] ${message}`);
+                return;
+            }
+            
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            
+            logConsole.appendChild(entry);
+            logConsole.scrollTop = logConsole.scrollHeight;
+            
+            // Limiter à 100 entrées
+            while (logConsole.children.length > 100) {
+                logConsole.removeChild(logConsole.firstChild);
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logConsole').innerHTML = '';
+            addLog('info', '📝 Console vidée');
+        }
+        
+        // ==================== AUTO-REFRESH ====================
+        function startAutoRefresh() {
+            // Mise à jour initiale de l'heure
+            document.getElementById('lastUpdate').textContent = 
+                `Mis à jour: ${new Date().toLocaleTimeString()}`;
+            
+            autoRefreshInterval = setInterval(async () => {
+                await loadServers();
+                document.getElementById('lastUpdate').textContent = 
+                    `Mis à jour: ${new Date().toLocaleTimeString()}`;
+            }, 30000); // 30 secondes
+        }
+        
+        async function refreshAll() {
+            addLog('info', '🔄 Actualisation manuelle...');
+            await loadServers();
+            addLog('success', '✅ Actualisation terminée');
+        }
+        
+        // ==================== MODAL ====================
+        function closeModal() {
+            document.getElementById('actionModal').style.display = 'none';
+        }
+        
+        // Fermer modal en cliquant à l'extérieur
+        window.onclick = function(event) {
+            const modal = document.getElementById('actionModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

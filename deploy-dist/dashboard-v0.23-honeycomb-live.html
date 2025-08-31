@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- NO CACHE FOR DEBUG -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATLAS v0.23 - Honeycomb LIVE (SharePoint)</title>
+    
+    <!-- MSAL pour Azure AD Auth -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+            background-color: #0e1418;
+            color: #d1d3d4;
+            line-height: 1.6;
+        }
+        
+        /* Loading screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0e1418;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-screen.hidden {
+            display: none;
+        }
+        
+        .spinner {
+            border: 3px solid #282e33;
+            border-top: 3px solid #5c7cfa;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Zabbix exact header */
+        .wrapper {
+            background: #0e1418;
+            min-height: 100vh;
+        }
+        
+        .header-title {
+            background: #0e1418;
+            border-bottom: 1px solid #282e33;
+            padding: 10px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-title h1 {
+            font-size: 1.75rem;
+            font-weight: 400;
+            color: #f2f2f2;
+            margin: 0;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #768895;
+            font-size: 0.9rem;
+        }
+        
+        .user-info button {
+            background: transparent;
+            border: 1px solid #444a51;
+            color: #d1d3d4;
+            padding: 4px 12px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .user-info button:hover {
+            background: #2b3139;
+            border-color: #5c7cfa;
+        }
+        
+        /* Zabbix dashboard container */
+        .dashboard {
+            padding: 10px;
+        }
+        
+        .dashboard-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        /* Zabbix widget exact style */
+        .dashboard-widget {
+            background: #0e1418;
+            border: 1px solid #282e33;
+            border-radius: 2px;
+        }
+        
+        .dashboard-widget-head {
+            background: linear-gradient(to bottom, #2b3139 0%, #1f252a 100%);
+            border-bottom: 1px solid #282e33;
+            padding: 8px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dashboard-widget-head h4 {
+            color: #f2f2f2;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .widget-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .widget-actions button {
+            background: transparent;
+            border: none;
+            color: #768895;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0 4px;
+        }
+        
+        .widget-actions button:hover {
+            color: #5c7cfa;
+        }
+        
+        .dashboard-widget-body {
+            background: #0e1418;
+            padding: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Zabbix exact SVG honeycomb container */
+        .svg-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Exact Zabbix honeycomb styles */
+        .honeycomb-cell {
+            cursor: pointer;
+        }
+        
+        .honeycomb-cell polygon {
+            stroke: #282e33;
+            stroke-width: 2;
+            transition: opacity 0.2s;
+        }
+        
+        .honeycomb-cell:hover polygon {
+            opacity: 0.8;
+            stroke: #5c7cfa;
+            stroke-width: 2;
+        }
+        
+        .honeycomb-cell text {
+            fill: #ffffff;
+            font-size: 11px;
+            font-weight: 400;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        
+        .honeycomb-cell .primary-label {
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .honeycomb-cell .secondary-label {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        /* Zabbix exact severity colors */
+        .severity-ok { fill: #43A047; }
+        .severity-info { fill: #7499FF; }
+        .severity-warning { fill: #FFC859; }
+        .severity-average { fill: #FFA059; }
+        .severity-high { fill: #E97659; }
+        .severity-disaster { fill: #E45959; }
+        .severity-na { fill: #97AAB3; }
+        
+        /* Stats bar */
+        .dashboard-stats {
+            background: #1f252a;
+            border: 1px solid #282e33;
+            border-radius: 2px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stat-label {
+            color: #768895;
+            font-size: 13px;
+        }
+        
+        .stat-value {
+            color: #f2f2f2;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* Controls */
+        .dashboard-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            background: #2b3139;
+            border: 1px solid #444a51;
+            color: #d1d3d4;
+            padding: 6px 12px;
+            border-radius: 2px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: #3d444d;
+            border-color: #5c7cfa;
+        }
+        
+        .btn.active {
+            background: #5c7cfa;
+            border-color: #5c7cfa;
+            color: #ffffff;
+        }
+        
+        /* Zabbix exact tooltip style */
+        .overlay-dialogue {
+            position: absolute;
+            background: #1f252a;
+            border: 1px solid #444a51;
+            border-radius: 2px;
+            padding: 0;
+            z-index: 10000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            display: none;
+            min-width: 250px;
+        }
+        
+        .overlay-dialogue.visible {
+            display: block;
+        }
+        
+        .overlay-dialogue-header {
+            background: linear-gradient(to bottom, #2b3139 0%, #1f252a 100%);
+            border-bottom: 1px solid #444a51;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #f2f2f2;
+        }
+        
+        .overlay-dialogue-body {
+            padding: 12px;
+            background: #0e1418;
+        }
+        
+        .overlay-dialogue table {
+            width: 100%;
+            font-size: 12px;
+            color: #d1d3d4;
+        }
+        
+        .overlay-dialogue td {
+            padding: 4px 0;
+            vertical-align: top;
+        }
+        
+        .overlay-dialogue td:first-child {
+            color: #768895;
+            padding-right: 15px;
+            white-space: nowrap;
+        }
+        
+        .overlay-dialogue td:last-child {
+            color: #f2f2f2;
+            word-break: break-word;
+        }
+        
+        .overlay-dialogue .status-ok {
+            color: #43A047;
+            font-weight: 600;
+        }
+        
+        .overlay-dialogue .status-warning {
+            color: #FFC859;
+            font-weight: 600;
+        }
+        
+        .overlay-dialogue .status-high {
+            color: #E97659;
+            font-weight: 600;
+        }
+        
+        .overlay-dialogue .status-disaster {
+            color: #E45959;
+            font-weight: 600;
+        }
+        
+        /* Error message */
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #E45959;
+            color: #E45959;
+            padding: 1rem;
+            margin: 1rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="spinner"></div>
+        <p style="color: #768895; margin-top: 1rem;">Connexion à SharePoint...</p>
+    </div>
+    
+    <div class="wrapper">
+        <header class="header-title">
+            <h1>🐝 ATLAS Honeycomb - Monitoring temps réel</h1>
+            <div class="user-info">
+                <span id="userEmail">Non connecté</span>
+                <button onclick="location.reload()">🔄 Rafraîchir</button>
+                <button onclick="logout()">Déconnexion</button>
+            </div>
+        </header>
+        
+        <main class="dashboard">
+            <div class="dashboard-controls">
+                <button class="btn active" onclick="setFilter('all')">Tous les serveurs</button>
+                <button class="btn" onclick="setFilter('problems')">Problèmes uniquement</button>
+                <button class="btn" onclick="setFilter('updates')">Mises à jour en attente</button>
+                <button class="btn active" id="autoRefreshBtn" onclick="toggleAutoRefresh()">
+                    🔄 Auto-refresh: ON
+                </button>
+            </div>
+            
+            <div class="dashboard-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Total:</span>
+                    <span class="stat-value" id="totalServers">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">OK:</span>
+                    <span class="stat-value" style="color: #43A047;" id="okCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Alertes:</span>
+                    <span class="stat-value" style="color: #FFC859;" id="warningCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Critiques:</span>
+                    <span class="stat-value" style="color: #E45959;" id="criticalCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Mises à jour:</span>
+                    <span class="stat-value" style="color: #FFA059;" id="totalUpdates">0</span>
+                </div>
+                <div class="stat-item" style="margin-left: auto;">
+                    <span class="stat-label">Dernière MAJ:</span>
+                    <span class="stat-value" id="lastUpdate">--:--:--</span>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="dashboard-widget">
+                    <div class="dashboard-widget-head">
+                        <h4>Vue globale - État des serveurs Windows</h4>
+                        <div class="widget-actions">
+                            <button onclick="loadServers()" title="Rafraîchir">🔄</button>
+                        </div>
+                    </div>
+                    <div class="dashboard-widget-body" style="height: 600px;">
+                        <div class="svg-container">
+                            <svg id="honeycomb" width="100%" height="100%" viewBox="0 0 1400 600">
+                                <!-- Honeycomb cells will be generated here -->
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Zabbix-style tooltip -->
+    <div id="tooltip" class="overlay-dialogue">
+        <div class="overlay-dialogue-header">Détails du serveur</div>
+        <div class="overlay-dialogue-body">
+            <table>
+                <tbody id="tooltip-content">
+                    <!-- Content will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration MSAL et SharePoint
+        const msalConfig = {
+            auth: {
+                clientId: 'f66a8c6c-1037-41b8-be3c-4f6e67c1f49e',
+                authority: 'https://login.microsoftonline.com/6027d81c-ad9b-48f5-9da6-96f1bad11429',
+                redirectUri: window.location.href.split('?')[0].split('#')[0] // URL dynamique
+            },
+            cache: {
+                cacheLocation: 'sessionStorage',
+                storeAuthStateInCookie: false
+            }
+        };
+        
+        const SHAREPOINT_CONFIG = {
+            baseUrl: 'https://graph.microsoft.com/v1.0/sites/syagacons.sharepoint.com,4cce268e-9cb7-4829-8c1c-3c85faa1810d,8cb3611e-c4aa-4105-b55d-2247e4fac8c8',
+            listId: '94dc7ad4-740f-4c1f-b99c-107e01c8f70b'
+        };
+        
+        // Variables globales
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        let servers = [];
+        let autoRefresh = true;
+        let refreshInterval = null;
+        let currentFilter = 'all';
+        const CELL_SIZE = 45;
+        const CELL_PADDING = 2;
+        
+        // Initialisation
+        window.onload = async () => {
+            try {
+                await msalInstance.initialize();
+                await msalInstance.handleRedirectPromise();
+                
+                const accounts = msalInstance.getAllAccounts();
+                if (accounts.length === 0) {
+                    await login();
+                } else {
+                    document.getElementById('userEmail').textContent = accounts[0].username;
+                    await loadServers();
+                    startAutoRefresh();
+                }
+            } catch (error) {
+                console.error('Erreur initialisation:', error);
+                showError('Erreur de connexion. Veuillez recharger la page.');
+            }
+        };
+        
+        // Connexion
+        async function login() {
+            try {
+                await msalInstance.loginRedirect({
+                    scopes: ['Sites.Read.All', 'Sites.ReadWrite.All']
+                });
+            } catch (error) {
+                console.error('Erreur login:', error);
+                showError('Impossible de se connecter à Microsoft.');
+            }
+        }
+        
+        // Déconnexion
+        function logout() {
+            msalInstance.logoutRedirect();
+        }
+        
+        // Obtenir le token d'accès
+        async function getAccessToken() {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length === 0) {
+                throw new Error('Non connecté');
+            }
+            
+            const request = {
+                scopes: ['Sites.Read.All', 'Sites.ReadWrite.All'],
+                account: accounts[0]
+            };
+            
+            try {
+                const response = await msalInstance.acquireTokenSilent(request);
+                return response.accessToken;
+            } catch (error) {
+                const response = await msalInstance.acquireTokenPopup(request);
+                return response.accessToken;
+            }
+        }
+        
+        // Charger les serveurs depuis SharePoint
+        async function loadServers() {
+            try {
+                document.getElementById('loadingScreen').classList.remove('hidden');
+                
+                const token = await getAccessToken();
+                const graphUrl = `${SHAREPOINT_CONFIG.baseUrl}/lists/${SHAREPOINT_CONFIG.listId}/items?$expand=fields&$top=100`;
+                
+                const response = await fetch(graphUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Filtrer les vraies entrées serveurs
+                const allItems = data.value || [];
+                servers = allItems
+                    .filter(item => 
+                        item.fields && 
+                        item.fields.Hostname &&
+                        item.fields.Hostname !== 'CONFIG' && 
+                        item.fields.Hostname !== 'UPDATE_CONFIG' &&
+                        item.fields.Title !== 'AGENT_CONFIG' &&
+                        item.fields.Title !== 'UPDATE_CONFIG'
+                    )
+                    .map(item => ({
+                        id: item.id,
+                        hostname: item.fields.Hostname || item.fields.Title,
+                        client: item.fields.Client || 'SYAGA',
+                        ip: item.fields.IP || 'N/A',
+                        state: item.fields.State || 'Unknown',
+                        pendingUpdates: parseInt(item.fields.PendingUpdates) || 0,
+                        criticalUpdates: parseInt(item.fields.CriticalUpdates) || 0,
+                        diskSpaceGB: parseInt(item.fields.DiskSpaceGB) || 0,
+                        role: item.fields.Role || 'Server',
+                        osVersion: item.fields.OSVersion || 'Windows Server',
+                        lastUpdate: item.fields.Modified || new Date().toISOString(),
+                        hypervEnabled: item.fields.HypervEnabled || false,
+                        hypervStatus: item.fields.HypervStatus || 'N/A',
+                        veeamEnabled: item.fields.VeeamEnabled || false,
+                        veeamStatus: item.fields.VeeamStatus || 'N/A',
+                        cpuUsage: parseInt(item.fields.CPUUsage) || 0,
+                        memoryUsage: parseInt(item.fields.MemoryUsage) || 0
+                    }));
+                
+                renderHoneycomb();
+                updateStats();
+                
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('fr-FR');
+                console.log(`✅ ${servers.length} serveurs chargés depuis SharePoint`);
+                
+            } catch (error) {
+                console.error('Erreur chargement:', error);
+                showError(`Erreur de chargement: ${error.message}`);
+            } finally {
+                document.getElementById('loadingScreen').classList.add('hidden');
+            }
+        }
+        
+        // Déterminer la sévérité
+        function getServerSeverity(server) {
+            if (server.state === 'Error' || server.criticalUpdates > 5) return 'disaster';
+            if (server.criticalUpdates > 0) return 'high';
+            if (server.pendingUpdates > 10) return 'average';
+            if (server.pendingUpdates > 0) return 'warning';
+            if (server.diskSpaceGB < 10) return 'warning';
+            return 'ok';
+        }
+        
+        // Créer un hexagone
+        function createHexagon(x, y, size) {
+            const points = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i - Math.PI / 6;
+                const px = x + size * Math.cos(angle);
+                const py = y + size * Math.sin(angle);
+                points.push(`${px},${py}`);
+            }
+            return points.join(' ');
+        }
+        
+        // Position dans la grille
+        function getHexPosition(index, columns) {
+            const col = index % columns;
+            const row = Math.floor(index / columns);
+            
+            const hexWidth = CELL_SIZE * Math.sqrt(3);
+            const hexHeight = CELL_SIZE * 2;
+            
+            const offsetX = (row % 2) * (hexWidth / 2);
+            
+            const x = col * (hexWidth + CELL_PADDING) + hexWidth / 2 + offsetX + 20;
+            const y = row * (hexHeight * 0.75 + CELL_PADDING) + CELL_SIZE + 20;
+            
+            return { x, y };
+        }
+        
+        // Afficher les serveurs en honeycomb
+        function renderHoneycomb() {
+            const svg = document.getElementById('honeycomb');
+            svg.innerHTML = '';
+            
+            // Filtrer les serveurs
+            let displayServers = servers;
+            if (currentFilter === 'problems') {
+                displayServers = servers.filter(s => getServerSeverity(s) !== 'ok');
+            } else if (currentFilter === 'updates') {
+                displayServers = servers.filter(s => s.pendingUpdates > 0 || s.criticalUpdates > 0);
+            }
+            
+            // Calculer le nombre de colonnes
+            const svgWidth = 1400;
+            const hexWidth = CELL_SIZE * Math.sqrt(3);
+            const columns = Math.floor((svgWidth - 40) / (hexWidth + CELL_PADDING));
+            
+            // Créer les hexagones
+            displayServers.forEach((server, index) => {
+                const { x, y } = getHexPosition(index, columns);
+                const severity = getServerSeverity(server);
+                
+                // Groupe pour l'hexagone
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.classList.add('honeycomb-cell');
+                g.setAttribute('data-server', JSON.stringify(server));
+                
+                // Polygone hexagonal
+                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                polygon.setAttribute('points', createHexagon(x, y, CELL_SIZE));
+                polygon.classList.add(`severity-${severity}`);
+                g.appendChild(polygon);
+                
+                // Texte principal (nom du serveur)
+                const text1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text1.setAttribute('x', x);
+                text1.setAttribute('y', y - 10);
+                text1.classList.add('primary-label');
+                text1.textContent = server.hostname.substring(0, 12);
+                g.appendChild(text1);
+                
+                // Texte secondaire (mises à jour critiques)
+                const text2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text2.setAttribute('x', x);
+                text2.setAttribute('y', y + 10);
+                text2.classList.add('secondary-label');
+                text2.textContent = server.criticalUpdates > 0 ? server.criticalUpdates : server.pendingUpdates;
+                g.appendChild(text2);
+                
+                // Événements
+                g.addEventListener('mouseenter', (e) => showTooltip(e, server));
+                g.addEventListener('mouseleave', hideTooltip);
+                
+                svg.appendChild(g);
+            });
+        }
+        
+        // Afficher le tooltip
+        function showTooltip(event, server) {
+            const tooltip = document.getElementById('tooltip');
+            const content = document.getElementById('tooltip-content');
+            
+            const severity = getServerSeverity(server);
+            let statusText = 'OK';
+            let statusClass = 'status-ok';
+            
+            if (severity === 'warning') {
+                statusText = 'Avertissement';
+                statusClass = 'status-warning';
+            } else if (severity === 'average') {
+                statusText = 'Moyen';
+                statusClass = 'status-warning';
+            } else if (severity === 'high') {
+                statusText = 'Élevé';
+                statusClass = 'status-high';
+            } else if (severity === 'disaster') {
+                statusText = 'Critique';
+                statusClass = 'status-disaster';
+            }
+            
+            content.innerHTML = `
+                <tr>
+                    <td>Serveur:</td>
+                    <td><strong>${server.hostname}</strong></td>
+                </tr>
+                <tr>
+                    <td>Client:</td>
+                    <td>${server.client}</td>
+                </tr>
+                <tr>
+                    <td>Adresse IP:</td>
+                    <td>${server.ip}</td>
+                </tr>
+                <tr>
+                    <td>Rôle:</td>
+                    <td>${server.role}</td>
+                </tr>
+                <tr>
+                    <td>État:</td>
+                    <td class="${statusClass}">${statusText}</td>
+                </tr>
+                <tr>
+                    <td>MAJ critiques:</td>
+                    <td><strong style="color: ${server.criticalUpdates > 0 ? '#E45959' : '#43A047'}">
+                        ${server.criticalUpdates}
+                    </strong></td>
+                </tr>
+                <tr>
+                    <td>MAJ en attente:</td>
+                    <td>${server.pendingUpdates}</td>
+                </tr>
+                <tr>
+                    <td>Espace disque:</td>
+                    <td>${server.diskSpaceGB} GB libre</td>
+                </tr>
+                ${server.hypervEnabled ? `
+                <tr>
+                    <td>Hyper-V:</td>
+                    <td>${server.hypervStatus}</td>
+                </tr>` : ''}
+                ${server.veeamEnabled ? `
+                <tr>
+                    <td>Veeam:</td>
+                    <td>${server.veeamStatus}</td>
+                </tr>` : ''}
+                <tr>
+                    <td>Dernière MAJ:</td>
+                    <td>${new Date(server.lastUpdate).toLocaleString('fr-FR')}</td>
+                </tr>
+            `;
+            
+            // Positionner le tooltip
+            const rect = event.target.getBoundingClientRect();
+            tooltip.style.left = (rect.right + 10) + 'px';
+            tooltip.style.top = rect.top + 'px';
+            
+            // Ajuster si sort de l'écran
+            setTimeout(() => {
+                const tooltipRect = tooltip.getBoundingClientRect();
+                if (tooltipRect.right > window.innerWidth) {
+                    tooltip.style.left = (rect.left - tooltipRect.width - 10) + 'px';
+                }
+                if (tooltipRect.bottom > window.innerHeight) {
+                    tooltip.style.top = (window.innerHeight - tooltipRect.height - 10) + 'px';
+                }
+            }, 1);
+            
+            tooltip.classList.add('visible');
+        }
+        
+        // Cacher le tooltip
+        function hideTooltip() {
+            document.getElementById('tooltip').classList.remove('visible');
+        }
+        
+        // Mettre à jour les statistiques
+        function updateStats() {
+            document.getElementById('totalServers').textContent = servers.length;
+            
+            const stats = {
+                ok: 0,
+                warning: 0,
+                critical: 0,
+                totalUpdates: 0
+            };
+            
+            servers.forEach(server => {
+                const severity = getServerSeverity(server);
+                if (severity === 'ok') stats.ok++;
+                else if (severity === 'warning' || severity === 'average') stats.warning++;
+                else if (severity === 'high' || severity === 'disaster') stats.critical++;
+                
+                stats.totalUpdates += server.pendingUpdates + server.criticalUpdates;
+            });
+            
+            document.getElementById('okCount').textContent = stats.ok;
+            document.getElementById('warningCount').textContent = stats.warning;
+            document.getElementById('criticalCount').textContent = stats.critical;
+            document.getElementById('totalUpdates').textContent = stats.totalUpdates;
+        }
+        
+        // Filtrer la vue
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.dashboard-controls .btn').forEach(btn => {
+                if (!btn.id) btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderHoneycomb();
+        }
+        
+        // Toggle auto-refresh
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            const btn = document.getElementById('autoRefreshBtn');
+            btn.textContent = `🔄 Auto-refresh: ${autoRefresh ? 'ON' : 'OFF'}`;
+            btn.classList.toggle('active', autoRefresh);
+            
+            if (autoRefresh) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        }
+        
+        // Démarrer l'auto-refresh
+        function startAutoRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            if (autoRefresh) {
+                refreshInterval = setInterval(loadServers, 30000); // Toutes les 30 secondes
+            }
+        }
+        
+        // Arrêter l'auto-refresh
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+        
+        // Afficher une erreur
+        function showError(message) {
+            const container = document.querySelector('.dashboard-widget-body');
+            container.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+    </script>
+</body>
+</html>
