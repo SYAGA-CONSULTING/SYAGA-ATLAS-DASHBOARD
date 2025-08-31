@@ -691,19 +691,19 @@
                         <!-- PRE-CHECK -->
                         <div class="server-block done" style="left: 0%; width: 11%;">✅ PRE-CHECK</div>
                         <div class="actions-under-block" style="left: 0%; width: 11%;">
-                            <div class="action-item" data-action="precheck-1">• Connectivité</div>
-                            <div class="action-item" data-action="precheck-2">• Espace disque</div>
-                            <div class="action-item" data-action="precheck-3">• Jobs SQL actifs</div>
-                            <div class="action-item" data-action="precheck-4">• Snapshots</div>
+                            <div class="action-item" data-action="precheck-1">• Capture EventLog AVANT</div>
+                            <div class="action-item" data-action="precheck-2">• Export Services Running</div>
+                            <div class="action-item" data-action="precheck-3">• Snapshots toutes VMs</div>
+                            <div class="action-item" data-action="precheck-4">• Baseline boot time</div>
                         </div>
                         
                         <!-- SUSPEND -->
                         <div class="server-block done" style="left: 11%; width: 11%;">✅ SUSPEND</div>
                         <div class="actions-under-block" style="left: 11%; width: 11%;">
-                            <div class="action-item" data-action="suspend-1">• Jobs SQL</div>
-                            <div class="action-item" data-action="suspend-2">• Veeam Backup</div>
-                            <div class="action-item" data-action="suspend-3">• Réplication</div>
-                            <div class="action-item" data-action="suspend-4">• Exchange DAG</div>
+                            <div class="action-item" data-action="suspend-1">• Stop Jobs SQL</div>
+                            <div class="action-item" data-action="suspend-2">• Pause Veeam Jobs</div>
+                            <div class="action-item" data-action="suspend-3">• ⚠️ Stop-VM -Force</div>
+                            <div class="action-item" data-action="suspend-4">• ❌ JAMAIS Save-VM</div>
                         </div>
                         
                         <!-- HOST04 -->
@@ -712,6 +712,11 @@
                             <div class="vm-principal">💾 VEEAM01</div>
                             <div class="vm-replica">💼 SAGE <span class="vm-source">(←H03)</span></div>
                         </div>
+                        <div class="actions-under-block" style="left: 22%; width: 11%;">
+                            <div class="action-item done" style="background: #d4edda;">🧪 Veeam Console OK</div>
+                            <div class="action-item done" style="background: #d4edda;">✓ Boot < 3 min</div>
+                            <div class="action-item done" style="background: #d4edda;">✓ No EventID 41</div>
+                        </div>
                         
                         <!-- HOST02 -->
                         <div class="server-block done" style="left: 33%; width: 11%;">✅ HOST02</div>
@@ -719,6 +724,11 @@
                             <div class="vm-principal">🖥️ RDS</div>
                             <div class="vm-replica">📱 APP <span class="vm-source">(←H01)</span></div>
                             <div class="vm-replica">🌐 WEB <span class="vm-source">(←H03)</span></div>
+                        </div>
+                        <div class="actions-under-block" style="left: 33%; width: 11%;">
+                            <div class="action-item done" style="background: #d4edda;">🧪 RDP 3389 OK</div>
+                            <div class="action-item done" style="background: #d4edda;">✓ Services 100%</div>
+                            <div class="action-item done" style="background: #d4edda;">📊 EventLog clean</div>
                         </div>
                         
                         <!-- HOST03 (EN UPDATE) -->
@@ -739,23 +749,23 @@
                             <div class="vm-replica active">🗄️ SQL <span class="vm-source">(←H03)</span></div>
                         </div>
                         
-                        <!-- VALIDATION -->
-                        <div class="server-block pending" style="left: 66%; width: 22%;">⏳ VALIDATION</div>
+                        <!-- UPDATE VMs -->
+                        <div class="server-block pending" style="left: 66%; width: 22%;">⏳ UPDATE VMs</div>
                         <div class="actions-under-block" style="left: 66%; width: 22%;">
-                            <div class="action-item" data-action="validation-1">• Test services Windows</div>
-                            <div class="action-item" data-action="validation-2">• Test connectivité VMs</div>
-                            <div class="action-item" data-action="validation-3">• Test réplications</div>
-                            <div class="action-item" data-action="validation-4">• Test applications métier</div>
-                            <div class="action-item" data-action="validation-5">• Validation utilisateurs</div>
+                            <div class="action-item" data-action="validation-1">• Update VEEAM01 + Test</div>
+                            <div class="action-item" data-action="validation-2">• Update SQL-Replica + Test</div>
+                            <div class="action-item" data-action="validation-3">• Update WEB/APP/SAGE</div>
+                            <div class="action-item" data-action="validation-4">• Update RDS-Replica</div>
+                            <div class="action-item" data-action="validation-5">• 🔴 DC EN DERNIER!</div>
                         </div>
                         
-                        <!-- RESUME -->
-                        <div class="server-block pending" style="left: 88%; width: 12%;">⏳ RESUME</div>
+                        <!-- VALIDATION FINALE -->
+                        <div class="server-block pending" style="left: 88%; width: 12%;">⏳ VALIDATION</div>
                         <div class="actions-under-block" style="left: 88%; width: 12%;">
-                            <div class="action-item" data-action="resume-1">• Jobs SQL</div>
-                            <div class="action-item" data-action="resume-2">• Veeam</div>
-                            <div class="action-item" data-action="resume-3">• Réplication</div>
-                            <div class="action-item" data-action="resume-4">• Exchange</div>
+                            <div class="action-item" data-action="resume-1">📊 Compare EventLog</div>
+                            <div class="action-item" data-action="resume-2">✓ Services 100%?</div>
+                            <div class="action-item" data-action="resume-3">🧪 Tests métier OK?</div>
+                            <div class="action-item" data-action="resume-4">▶ Resume Jobs SQL</div>
                         </div>
                     </div>
                 </div>
