@@ -532,6 +532,8 @@
         let animationInterval = null;
         let speed = 1;
         
+        console.log('Initial state - Progress:', progress, 'Should be in HOST03 phase');
+        
         // Initialisation du DOM
         function initializeDOM() {
             const track = document.getElementById('servers-track');
@@ -545,7 +547,13 @@
                 // Header
                 const header = document.createElement('div');
                 header.className = `server-header ${server.type}`;
-                header.dataset[server.type] = server.id;
+                if (server.type === 'vm') {
+                    header.dataset.vm = server.id;
+                } else if (server.type === 'host') {
+                    header.dataset.host = server.id;
+                } else if (server.type === 'phase') {
+                    header.dataset.phase = server.id;
+                }
                 
                 if (server.type === 'vm') {
                     header.innerHTML = `
@@ -710,7 +718,12 @@
             const header = document.querySelector(`[data-phase="${id}"]`);
             const actions = document.querySelectorAll(`[data-action^="${id}-"]`);
             
-            if (!header) return;
+            if (!header) {
+                console.warn(`Header not found for phase: ${id}`);
+                return;
+            }
+            
+            console.log(`Updating phase ${id}, progress: ${progress}, timeline: ${timeline.start}-${timeline.end}`);
             
             if (progress < timeline.start) {
                 // Pas encore commencé
@@ -728,6 +741,8 @@
                 
                 const subProgress = (progress - timeline.start) / (timeline.end - timeline.start);
                 const currentAction = Math.floor(subProgress * actionCount);
+                
+                console.log(`Phase ${id} subProgress: ${subProgress}, currentAction: ${currentAction}`);
                 
                 actions.forEach((action, i) => {
                     action.classList.remove('pending', 'running', 'done');
@@ -763,7 +778,12 @@
             const header = document.querySelector(`[data-host="${id}"]`);
             const actions = document.querySelectorAll(`[data-action^="${id}-"]`);
             
-            if (!header) return;
+            if (!header) {
+                console.warn(`Header not found for host: ${id}`);
+                return;
+            }
+            
+            console.log(`Updating host ${id}, progress: ${progress}, timeline: ${timeline.start}-${timeline.end}`);
             
             const name = id.toUpperCase();
             
@@ -783,25 +803,38 @@
                 
                 const subProgress = (progress - timeline.start) / (timeline.end - timeline.start);
                 
+                console.log(`Host ${id} subProgress: ${subProgress}`);
+                
                 // Windows Update (0-40%)
                 // Reboot (40-70%)
                 // Tests (70-100%)
                 actions.forEach((action, i) => {
                     action.classList.remove('pending', 'running', 'done');
-                    if (i === 0 && subProgress < 0.4) {
-                        action.classList.add('running');
-                    } else if (i === 0 && subProgress >= 0.4) {
-                        action.classList.add('done');
-                    } else if (i === 1 && subProgress >= 0.4 && subProgress < 0.7) {
-                        action.classList.add('running');
-                    } else if (i === 1 && subProgress >= 0.7) {
-                        action.classList.add('done');
-                    } else if (i === 2 && subProgress >= 0.7 && subProgress < 1) {
-                        action.classList.add('running');
-                    } else if (i === 2 && subProgress >= 1) {
-                        action.classList.add('done');
-                    } else {
-                        action.classList.add('pending');
+                    if (i === 0) { // Windows Update
+                        if (subProgress < 0.4) {
+                            action.classList.add('running');
+                            console.log(`${id} Windows Update: running`);
+                        } else {
+                            action.classList.add('done');
+                        }
+                    } else if (i === 1) { // Reboot
+                        if (subProgress < 0.4) {
+                            action.classList.add('pending');
+                        } else if (subProgress < 0.7) {
+                            action.classList.add('running');
+                            console.log(`${id} Reboot: running`);
+                        } else {
+                            action.classList.add('done');
+                        }
+                    } else if (i === 2) { // Tests
+                        if (subProgress < 0.7) {
+                            action.classList.add('pending');
+                        } else if (subProgress < 1) {
+                            action.classList.add('running');
+                            console.log(`${id} Tests: running`);
+                        } else {
+                            action.classList.add('done');
+                        }
                     }
                 });
             } else {
@@ -838,6 +871,7 @@
             
             // HOST03 update (44-55%) - SQL, WEB, SAGE down
             if (progress >= TIMELINE.HOST03.start && progress < TIMELINE.HOST03.end) {
+                console.log('HOST03 is updating, setting VMs as inactive');
                 setVMInactive('sql');
                 setVMInactive('web');
                 setVMInactive('sage');
@@ -890,13 +924,24 @@
         }
         
         function setVMInactive(vmId) {
+            console.log(`Setting VM ${vmId} as inactive`);
             // Colonne VM
             const header = document.querySelector(`[data-vm="${vmId}"]`);
-            header?.classList.add('inactive');
+            if (header) {
+                header.classList.add('inactive');
+                console.log(`VM column ${vmId} set to inactive`);
+            } else {
+                console.warn(`VM header not found: ${vmId}`);
+            }
             
             // Bulle sous le host
             const bubble = document.querySelector(`.vm-bubble[data-vm="${vmId}"]`);
-            bubble?.classList.add('inactive');
+            if (bubble) {
+                bubble.classList.add('inactive');
+                console.log(`VM bubble ${vmId} set to inactive`);
+            } else {
+                console.warn(`VM bubble not found: ${vmId}`);
+            }
         }
         
         // Mise à jour des actions
@@ -1019,9 +1064,36 @@
         });
         
         // Initialisation
+        console.log('=== INITIALISATION ===');
         initializeDOM();
+        console.log('DOM initialized');
+        
+        // Au démarrage, HOST03 est en cours (progress = 50)
+        // donc ses VMs doivent être inactives
+        console.log('Setting initial state: HOST03 in progress');
         updatePosition();
+        console.log('Initial position updated, progress:', progress);
+        
+        // Vérifier que HOST03 est bien actif
+        const host03Header = document.querySelector('[data-host="host03"]');
+        console.log('HOST03 header found:', host03Header);
+        console.log('HOST03 classes:', host03Header?.className);
+        
+        // Vérifier que les VMs sont bien inactives
+        const sqlHeader = document.querySelector('[data-vm="sql"]');
+        console.log('SQL VM header found:', sqlHeader);
+        console.log('SQL VM classes:', sqlHeader?.className);
+        
         startAnimation();
+        console.log('Animation started');
+        
+        // Debug: Afficher l'état toutes les 2 secondes
+        setInterval(() => {
+            console.log('Progress:', progress, 'Phase:', document.getElementById('current-phase').textContent);
+            console.log('Active headers:', document.querySelectorAll('.server-header.active').length);
+            console.log('Running actions:', document.querySelectorAll('.action-item.running').length);
+            console.log('Done actions:', document.querySelectorAll('.action-item.done').length);
+        }, 2000);
     </script>
 </body>
 </html>
