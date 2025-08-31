@@ -757,6 +757,32 @@
                 <div class="servers-section">
                     <div class="servers-label">SERVEURS</div>
                     <div class="servers-track">
+                        <!-- PRE-CHECK -->
+                        <div class="server-column phase" data-server="PRECHECK">
+                            <div class="server-header done" style="background: #d4edda; border-color: #28a745;">
+                                <span>✅ PRE-CHECK</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item done" data-action="precheck-1" style="background: #d4edda;">✓ Capture EventLog</div>
+                                <div class="action-item done" data-action="precheck-2" style="background: #d4edda;">✓ Export Services</div>
+                                <div class="action-item done" data-action="precheck-3" style="background: #d4edda;">✓ Snapshots VMs</div>
+                                <div class="action-item done" data-action="precheck-4" style="background: #d4edda;">✓ Baseline</div>
+                            </div>
+                        </div>
+                        
+                        <!-- SUSPEND -->
+                        <div class="server-column phase" data-server="SUSPEND">
+                            <div class="server-header done" style="background: #d4edda; border-color: #28a745;">
+                                <span>✅ SUSPEND</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item done" data-action="suspend-1" style="background: #d4edda;">⏸ Jobs SQL</div>
+                                <div class="action-item done" data-action="suspend-2" style="background: #d4edda;">⏸ Veeam</div>
+                                <div class="action-item done" data-action="suspend-3" style="background: #d4edda;">✓ Stop-VM</div>
+                                <div class="action-item done" data-action="suspend-4" style="background: #ffebee; color: #dc3545;">❌ NO Save-VM</div>
+                            </div>
+                        </div>
+                        
                         <!-- HOST01 (Physique) -->
                         <div class="server-column host" data-server="HOST01">
                             <div class="server-header host" data-host="HOST01">
