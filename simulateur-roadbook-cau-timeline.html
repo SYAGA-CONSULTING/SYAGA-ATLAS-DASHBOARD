@@ -161,8 +161,10 @@
         .servers-track {
             margin-left: 150px;
             position: relative;
-            min-height: 300px;  /* Plus de hauteur pour éviter superposition */
+            min-height: 300px;
             margin-bottom: 20px;
+            display: flex;
+            gap: 5px;
         }
         
         /* Serveur principal */
@@ -180,6 +182,73 @@
             font-size: 0.9rem;
             transition: all 0.3s;
             z-index: 10;
+        }
+        
+        /* Colonne de serveur (host ou VM) */
+        .server-column {
+            position: relative;
+            width: 8.5%;
+            min-height: 250px;
+        }
+        
+        .server-column.phase {
+            width: 11%;
+        }
+        
+        .server-column.vm {
+            background: rgba(156, 39, 176, 0.05);
+            border-radius: 8px;
+        }
+        
+        .server-column.host {
+            background: rgba(33, 150, 243, 0.05);
+            border-radius: 8px;
+        }
+        
+        .server-header {
+            height: 50px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+            margin-bottom: 5px;
+            position: relative;
+        }
+        
+        .server-header.host {
+            background: linear-gradient(180deg, #e3f2fd 0%, #bbdefb 100%);
+            border-color: #2196f3;
+        }
+        
+        .server-header.vm {
+            background: linear-gradient(180deg, #f3e5f5 0%, #e1bee7 100%);
+            border-color: #9c27b0;
+        }
+        
+        .server-header.inactive {
+            background: #ffebee;
+            border-color: #dc3545;
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+        
+        .server-type {
+            font-size: 0.65rem;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        
+        .server-location {
+            font-size: 0.6rem;
+            color: #999;
+            position: absolute;
+            bottom: 2px;
         }
         
         .server-block.done {
@@ -684,98 +753,178 @@
             
             <!-- Swimlanes -->
             <div class="swimlanes">
-                <!-- SERVEURS avec VMs en dessous -->
+                <!-- SERVEURS (4 Physiques + 7 VMs) -->
                 <div class="servers-section">
-                    <div class="servers-label">Serveurs<br>&<br>VMs</div>
+                    <div class="servers-label">SERVEURS</div>
                     <div class="servers-track">
-                        <!-- PRE-CHECK -->
-                        <div class="server-block done" style="left: 0%; width: 11%;">✅ PRE-CHECK</div>
-                        <div class="actions-under-block" style="left: 0%; width: 11%;">
-                            <div class="action-item" data-action="precheck-1">• Capture EventLog AVANT</div>
-                            <div class="action-item" data-action="precheck-2">• Export Services Running</div>
-                            <div class="action-item" data-action="precheck-3">• Snapshots toutes VMs</div>
-                            <div class="action-item" data-action="precheck-4">• Baseline boot time</div>
+                        <!-- HOST01 (Physique) -->
+                        <div class="server-column host" data-server="HOST01">
+                            <div class="server-header host" data-host="HOST01">
+                                <span class="server-type">PHYSIQUE</span>
+                                <span>HOST01</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item pending" data-action="host01-update">🔄 Windows Update</div>
+                                <div class="action-item pending" data-action="host01-reboot">🔄 Reboot</div>
+                                <div class="action-item pending" data-action="host01-test">🧪 AD Réplication</div>
+                            </div>
+                            <!-- VMs hébergées -->
+                            <div class="hosted-vms" style="margin-top: 20px; padding: 5px; background: rgba(0,0,0,0.05); border-radius: 5px;">
+                                <div style="font-size: 0.65rem; color: #666; margin-bottom: 3px;">Héberge:</div>
+                                <div class="vm-bubble" data-vm="DC" style="padding: 2px 5px; background: #d4edda; border: 1px solid #28a745; border-radius: 3px; font-size: 0.7rem; margin-bottom: 2px;">💾 DC</div>
+                                <div class="vm-bubble" data-vm="APP" style="padding: 2px 5px; background: #d4edda; border: 1px solid #28a745; border-radius: 3px; font-size: 0.7rem;">📱 APP</div>
+                            </div>
                         </div>
                         
-                        <!-- SUSPEND -->
-                        <div class="server-block done" style="left: 11%; width: 11%;">✅ SUSPEND</div>
-                        <div class="actions-under-block" style="left: 11%; width: 11%;">
-                            <div class="action-item" data-action="suspend-1">• Stop Jobs SQL</div>
-                            <div class="action-item" data-action="suspend-2">• Pause Veeam Jobs</div>
-                            <div class="action-item" data-action="suspend-3">• ⚠️ Stop-VM -Force</div>
-                            <div class="action-item" data-action="suspend-4">• ❌ JAMAIS Save-VM</div>
+                        <!-- HOST02 (Physique) -->
+                        <div class="server-column host" data-server="HOST02">
+                            <div class="server-header host" data-host="HOST02">
+                                <span class="server-type">PHYSIQUE</span>
+                                <span>HOST02</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item pending" data-action="host02-update">🔄 Windows Update</div>
+                                <div class="action-item pending" data-action="host02-reboot">🔄 Reboot</div>
+                                <div class="action-item pending" data-action="host02-test">🧪 RDP Test</div>
+                            </div>
+                            <div class="hosted-vms" style="margin-top: 20px; padding: 5px; background: rgba(0,0,0,0.05); border-radius: 5px;">
+                                <div style="font-size: 0.65rem; color: #666; margin-bottom: 3px;">Héberge:</div>
+                                <div class="vm-bubble" data-vm="RDS" style="padding: 2px 5px; background: #d4edda; border: 1px solid #28a745; border-radius: 3px; font-size: 0.7rem;">🖥️ RDS</div>
+                            </div>
                         </div>
                         
-                        <!-- HOST04 -->
-                        <div class="server-block done" style="left: 22%; width: 11%;">✅ HOST04</div>
-                        <div class="vms-under-server" style="left: 22%; width: 11%;">
-                            <div class="vm-principal">💾 VEEAM01</div>
-                            <div class="vm-replica">💼 SAGE <span class="vm-source">(←H03)</span></div>
-                        </div>
-                        <div class="actions-under-block" style="left: 22%; width: 11%;">
-                            <div class="action-item done" data-action="host04-update" style="background: #d4edda;">🔄 Windows Update</div>
-                            <div class="action-item done" data-action="host04-reboot" style="background: #d4edda;">🔄 Reboot HOST04</div>
-                            <div class="action-item done" data-action="host04-test" style="background: #d4edda;">🧪 Veeam Console OK</div>
-                        </div>
-                        
-                        <!-- HOST02 -->
-                        <div class="server-block done" style="left: 33%; width: 11%;">✅ HOST02</div>
-                        <div class="vms-under-server" style="left: 33%; width: 11%;">
-                            <div class="vm-principal">🖥️ RDS</div>
-                            <div class="vm-replica">📱 APP <span class="vm-source">(←H01)</span></div>
-                            <div class="vm-replica">🌐 WEB <span class="vm-source">(←H03)</span></div>
-                        </div>
-                        <div class="actions-under-block" style="left: 33%; width: 11%;">
-                            <div class="action-item done" data-action="host02-update" style="background: #d4edda;">🔄 Windows Update</div>
-                            <div class="action-item done" data-action="host02-reboot" style="background: #d4edda;">🔄 Reboot HOST02</div>
-                            <div class="action-item done" data-action="host02-test" style="background: #d4edda;">🧪 RDP 3389 OK</div>
+                        <!-- HOST03 (Physique) -->
+                        <div class="server-column host" data-server="HOST03">
+                            <div class="server-header host active" data-host="HOST03">
+                                <span class="server-type">PHYSIQUE</span>
+                                <span>⚡ HOST03</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item running" data-action="host03-update">🔄 Windows Update</div>
+                                <div class="action-item pending" data-action="host03-reboot">🔄 Reboot</div>
+                                <div class="action-item pending" data-action="host03-test">🧪 Tests</div>
+                            </div>
+                            <div class="hosted-vms" style="margin-top: 20px; padding: 5px; background: rgba(0,0,0,0.05); border-radius: 5px;">
+                                <div style="font-size: 0.65rem; color: #666; margin-bottom: 3px;">Héberge:</div>
+                                <div class="vm-bubble inactive" data-vm="SQL" style="padding: 2px 5px; background: #ffebee; border: 1px solid #dc3545; border-radius: 3px; font-size: 0.7rem; margin-bottom: 2px; opacity: 0.4; text-decoration: line-through;">🗄️ SQL</div>
+                                <div class="vm-bubble inactive" data-vm="WEB" style="padding: 2px 5px; background: #ffebee; border: 1px solid #dc3545; border-radius: 3px; font-size: 0.7rem; margin-bottom: 2px; opacity: 0.4; text-decoration: line-through;">🌐 WEB</div>
+                                <div class="vm-bubble inactive" data-vm="SAGE" style="padding: 2px 5px; background: #ffebee; border: 1px solid #dc3545; border-radius: 3px; font-size: 0.7rem; opacity: 0.4; text-decoration: line-through;">💼 SAGE</div>
+                            </div>
                         </div>
                         
-                        <!-- HOST03 (EN UPDATE) -->
-                        <div class="server-block active" style="left: 44%; width: 11%;">⚡ HOST03</div>
-                        <div class="vms-under-server" style="left: 44%; width: 11%;">
-                            <div class="vm-principal inactive">🗄️ SQL</div>
-                            <div class="vm-principal inactive">🌐 WEB</div>
-                            <div class="vm-principal inactive">💼 SAGE</div>
-                            <div class="vm-replica">💾 DC <span class="vm-source">(←H01)</span></div>
-                        </div>
-                        <div class="actions-under-block" style="left: 44%; width: 11%;">
-                            <div class="action-item running" data-action="host03-update">🔄 Windows Update</div>
-                            <div class="action-item pending" data-action="host03-reboot">🔄 Reboot HOST03</div>
-                            <div class="action-item pending" data-action="host03-test">🧪 Tests Services</div>
-                        </div>
-                        
-                        <!-- HOST01 -->
-                        <div class="server-block pending" style="left: 55%; width: 11%;">⏳ HOST01</div>
-                        <div class="vms-under-server" style="left: 55%; width: 11%;">
-                            <div class="vm-principal">💾 DC</div>
-                            <div class="vm-principal">📱 APP</div>
-                            <div class="vm-replica active">🖥️ RDS <span class="vm-source">(←H02)</span></div>
-                            <div class="vm-replica active">🗄️ SQL <span class="vm-source">(←H03)</span></div>
-                        </div>
-                        <div class="actions-under-block" style="left: 55%; width: 11%;">
-                            <div class="action-item pending" data-action="host01-update">🔄 Windows Update</div>
-                            <div class="action-item pending" data-action="host01-reboot">🔄 Reboot HOST01</div>
-                            <div class="action-item pending" data-action="host01-test">🧪 AD Réplication</div>
+                        <!-- HOST04 (Physique) -->
+                        <div class="server-column host" data-server="HOST04">
+                            <div class="server-header host done" data-host="HOST04">
+                                <span class="server-type">PHYSIQUE</span>
+                                <span>✅ HOST04</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item done" data-action="host04-update" style="background: #d4edda;">🔄 Windows Update</div>
+                                <div class="action-item done" data-action="host04-reboot" style="background: #d4edda;">🔄 Reboot</div>
+                                <div class="action-item done" data-action="host04-test" style="background: #d4edda;">🧪 Veeam OK</div>
+                            </div>
+                            <div class="hosted-vms" style="margin-top: 20px; padding: 5px; background: rgba(0,0,0,0.05); border-radius: 5px;">
+                                <div style="font-size: 0.65rem; color: #666; margin-bottom: 3px;">Héberge:</div>
+                                <div class="vm-bubble" data-vm="VEEAM01" style="padding: 2px 5px; background: #d4edda; border: 1px solid #28a745; border-radius: 3px; font-size: 0.7rem;">💾 VEEAM01</div>
+                            </div>
                         </div>
                         
-                        <!-- UPDATE VMs -->
-                        <div class="server-block pending" style="left: 66%; width: 22%;">⏳ UPDATE VMs</div>
-                        <div class="actions-under-block" style="left: 66%; width: 22%;">
-                            <div class="action-item pending" data-action="vm-update-1">🔄 Windows Update VEEAM01</div>
-                            <div class="action-item pending" data-action="vm-update-2">🔄 Windows Update SQL-Replica</div>
-                            <div class="action-item pending" data-action="vm-update-3">🔄 Windows Update WEB/APP/SAGE</div>
-                            <div class="action-item pending" data-action="vm-update-4">🔄 Windows Update RDS-Replica</div>
-                            <div class="action-item pending" data-action="vm-update-5" style="color: #dc3545;">🔄 Windows Update DC (DERNIER!)</div>
+                        <!-- DC (VM) -->
+                        <div class="server-column vm" data-server="DC">
+                            <div class="server-header vm" data-vm="DC">
+                                <span class="server-type">VM</span>
+                                <span>💾 DC</span>
+                                <span class="server-location">sur HOST01</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item pending" data-action="dc-update">🔄 Windows Update</div>
+                                <div class="action-item pending" data-action="dc-reboot">🔄 Reboot</div>
+                                <div class="action-item pending" data-action="dc-test">🧪 AD Test</div>
+                            </div>
                         </div>
                         
-                        <!-- VALIDATION FINALE -->
-                        <div class="server-block pending" style="left: 88%; width: 12%;">⏳ VALIDATION</div>
-                        <div class="actions-under-block" style="left: 88%; width: 12%;">
-                            <div class="action-item pending" data-action="resume-1">📊 Compare EventLog</div>
-                            <div class="action-item pending" data-action="resume-2">✓ Services 100%?</div>
-                            <div class="action-item pending" data-action="resume-3">🧪 Tests métier OK?</div>
-                            <div class="action-item pending" data-action="resume-4">▶ Resume Jobs SQL</div>
+                        <!-- RDS (VM) -->
+                        <div class="server-column vm" data-server="RDS">
+                            <div class="server-header vm" data-vm="RDS">
+                                <span class="server-type">VM</span>
+                                <span>🖥️ RDS</span>
+                                <span class="server-location">sur HOST02</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item pending" data-action="rds-update">🔄 Windows Update</div>
+                                <div class="action-item pending" data-action="rds-reboot">🔄 Reboot</div>
+                                <div class="action-item pending" data-action="rds-test">🧪 RDP Test</div>
+                            </div>
+                        </div>
+                        
+                        <!-- SQL (VM) -->
+                        <div class="server-column vm" data-server="SQL">
+                            <div class="server-header vm inactive" data-vm="SQL">
+                                <span class="server-type">VM</span>
+                                <span>🗄️ SQL</span>
+                                <span class="server-location">sur HOST03</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item pending" data-action="sql-update">🔄 Windows Update</div>
+                                <div class="action-item pending" data-action="sql-reboot">🔄 Reboot</div>
+                                <div class="action-item pending" data-action="sql-test">🧪 SQL Test</div>
+                            </div>
+                        </div>
+                        
+                        <!-- WEB (VM) -->
+                        <div class="server-column vm" data-server="WEB">
+                            <div class="server-header vm inactive" data-vm="WEB">
+                                <span class="server-type">VM</span>
+                                <span>🌐 WEB</span>
+                                <span class="server-location">sur HOST03</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item pending" data-action="web-update">🔄 Windows Update</div>
+                                <div class="action-item pending" data-action="web-reboot">🔄 Reboot</div>
+                                <div class="action-item pending" data-action="web-test">🧪 IIS Test</div>
+                            </div>
+                        </div>
+                        
+                        <!-- APP (VM) -->
+                        <div class="server-column vm" data-server="APP">
+                            <div class="server-header vm" data-vm="APP">
+                                <span class="server-type">VM</span>
+                                <span>📱 APP</span>
+                                <span class="server-location">sur HOST01</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item pending" data-action="app-update">🔄 Windows Update</div>
+                                <div class="action-item pending" data-action="app-reboot">🔄 Reboot</div>
+                                <div class="action-item pending" data-action="app-test">🧪 API Test</div>
+                            </div>
+                        </div>
+                        
+                        <!-- SAGE (VM) -->
+                        <div class="server-column vm" data-server="SAGE">
+                            <div class="server-header vm inactive" data-vm="SAGE">
+                                <span class="server-type">VM</span>
+                                <span>💼 SAGE</span>
+                                <span class="server-location">sur HOST03</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item pending" data-action="sage-update">🔄 Windows Update</div>
+                                <div class="action-item pending" data-action="sage-reboot">🔄 Reboot</div>
+                                <div class="action-item pending" data-action="sage-test">🧪 Service Test</div>
+                            </div>
+                        </div>
+                        
+                        <!-- VEEAM01 (VM) -->
+                        <div class="server-column vm" data-server="VEEAM01">
+                            <div class="server-header vm" data-vm="VEEAM01">
+                                <span class="server-type">VM</span>
+                                <span>💾 VEEAM01</span>
+                                <span class="server-location">sur HOST04</span>
+                            </div>
+                            <div class="actions-under-block">
+                                <div class="action-item pending" data-action="veeam-update">🔄 Windows Update</div>
+                                <div class="action-item pending" data-action="veeam-reboot">🔄 Reboot</div>
+                                <div class="action-item pending" data-action="veeam-test">🧪 Backup Test</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1205,89 +1354,151 @@
         }
         
         function updateFailovers() {
-            const vmsUnderServer = document.querySelectorAll('.vms-under-server');
-            
             // Réinitialiser tous les états
-            document.querySelectorAll('.vm-principal').forEach(vm => {
-                vm.classList.remove('inactive');
+            document.querySelectorAll('.server-header.vm').forEach(header => {
+                header.classList.remove('inactive');
             });
-            document.querySelectorAll('.vm-replica').forEach(vm => {
-                vm.classList.remove('active');
+            document.querySelectorAll('.vm-bubble').forEach(bubble => {
+                bubble.classList.remove('inactive');
+                bubble.style.opacity = '1';
+                bubble.style.textDecoration = 'none';
+                bubble.style.background = '#d4edda';
+                bubble.style.borderColor = '#28a745';
             });
             
-            // HOST04 en update (22-33%)
+            // HOST04 en update (22-33%) - VEEAM01 affecté
             if (progress >= 22 && progress < 33) {
-                // HOST04 (index 0): VEEAM01 inactive
-                vmsUnderServer[0].querySelectorAll('.vm-principal').forEach(vm => {
-                    vm.classList.add('inactive');
-                });
-                // Pas de réplica pour VEEAM01
+                // Colonne VEEAM01
+                const veeamHeader = document.querySelector('[data-vm="VEEAM01"]');
+                if (veeamHeader) veeamHeader.classList.add('inactive');
+                
+                // Bulle sous HOST04
+                const veeamBubble = document.querySelector('.vm-bubble[data-vm="VEEAM01"]');
+                if (veeamBubble) {
+                    veeamBubble.style.background = '#ffebee';
+                    veeamBubble.style.borderColor = '#dc3545';
+                    veeamBubble.style.opacity = '0.4';
+                    veeamBubble.style.textDecoration = 'line-through';
+                }
             }
-            // HOST02 en update (33-44%)
+            
+            // HOST02 en update (33-44%) - RDS affecté
             else if (progress >= 33 && progress < 44) {
-                // HOST02 (index 1): RDS inactive
-                vmsUnderServer[1].querySelectorAll('.vm-principal').forEach(vm => {
-                    if (vm.textContent.includes('RDS')) {
-                        vm.classList.add('inactive');
-                    }
-                });
-                // HOST01 (index 3): Réplica RDS actif
-                vmsUnderServer[3].querySelectorAll('.vm-replica').forEach(vm => {
-                    if (vm.textContent.includes('RDS')) {
-                        vm.classList.add('active');
-                    }
-                });
+                // Colonne RDS
+                const rdsHeader = document.querySelector('[data-vm="RDS"]');
+                if (rdsHeader) rdsHeader.classList.add('inactive');
+                
+                // Bulle sous HOST02
+                const rdsBubble = document.querySelector('.vm-bubble[data-vm="RDS"]');
+                if (rdsBubble) {
+                    rdsBubble.style.background = '#ffebee';
+                    rdsBubble.style.borderColor = '#dc3545';
+                    rdsBubble.style.opacity = '0.4';
+                    rdsBubble.style.textDecoration = 'line-through';
+                }
             }
-            // HOST03 en update (44-55%)
+            
+            // HOST03 en update (44-55%) - SQL, WEB, SAGE affectés
             else if (progress >= 44 && progress < 55) {
-                // HOST03 (index 2): SQL, WEB, SAGE inactives
-                vmsUnderServer[2].querySelectorAll('.vm-principal').forEach(vm => {
-                    vm.classList.add('inactive');
+                // Colonnes des VMs
+                ['SQL', 'WEB', 'SAGE'].forEach(vmName => {
+                    const header = document.querySelector(`[data-vm="${vmName}"]`);
+                    if (header) header.classList.add('inactive');
                 });
                 
-                // HOST01 (index 3): Réplica SQL actif
-                vmsUnderServer[3].querySelectorAll('.vm-replica').forEach(vm => {
-                    if (vm.textContent.includes('SQL')) {
-                        vm.classList.add('active');
-                    }
-                });
-                
-                // HOST02 (index 1): Réplica WEB actif
-                vmsUnderServer[1].querySelectorAll('.vm-replica').forEach(vm => {
-                    if (vm.textContent.includes('WEB')) {
-                        vm.classList.add('active');
-                    }
-                });
-                
-                // HOST04 (index 0): Réplica SAGE actif
-                vmsUnderServer[0].querySelectorAll('.vm-replica').forEach(vm => {
-                    if (vm.textContent.includes('SAGE')) {
-                        vm.classList.add('active');
+                // Bulles sous HOST03
+                ['SQL', 'WEB', 'SAGE'].forEach(vmName => {
+                    const bubble = document.querySelector(`.vm-bubble[data-vm="${vmName}"]`);
+                    if (bubble) {
+                        bubble.style.background = '#ffebee';
+                        bubble.style.borderColor = '#dc3545';
+                        bubble.style.opacity = '0.4';
+                        bubble.style.textDecoration = 'line-through';
                     }
                 });
             }
-            // HOST01 en update (55-66%)
+            
+            // HOST01 en update (55-66%) - DC et APP affectés
             else if (progress >= 55 && progress < 66) {
-                // HOST01 (index 3): DC et APP inactives
-                vmsUnderServer[3].querySelectorAll('.vm-principal').forEach(vm => {
-                    if (vm.textContent.includes('DC') || vm.textContent.includes('APP')) {
-                        vm.classList.add('inactive');
-                    }
+                // Colonnes des VMs
+                ['DC', 'APP'].forEach(vmName => {
+                    const header = document.querySelector(`[data-vm="${vmName}"]`);
+                    if (header) header.classList.add('inactive');
                 });
                 
-                // HOST03 (index 2): Réplica DC actif
-                vmsUnderServer[2].querySelectorAll('.vm-replica').forEach(vm => {
-                    if (vm.textContent.includes('DC')) {
-                        vm.classList.add('active');
+                // Bulles sous HOST01
+                ['DC', 'APP'].forEach(vmName => {
+                    const bubble = document.querySelector(`.vm-bubble[data-vm="${vmName}"]`);
+                    if (bubble) {
+                        bubble.style.background = '#ffebee';
+                        bubble.style.borderColor = '#dc3545';
+                        bubble.style.opacity = '0.4';
+                        bubble.style.textDecoration = 'line-through';
                     }
                 });
-                
-                // HOST02 (index 1): Réplica APP actif
-                vmsUnderServer[1].querySelectorAll('.vm-replica').forEach(vm => {
-                    if (vm.textContent.includes('APP')) {
-                        vm.classList.add('active');
-                    }
-                });
+            }
+        }
+        
+        function updateHostHeaders() {
+            // Réinitialiser
+            document.querySelectorAll('.server-header.host').forEach(header => {
+                header.classList.remove('active', 'done');
+            });
+            
+            // HOST04 (22-33%)
+            const host04 = document.querySelector('[data-host="HOST04"]');
+            if (host04) {
+                if (progress >= 22 && progress < 33) {
+                    host04.classList.add('active');
+                    host04.innerHTML = '<span class="server-type">PHYSIQUE</span><span>⚡ HOST04</span>';
+                } else if (progress >= 33) {
+                    host04.classList.add('done');
+                    host04.innerHTML = '<span class="server-type">PHYSIQUE</span><span>✅ HOST04</span>';
+                } else {
+                    host04.innerHTML = '<span class="server-type">PHYSIQUE</span><span>HOST04</span>';
+                }
+            }
+            
+            // HOST02 (33-44%)
+            const host02 = document.querySelector('[data-host="HOST02"]');
+            if (host02) {
+                if (progress >= 33 && progress < 44) {
+                    host02.classList.add('active');
+                    host02.innerHTML = '<span class="server-type">PHYSIQUE</span><span>⚡ HOST02</span>';
+                } else if (progress >= 44) {
+                    host02.classList.add('done');
+                    host02.innerHTML = '<span class="server-type">PHYSIQUE</span><span>✅ HOST02</span>';
+                } else {
+                    host02.innerHTML = '<span class="server-type">PHYSIQUE</span><span>HOST02</span>';
+                }
+            }
+            
+            // HOST03 (44-55%)
+            const host03 = document.querySelector('[data-host="HOST03"]');
+            if (host03) {
+                if (progress >= 44 && progress < 55) {
+                    host03.classList.add('active');
+                    host03.innerHTML = '<span class="server-type">PHYSIQUE</span><span>⚡ HOST03</span>';
+                } else if (progress >= 55) {
+                    host03.classList.add('done');
+                    host03.innerHTML = '<span class="server-type">PHYSIQUE</span><span>✅ HOST03</span>';
+                } else {
+                    host03.innerHTML = '<span class="server-type">PHYSIQUE</span><span>HOST03</span>';
+                }
+            }
+            
+            // HOST01 (55-66%)
+            const host01 = document.querySelector('[data-host="HOST01"]');
+            if (host01) {
+                if (progress >= 55 && progress < 66) {
+                    host01.classList.add('active');
+                    host01.innerHTML = '<span class="server-type">PHYSIQUE</span><span>⚡ HOST01</span>';
+                } else if (progress >= 66) {
+                    host01.classList.add('done');
+                    host01.innerHTML = '<span class="server-type">PHYSIQUE</span><span>✅ HOST01</span>';
+                } else {
+                    host01.innerHTML = '<span class="server-type">PHYSIQUE</span><span>HOST01</span>';
+                }
             }
         }
         
