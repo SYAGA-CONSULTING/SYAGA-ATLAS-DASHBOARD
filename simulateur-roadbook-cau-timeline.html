@@ -713,9 +713,9 @@
                             <div class="vm-replica">💼 SAGE <span class="vm-source">(←H03)</span></div>
                         </div>
                         <div class="actions-under-block" style="left: 22%; width: 11%;">
-                            <div class="action-item done" style="background: #d4edda;">🧪 Veeam Console OK</div>
-                            <div class="action-item done" style="background: #d4edda;">✓ Boot < 3 min</div>
-                            <div class="action-item done" style="background: #d4edda;">✓ No EventID 41</div>
+                            <div class="action-item done" data-action="host04-update" style="background: #d4edda;">🔄 Windows Update</div>
+                            <div class="action-item done" data-action="host04-reboot" style="background: #d4edda;">🔄 Reboot HOST04</div>
+                            <div class="action-item done" data-action="host04-test" style="background: #d4edda;">🧪 Veeam Console OK</div>
                         </div>
                         
                         <!-- HOST02 -->
@@ -726,9 +726,9 @@
                             <div class="vm-replica">🌐 WEB <span class="vm-source">(←H03)</span></div>
                         </div>
                         <div class="actions-under-block" style="left: 33%; width: 11%;">
-                            <div class="action-item done" style="background: #d4edda;">🧪 RDP 3389 OK</div>
-                            <div class="action-item done" style="background: #d4edda;">✓ Services 100%</div>
-                            <div class="action-item done" style="background: #d4edda;">📊 EventLog clean</div>
+                            <div class="action-item done" data-action="host02-update" style="background: #d4edda;">🔄 Windows Update</div>
+                            <div class="action-item done" data-action="host02-reboot" style="background: #d4edda;">🔄 Reboot HOST02</div>
+                            <div class="action-item done" data-action="host02-test" style="background: #d4edda;">🧪 RDP 3389 OK</div>
                         </div>
                         
                         <!-- HOST03 (EN UPDATE) -->
@@ -739,6 +739,11 @@
                             <div class="vm-principal inactive">💼 SAGE</div>
                             <div class="vm-replica">💾 DC <span class="vm-source">(←H01)</span></div>
                         </div>
+                        <div class="actions-under-block" style="left: 44%; width: 11%;">
+                            <div class="action-item running" data-action="host03-update">🔄 Windows Update</div>
+                            <div class="action-item pending" data-action="host03-reboot">🔄 Reboot HOST03</div>
+                            <div class="action-item pending" data-action="host03-test">🧪 Tests Services</div>
+                        </div>
                         
                         <!-- HOST01 -->
                         <div class="server-block pending" style="left: 55%; width: 11%;">⏳ HOST01</div>
@@ -748,24 +753,29 @@
                             <div class="vm-replica active">🖥️ RDS <span class="vm-source">(←H02)</span></div>
                             <div class="vm-replica active">🗄️ SQL <span class="vm-source">(←H03)</span></div>
                         </div>
+                        <div class="actions-under-block" style="left: 55%; width: 11%;">
+                            <div class="action-item pending" data-action="host01-update">🔄 Windows Update</div>
+                            <div class="action-item pending" data-action="host01-reboot">🔄 Reboot HOST01</div>
+                            <div class="action-item pending" data-action="host01-test">🧪 AD Réplication</div>
+                        </div>
                         
                         <!-- UPDATE VMs -->
                         <div class="server-block pending" style="left: 66%; width: 22%;">⏳ UPDATE VMs</div>
                         <div class="actions-under-block" style="left: 66%; width: 22%;">
-                            <div class="action-item" data-action="validation-1">• Update VEEAM01 + Test</div>
-                            <div class="action-item" data-action="validation-2">• Update SQL-Replica + Test</div>
-                            <div class="action-item" data-action="validation-3">• Update WEB/APP/SAGE</div>
-                            <div class="action-item" data-action="validation-4">• Update RDS-Replica</div>
-                            <div class="action-item" data-action="validation-5">• 🔴 DC EN DERNIER!</div>
+                            <div class="action-item pending" data-action="vm-update-1">🔄 Windows Update VEEAM01</div>
+                            <div class="action-item pending" data-action="vm-update-2">🔄 Windows Update SQL-Replica</div>
+                            <div class="action-item pending" data-action="vm-update-3">🔄 Windows Update WEB/APP/SAGE</div>
+                            <div class="action-item pending" data-action="vm-update-4">🔄 Windows Update RDS-Replica</div>
+                            <div class="action-item pending" data-action="vm-update-5" style="color: #dc3545;">🔄 Windows Update DC (DERNIER!)</div>
                         </div>
                         
                         <!-- VALIDATION FINALE -->
                         <div class="server-block pending" style="left: 88%; width: 12%;">⏳ VALIDATION</div>
                         <div class="actions-under-block" style="left: 88%; width: 12%;">
-                            <div class="action-item" data-action="resume-1">📊 Compare EventLog</div>
-                            <div class="action-item" data-action="resume-2">✓ Services 100%?</div>
-                            <div class="action-item" data-action="resume-3">🧪 Tests métier OK?</div>
-                            <div class="action-item" data-action="resume-4">▶ Resume Jobs SQL</div>
+                            <div class="action-item pending" data-action="resume-1">📊 Compare EventLog</div>
+                            <div class="action-item pending" data-action="resume-2">✓ Services 100%?</div>
+                            <div class="action-item pending" data-action="resume-3">🧪 Tests métier OK?</div>
+                            <div class="action-item pending" data-action="resume-4">▶ Resume Jobs SQL</div>
                         </div>
                     </div>
                 </div>
@@ -969,20 +979,156 @@
         
         // Gestion des actions séquentielles
         function updateActions() {
-            const actions = document.querySelectorAll('.action-item');
-            
-            // PRE-CHECK (0-11%)
-            if (progress >= 0 && progress < 11) {
-                const precheckProgress = (progress / 11) * 4;
-                updateActionSequence('precheck', Math.floor(precheckProgress) + 1);
-            } else if (progress >= 11) {
-                // Toutes les actions precheck terminées
-                for (let i = 1; i <= 4; i++) {
-                    const action = document.querySelector(`[data-action="precheck-${i}"]`);
+            // HOST03 actions (44-55%)
+            if (progress >= 44 && progress < 55) {
+                const host03Progress = (progress - 44) / 11;
+                
+                // Windows Update (44-48%)
+                const updateAction = document.querySelector('[data-action="host03-update"]');
+                if (updateAction) {
+                    if (host03Progress < 0.36) {
+                        updateAction.classList.remove('pending', 'done');
+                        updateAction.classList.add('running');
+                    } else {
+                        updateAction.classList.remove('pending', 'running');
+                        updateAction.classList.add('done');
+                        updateAction.style.background = '#d4edda';
+                    }
+                }
+                
+                // Reboot (48-51%)
+                const rebootAction = document.querySelector('[data-action="host03-reboot"]');
+                if (rebootAction) {
+                    if (host03Progress >= 0.36 && host03Progress < 0.64) {
+                        rebootAction.classList.remove('pending', 'done');
+                        rebootAction.classList.add('running');
+                    } else if (host03Progress >= 0.64) {
+                        rebootAction.classList.remove('pending', 'running');
+                        rebootAction.classList.add('done');
+                        rebootAction.style.background = '#d4edda';
+                    }
+                }
+                
+                // Tests (51-55%)
+                const testAction = document.querySelector('[data-action="host03-test"]');
+                if (testAction) {
+                    if (host03Progress >= 0.64 && host03Progress < 1) {
+                        testAction.classList.remove('pending', 'done');
+                        testAction.classList.add('running');
+                    } else if (host03Progress >= 1) {
+                        testAction.classList.remove('pending', 'running');
+                        testAction.classList.add('done');
+                        testAction.style.background = '#d4edda';
+                    }
+                }
+            } else if (progress >= 55) {
+                // Tout HOST03 terminé
+                ['host03-update', 'host03-reboot', 'host03-test'].forEach(actionId => {
+                    const action = document.querySelector(`[data-action="${actionId}"]`);
                     if (action) {
                         action.classList.remove('pending', 'running');
                         action.classList.add('done');
-                        action.innerHTML = action.innerHTML.replace('•', '✓');
+                        action.style.background = '#d4edda';
+                    }
+                });
+            }
+            
+            // HOST01 actions (55-66%)
+            if (progress >= 55 && progress < 66) {
+                const host01Progress = (progress - 55) / 11;
+                
+                // Windows Update (55-58%)
+                const updateAction = document.querySelector('[data-action="host01-update"]');
+                if (updateAction) {
+                    if (host01Progress < 0.27) {
+                        updateAction.classList.remove('pending', 'done');
+                        updateAction.classList.add('running');
+                    } else {
+                        updateAction.classList.remove('pending', 'running');
+                        updateAction.classList.add('done');
+                        updateAction.style.background = '#d4edda';
+                    }
+                }
+                
+                // Reboot (58-61%)
+                const rebootAction = document.querySelector('[data-action="host01-reboot"]');
+                if (rebootAction) {
+                    if (host01Progress >= 0.27 && host01Progress < 0.55) {
+                        rebootAction.classList.remove('pending', 'done');
+                        rebootAction.classList.add('running');
+                    } else if (host01Progress >= 0.55) {
+                        rebootAction.classList.remove('pending', 'running');
+                        rebootAction.classList.add('done');
+                        rebootAction.style.background = '#d4edda';
+                    }
+                }
+                
+                // Tests (61-66%)
+                const testAction = document.querySelector('[data-action="host01-test"]');
+                if (testAction) {
+                    if (host01Progress >= 0.55 && host01Progress < 1) {
+                        testAction.classList.remove('pending', 'done');
+                        testAction.classList.add('running');
+                    } else if (host01Progress >= 1) {
+                        testAction.classList.remove('pending', 'running');
+                        testAction.classList.add('done');
+                        testAction.style.background = '#d4edda';
+                    }
+                }
+            } else if (progress >= 66) {
+                // Tout HOST01 terminé
+                ['host01-update', 'host01-reboot', 'host01-test'].forEach(actionId => {
+                    const action = document.querySelector(`[data-action="${actionId}"]`);
+                    if (action) {
+                        action.classList.remove('pending', 'running');
+                        action.classList.add('done');
+                        action.style.background = '#d4edda';
+                    }
+                });
+            }
+            
+            // VMs updates (66-88%)
+            if (progress >= 66 && progress < 88) {
+                const vmProgress = (progress - 66) / 22;
+                const currentVm = Math.floor(vmProgress * 5) + 1;
+                
+                for (let i = 1; i <= 5; i++) {
+                    const action = document.querySelector(`[data-action="vm-update-${i}"]`);
+                    if (!action) continue;
+                    
+                    if (i < currentVm) {
+                        action.classList.remove('pending', 'running');
+                        action.classList.add('done');
+                        action.style.background = '#d4edda';
+                    } else if (i === currentVm) {
+                        action.classList.remove('pending', 'done');
+                        action.classList.add('running');
+                    } else {
+                        action.classList.remove('running', 'done');
+                        action.classList.add('pending');
+                    }
+                }
+            }
+            
+            // VALIDATION actions (88-100%)
+            if (progress >= 88 && progress < 100) {
+                const validProgress = (progress - 88) / 12;
+                const currentAction = Math.floor(validProgress * 4) + 1;
+                
+                for (let i = 1; i <= 4; i++) {
+                    const action = document.querySelector(`[data-action="resume-${i}"]`);
+                    if (!action) continue;
+                    
+                    if (i < currentAction) {
+                        action.classList.remove('pending', 'running');
+                        action.classList.add('done');
+                        action.style.background = '#d4edda';
+                    } else if (i === currentAction) {
+                        action.classList.remove('pending', 'done');
+                        action.classList.add('running');
+                    } else {
+                        action.classList.remove('running', 'done');
+                        action.classList.add('pending');
                     }
                 }
             }
