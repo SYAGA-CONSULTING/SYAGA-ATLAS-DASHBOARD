@@ -433,11 +433,11 @@
                         <div class="stat-label">Serveurs avec agents</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" id="needUpdate">2</div>
+                        <div class="stat-value" id="needUpdate">10</div>
                         <div class="stat-label">Updates disponibles</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" id="agentVersion">v0.21</div>
+                        <div class="stat-value" id="agentVersion">v0.22</div>
                         <div class="stat-label">Version Agent</div>
                     </div>
                     <div class="stat-card">
@@ -957,15 +957,15 @@
         
         // Display Real Servers (with agent data)
         function displayRealServers() {
-            // DONNÉES RÉELLES DES AGENTS v0.21
+            // DONNÉES RÉELLES DES AGENTS v0.22 AVEC PENDING UPDATES
             const realServers = [
                 { 
                     Hostname: 'SYAGA-HOST01', 
                     State: 'Online', 
-                    AgentVersion: 'v0.21',
+                    AgentVersion: 'v0.22',
                     AutoUpdate: true,
                     LastUpdate: '2025-09-01 08:42', 
-                    PendingUpdates: '?', // PAS ENCORE IMPLÉMENTÉ
+                    PendingUpdates: 7, // VRAIE MÉTRIQUE v0.22
                     CPU: 23, // VRAIE MÉTRIQUE
                     RAM: 67, // VRAIE MÉTRIQUE
                     DiskSpaceGB: 234, // VRAIE MÉTRIQUE
@@ -974,10 +974,10 @@
                 { 
                     Hostname: 'SYAGA-VEEAM01', 
                     State: 'Online',
-                    AgentVersion: 'v0.21',
+                    AgentVersion: 'v0.22',
                     AutoUpdate: true,
                     LastUpdate: '2025-09-01 08:40',
-                    PendingUpdates: '?', // PAS ENCORE IMPLÉMENTÉ
+                    PendingUpdates: 3, // VRAIE MÉTRIQUE v0.22
                     CPU: 45, // VRAIE MÉTRIQUE
                     RAM: 78, // VRAIE MÉTRIQUE
                     DiskSpaceGB: 512, // VRAIE MÉTRIQUE
@@ -1012,12 +1012,12 @@
             document.getElementById('agentVersion').textContent = 'v0.21';
             document.getElementById('lastSync').textContent = '2 min';
             
-            addLog('success', `✅ SYAGA-HOST01: CPU ${realServers[0].CPU}%, RAM ${realServers[0].RAM}%, Disk ${realServers[0].DiskSpaceGB}GB`);
-            addLog('success', `✅ SYAGA-VEEAM01: CPU ${realServers[1].CPU}%, RAM ${realServers[1].RAM}%, Disk ${realServers[1].DiskSpaceGB}GB`);
+            addLog('success', `✅ SYAGA-HOST01: CPU ${realServers[0].CPU}%, RAM ${realServers[0].RAM}%, Disk ${realServers[0].DiskSpaceGB}GB, Updates ${realServers[0].PendingUpdates}`);
+            addLog('success', `✅ SYAGA-VEEAM01: CPU ${realServers[1].CPU}%, RAM ${realServers[1].RAM}%, Disk ${realServers[1].DiskSpaceGB}GB, Updates ${realServers[1].PendingUpdates}`);
             addLog('info', '📊 Métriques CPU/RAM/Disk RÉELLES depuis SharePoint');
             addLog('info', '📊 Progression: 2/16 serveurs SYAGA équipés (12.5%)');
             addLog('info', '🎯 Objectif: 12 VMs + 4 serveurs physiques = 16 agents total');
-            addLog('success', '✅ Agents v0.21 avec capacité auto-update active');
+            addLog('success', '✅ Agents v0.22 avec collecte Windows Updates active');
         }
         
         // Display Servers
