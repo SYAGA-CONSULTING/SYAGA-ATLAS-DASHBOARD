@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- NO CACHE FOR DEBUG -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 ATLAS v0.23 - Smart Matrix Dashboard</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+        }
+        
+        .selector-container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 90%;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 3rem;
+        }
+        
+        .versions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .version-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            display: block;
+        }
+        
+        .version-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .version-card.primary {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            border: none;
+            grid-column: span 2;
+        }
+        
+        .version-card.primary:hover {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+        
+        .version-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .version-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .version-desc {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        
+        .badge.new {
+            background: #f59e0b;
+            animation: pulse 2s infinite;
+        }
+        
+        .badge.live {
+            background: #10b981;
+        }
+        
+        .badge.demo {
+            background: #8b5cf6;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .info-box {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #34d399;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 0.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .versions-grid {
+                grid-template-columns: 1fr;
+            }
+            .version-card.primary {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="selector-container">
+        <h1>🏛️ ATLAS - Le Pilier de l'Infrastructure Métier</h1>
+        <p class="subtitle">COLLECTER tout • CONNAÎTRE tout • SURVEILLER tout • ANALYSER tout • CORRÉLER tout • OPTIMISER tout • PROTÉGER tout • VAINCRE tout</p>
+        
+        <div class="versions-grid">
+            <!-- Dashboard ATLAS PILLAR - LA VISION COMPLÈTE -->
+            <a href="atlas-pillar-dashboard.html" class="version-card primary" style="grid-column: span 2;">
+                <div class="version-icon">🏛️</div>
+                <div class="version-title">ATLAS PILLAR - Le Titan Digital</div>
+                <div class="version-desc">
+                    <strong>LA VISION COMPLÈTE</strong> : Les 8 Piliers de la Mission • La Trinité Imbattable • Les 5 Modules
+                    • ROI 570% • 31 jours → 7.5h • Intelligence-as-a-Service
+                </div>
+                <span class="badge new">🔥 RÉVOLUTIONNAIRE</span>
+                <span class="badge live">MONOPOLE TECHNIQUE</span>
+            </a>
+            
+            <!-- Timeline CAU Pattern LAA -->
+            <a href="timeline-cau-orchestration.html" class="version-card primary">
+                <div class="version-icon">🎯</div>
+                <div class="version-title">Timeline CAU - Pattern LAA</div>
+                <div class="version-desc">
+                    Visualisation complète de l'orchestration Windows Update avec snapshots Hyper-V, 
+                    gestion Veeam et réplicas. Animation temps réel.
+                </div>
+                <span class="badge new">VISUALISATION</span>
+                <span class="badge live">PATTERN LAA</span>
+            </a>
+            
+            <!-- Dashboard v0.23 Technical -->
+            <a href="atlas-dashboard-v023.html" class="version-card">
+                <div class="version-icon">⚙️</div>
+                <div class="version-title">ATLAS v0.23 - Technical View</div>
+                <div class="version-desc">
+                    Vue technique avec onglets détaillés. Interface d'administration complète.
+                </div>
+                <span class="badge demo">ADMIN</span>
+            </a>
+        </div>
+        
+        <div class="info-box">
+            <strong>🏛️ ATLAS - Plus qu'un orchestrateur:</strong> LE PILIER qui porte toute l'infrastructure métier. 
+            La Trinité Imbattable (Agents + IA Claude + 25 ans XP) créé un <strong>MONOPOLE TECHNIQUE</strong> impossible à copier.
+            <br><br>
+            <strong>📊 Résultats prouvés:</strong> 742h économisées/mois • ROI 570% • 90% incidents en moins • 31 jours → 7.5h
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value">1000</div>
+                <div class="stat-label">Serveurs simultanés</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">7.5h</div>
+                <div class="stat-label">Temps total</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">100%</div>
+                <div class="stat-label">Sans cluster</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">0€</div>
+                <div class="stat-label">Licence CAU</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
