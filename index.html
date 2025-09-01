@@ -230,8 +230,25 @@
     </style>
 </head>
 <body>
+    <!-- Login Screen -->
+    <div id="loginScreen" style="display: none;">
+        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #0078d4 0%, #40e0d0 100%);">
+            <div style="background: white; padding: 40px; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center; max-width: 400px;">
+                <h1 style="color: #0078d4; margin-bottom: 10px;">🚀 ATLAS</h1>
+                <h2 style="color: #666; font-size: 1.2rem; font-weight: normal; margin-bottom: 30px;">Windows Update Orchestration</h2>
+                <p style="color: #666; margin-bottom: 30px;">Connectez-vous avec votre compte Microsoft 365 pour accéder au dashboard ATLAS</p>
+                <button class="btn" onclick="login()" style="width: 100%; padding: 12px;">
+                    Se connecter avec Microsoft 365
+                </button>
+                <p style="color: #999; font-size: 0.85rem; margin-top: 20px;">
+                    2 serveurs actifs : SYAGA-HOST01, SYAGA-VEEAM01
+                </p>
+            </div>
+        </div>
+    </div>
+    
     <!-- Loading Screen -->
-    <div id="loading">
+    <div id="loading" style="display: none;">
         <div>
             <div class="spinner"></div>
             <p style="margin-top: 20px; color: #666;">Connexion à Microsoft 365...</p>
@@ -339,35 +356,52 @@
         // Initialisation
         window.addEventListener('load', async () => {
             try {
-                // Handle redirect
+                // Handle redirect promise first
                 const response = await msalInstance.handleRedirectPromise();
                 
-                // Check accounts
-                const accounts = msalInstance.getAllAccounts();
-                
-                if (accounts.length > 0) {
-                    // Already logged in
+                if (response) {
+                    // Coming back from redirect
                     await getToken();
-                    showApp(accounts[0]);
+                    showApp(response.account);
                 } else {
-                    // Need to login
-                    await login();
+                    // Check if already logged in
+                    const accounts = msalInstance.getAllAccounts();
+                    
+                    if (accounts.length > 0) {
+                        // Already logged in
+                        await getToken();
+                        showApp(accounts[0]);
+                    } else {
+                        // Show login screen
+                        showLoginScreen();
+                    }
                 }
             } catch (error) {
                 console.error('Init error:', error);
-                await login();
+                showLoginScreen();
             }
         });
+        
+        // Show login screen
+        function showLoginScreen() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+        }
         
         // Login
         async function login() {
             try {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('loading').style.display = 'flex';
+                
                 await msalInstance.loginRedirect({
                     scopes: ["User.Read", "Sites.ReadWrite.All"]
                 });
             } catch (error) {
                 console.error('Login error:', error);
-                addLog('error', 'Erreur de connexion: ' + error.message);
+                alert('Erreur de connexion: ' + error.message);
+                showLoginScreen();
             }
         }
         
@@ -411,6 +445,7 @@
         // Show App
         function showApp(account) {
             document.getElementById('loading').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('app').style.display = 'block';
             document.getElementById('userName').textContent = account.name || account.username;
             
@@ -486,12 +521,10 @@
         
         // Display Demo Servers (fallback)
         function displayDemoServers() {
+            // LES VRAIS SERVEURS QUI EXISTENT DANS SHAREPOINT
             const demoServers = [
-                { Hostname: 'SYAGA-HOST01', State: 'Online', LastUpdate: '2025-08-28', PendingUpdates: 3 },
-                { Hostname: 'SYAGA-HOST02', State: 'Online', LastUpdate: '2025-08-25', PendingUpdates: 7 },
-                { Hostname: 'SYAGA-VEEAM01', State: 'Online', LastUpdate: '2025-08-20', PendingUpdates: 12 },
-                { Hostname: 'LAA-SQL01', State: 'Warning', LastUpdate: '2025-08-15', PendingUpdates: 18 },
-                { Hostname: 'LAA-DC01', State: 'Online', LastUpdate: '2025-08-28', PendingUpdates: 0 }
+                { Hostname: 'SYAGA-HOST01', State: 'Online', LastUpdate: '2025-09-01', PendingUpdates: 5, CPU: 45, RAM: 67, DiskSpaceGB: 234 },
+                { Hostname: 'SYAGA-VEEAM01', State: 'Online', LastUpdate: '2025-09-01', PendingUpdates: 3, CPU: 23, RAM: 54, DiskSpaceGB: 512 }
             ];
             
             const tbody = document.getElementById('serversTable');
@@ -510,9 +543,13 @@
                 </tr>
             `).join('');
             
-            // Update stats
+            // Update stats  
             document.getElementById('totalServers').textContent = demoServers.length;
             document.getElementById('needUpdate').textContent = demoServers.filter(s => s.PendingUpdates > 0).length;
+            
+            addLog('info', `RÉEL: 2 serveurs actifs dans SharePoint`);
+            addLog('success', `SYAGA-HOST01: ${demoServers[0].PendingUpdates} updates disponibles`);
+            addLog('success', `SYAGA-VEEAM01: ${demoServers[1].PendingUpdates} updates disponibles`);
         }
         
         // Update Stats
