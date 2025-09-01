@@ -429,8 +429,8 @@
                 <!-- Stats -->
                 <div class="stats">
                     <div class="stat-card">
-                        <div class="stat-value" id="totalServers">2</div>
-                        <div class="stat-label">Serveurs totaux</div>
+                        <div class="stat-value" id="totalServers">2/16</div>
+                        <div class="stat-label">Serveurs avec agents</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="needUpdate">2</div>
@@ -586,7 +586,7 @@
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga2">
-                            <label for="syaga2">Déployer agents sur TOUTES les VMs SYAGA</label>
+                            <label for="syaga2">Déployer agents sur 12 VMs SYAGA + 4 serveurs physiques (16 total)</label>
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga3">
@@ -1007,7 +1007,7 @@
             `).join('');
             
             // Update stats
-            document.getElementById('totalServers').textContent = realServers.length;
+            document.getElementById('totalServers').textContent = `${realServers.length}/16`; // 2 sur 16 déployés
             document.getElementById('needUpdate').textContent = '?'; // PAS DE DONNÉES RÉELLES
             document.getElementById('agentVersion').textContent = 'v0.21';
             document.getElementById('lastSync').textContent = '2 min';
@@ -1015,6 +1015,8 @@
             addLog('warning', `⚠️ SYAGA-HOST01: Agent v0.21 connecté - En attente de données réelles`);
             addLog('warning', `⚠️ SYAGA-VEEAM01: Agent v0.21 connecté - En attente de données réelles`);
             addLog('info', '🔴 Les métriques (CPU, RAM, Disk, Updates) ne sont pas encore remontées');
+            addLog('info', '📊 Progression: 2/16 serveurs SYAGA équipés (12.5%)');
+            addLog('info', '🎯 Objectif: 12 VMs + 4 serveurs physiques = 16 agents total');
             addLog('success', '✅ Agents v0.21 avec capacité auto-update active');
         }
         
@@ -1053,8 +1055,8 @@
         // Update Stats
         function updateStats(servers) {
             const fields = servers.map(s => s.fields || {});
-            document.getElementById('totalServers').textContent = servers.length || 2;
-            document.getElementById('needUpdate').textContent = fields.filter(f => f.PendingUpdates > 0).length || 2;
+            document.getElementById('totalServers').textContent = servers.length ? `${servers.length}/16` : '2/16';
+            document.getElementById('needUpdate').textContent = fields.filter(f => f.PendingUpdates > 0).length || '?';
             document.getElementById('agentVersion').textContent = 'v0.21';
             document.getElementById('lastSync').textContent = '2 min';
         }
