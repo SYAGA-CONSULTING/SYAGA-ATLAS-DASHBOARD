@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATLAS Operations - Dashboard Sécurisé</title>
+    
+    <!-- MSAL pour Azure AD Auth -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+        
+        .login-box {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        
+        .login-box h1 {
+            color: #00ff00;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        
+        .login-btn {
+            background: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .login-btn:hover {
+            background: #106ebe;
+            transform: translateY(-2px);
+        }
+        
+        /* Main Dashboard - Hidden by default */
+        .dashboard {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+        
+        .dashboard.authenticated {
+            display: flex;
+        }
+        
+        /* Header */
+        .header {
+            background: #1a1a1a;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #00ff00;
+        }
+        
+        .header h1 {
+            color: #00ff00;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #888;
+        }
+        
+        .user-info .user-name {
+            color: #00ff00;
+        }
+        
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        /* Main Layout */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: #1a1a1a;
+            border-right: 1px solid #333;
+            padding: 20px 0;
+        }
+        
+        .nav-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #888;
+        }
+        
+        .nav-item:hover {
+            background: #2a2a2a;
+            color: #00ff00;
+        }
+        
+        .nav-item.active {
+            background: #2a2a2a;
+            color: #00ff00;
+            border-left: 3px solid #00ff00;
+        }
+        
+        /* Content Area */
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #0f0f0f;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        
+        .stat-card.critical {
+            border-color: #ff0000;
+            animation: blink 2s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { border-color: #ff0000; }
+            50% { border-color: #660000; }
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00ff00;
+        }
+        
+        .stat-label {
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        /* Servers Grid */
+        .servers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .server-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s;
+        }
+        
+        .server-card:hover {
+            border-color: #00ff00;
+            transform: translateY(-2px);
+        }
+        
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .server-name {
+            font-weight: bold;
+            color: #00ff00;
+        }
+        
+        .server-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+        
+        .status-online {
+            background: #2ed573;
+            color: #000;
+        }
+        
+        .status-warning {
+            background: #ffa502;
+            color: #000;
+        }
+        
+        .status-offline {
+            background: #ff4757;
+            color: #fff;
+        }
+        
+        /* Progress Bars */
+        .progress-bar {
+            background: #333;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #00ff00;
+            transition: width 0.3s;
+        }
+        
+        .progress-fill.warning {
+            background: #ffa502;
+        }
+        
+        .progress-fill.critical {
+            background: #ff4757;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #0078d4;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #2ed573;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        /* Timeline Container */
+        .timeline-container {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        /* Console */
+        .console {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .console-line {
+            margin: 2px 0;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .console-time {
+            color: #666;
+        }
+        
+        .console-success {
+            color: #2ed573;
+        }
+        
+        .console-error {
+            color: #ff4757;
+        }
+        
+        .console-warning {
+            color: #ffa502;
+        }
+        
+        .console-info {
+            color: #74b9ff;
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid #333;
+            border-top: 3px solid #00ff00;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-box">
+            <h1>🔒 ATLAS OPERATIONS</h1>
+            <p style="color: #888; margin-bottom: 30px;">Authentification Microsoft 365 requise</p>
+            <button class="login-btn" onclick="login()">
+                Se connecter avec Microsoft 365
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Dashboard (Hidden until auth) -->
+    <div id="dashboard" class="dashboard">
+        <div class="header">
+            <h1>
+                🚀 ATLAS OPERATIONS
+                <span style="color: #888; font-size: 0.8rem;">v0.23</span>
+            </h1>
+            <div class="user-info">
+                <span>Connecté en tant que :</span>
+                <span class="user-name" id="userName">-</span>
+                <button class="logout-btn" onclick="logout()">Déconnexion</button>
+            </div>
+        </div>
+        
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="nav-item active" onclick="showSection('overview')">
+                    📊 Vue d'ensemble
+                </div>
+                <div class="nav-item" onclick="showSection('servers')">
+                    🖥️ Serveurs
+                </div>
+                <div class="nav-item" onclick="showSection('timeline')">
+                    ⏱️ Timeline CAU
+                </div>
+                <div class="nav-item" onclick="showSection('orchestration')">
+                    🎯 Orchestration
+                </div>
+                <div class="nav-item" onclick="showSection('veeam')">
+                    💾 Veeam
+                </div>
+                <div class="nav-item" onclick="showSection('hyperv')">
+                    🔄 Hyper-V
+                </div>
+                <div class="nav-item" onclick="showSection('logs')">
+                    📝 Logs
+                </div>
+            </div>
+            
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Overview Section -->
+                <div id="overview" class="section active">
+                    <h2 style="color: #00ff00; margin-bottom: 20px;">📊 Tableau de Bord Opérationnel</h2>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">127</div>
+                            <div class="stat-label">Serveurs actifs</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">342</div>
+                            <div class="stat-label">VMs gérées</div>
+                        </div>
+                        <div class="stat-card critical">
+                            <div class="stat-value" style="color: #ff4757;">3</div>
+                            <div class="stat-label">Alertes critiques</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">7.5h</div>
+                            <div class="stat-label">Temps orchestration</div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="startOrchestration()">
+                            🚀 Démarrer Orchestration
+                        </button>
+                        <button class="btn btn-success" onclick="analyzeWithAI()">
+                            🧠 Analyse IA Claude
+                        </button>
+                        <button class="btn btn-danger" onclick="emergencyStop()">
+                            🛑 Arrêt d'urgence
+                        </button>
+                    </div>
+                    
+                    <h3 style="color: #00ff00; margin: 30px 0 15px;">Serveurs Critiques</h3>
+                    <div class="servers-grid" id="criticalServers">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                
+                <!-- Servers Section -->
+                <div id="servers" class="section" style="display: none;">
+                    <h2 style="color: #00ff00; margin-bottom: 20px;">🖥️ Gestion des Serveurs</h2>
+                    <div class="servers-grid" id="allServers">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                
+                <!-- Timeline Section -->
+                <div id="timeline" class="section" style="display: none;">
+                    <h2 style="color: #00ff00; margin-bottom: 20px;">⏱️ Timeline Orchestration CAU</h2>
+                    <div class="timeline-container">
+                        <div class="timeline-header">
+                            <span>Pattern LAA - 1000 serveurs en 7.5h</span>
+                            <button class="btn btn-primary" onclick="loadTimeline()">
+                                Charger Timeline
+                            </button>
+                        </div>
+                        <iframe id="timelineFrame" style="width: 100%; height: 600px; border: none; display: none;"></iframe>
+                    </div>
+                </div>
+                
+                <!-- Logs Section -->
+                <div id="logs" class="section" style="display: none;">
+                    <h2 style="color: #00ff00; margin-bottom: 20px;">📝 Console des Logs</h2>
+                    <div class="console" id="console">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // MSAL Configuration
+        const msalConfig = {
+            auth: {
+                clientId: "f66a8c6c-1037-41b8-be3c-4f6e67c1f49e",
+                authority: "https://login.microsoftonline.com/organizations",
+                redirectUri: window.location.origin + window.location.pathname
+            },
+            cache: {
+                cacheLocation: "sessionStorage",
+                storeAuthStateInCookie: false
+            }
+        };
+        
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        
+        // Login request
+        const loginRequest = {
+            scopes: ["User.Read", "Sites.ReadWrite.All"]
+        };
+        
+        // Check if already authenticated
+        window.addEventListener('load', async () => {
+            try {
+                const accounts = msalInstance.getAllAccounts();
+                if (accounts.length > 0) {
+                    showDashboard(accounts[0]);
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        });
+        
+        // Login function
+        async function login() {
+            try {
+                const loginResponse = await msalInstance.loginPopup(loginRequest);
+                showDashboard(loginResponse.account);
+                addLog('success', `Connexion réussie : ${loginResponse.account.name}`);
+            } catch (error) {
+                console.error('Login failed:', error);
+                alert('Erreur de connexion. Veuillez réessayer.');
+            }
+        }
+        
+        // Logout function
+        function logout() {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length > 0) {
+                const logoutRequest = {
+                    account: accounts[0]
+                };
+                msalInstance.logoutPopup(logoutRequest);
+            }
+        }
+        
+        // Show dashboard after auth
+        function showDashboard(account) {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('dashboard').classList.add('authenticated');
+            document.getElementById('userName').textContent = account.name;
+            
+            // Initialize dashboard
+            loadCriticalServers();
+            startLiveUpdates();
+            addLog('success', 'Dashboard ATLAS initialisé avec succès');
+        }
+        
+        // Section navigation
+        function showSection(sectionName) {
+            // Update nav
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(sectionName).style.display = 'block';
+            
+            // Load section data
+            if (sectionName === 'servers') {
+                loadAllServers();
+            } else if (sectionName === 'logs') {
+                loadLogs();
+            }
+        }
+        
+        // Load critical servers
+        function loadCriticalServers() {
+            const container = document.getElementById('criticalServers');
+            const servers = [
+                { name: 'SYAGA-HOST01', status: 'online', cpu: 45, ram: 67, disk: 78 },
+                { name: 'SYAGA-VEEAM01', status: 'warning', cpu: 78, ram: 82, disk: 45 },
+                { name: 'LAA-SQL01', status: 'online', cpu: 23, ram: 54, disk: 65 },
+                { name: 'LAA-DC01', status: 'offline', cpu: 0, ram: 0, disk: 0 }
+            ];
+            
+            container.innerHTML = servers.map(server => `
+                <div class="server-card">
+                    <div class="server-header">
+                        <span class="server-name">${server.name}</span>
+                        <span class="server-status status-${server.status}">${server.status.toUpperCase()}</span>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; color: #666; font-size: 0.85rem;">
+                            <span>CPU</span>
+                            <span>${server.cpu}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill ${server.cpu > 80 ? 'critical' : server.cpu > 60 ? 'warning' : ''}" 
+                                 style="width: ${server.cpu}%"></div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; color: #666; font-size: 0.85rem;">
+                            <span>RAM</span>
+                            <span>${server.ram}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill ${server.ram > 80 ? 'critical' : server.ram > 60 ? 'warning' : ''}" 
+                                 style="width: ${server.ram}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Load all servers
+        function loadAllServers() {
+            const container = document.getElementById('allServers');
+            container.innerHTML = '<div class="spinner"></div>';
+            
+            // Simulate loading
+            setTimeout(() => {
+                const servers = [];
+                for (let i = 1; i <= 20; i++) {
+                    servers.push({
+                        name: `SERVER-${String(i).padStart(3, '0')}`,
+                        status: Math.random() > 0.8 ? 'warning' : 'online',
+                        cpu: Math.floor(Math.random() * 100),
+                        ram: Math.floor(Math.random() * 100),
+                        disk: Math.floor(Math.random() * 100)
+                    });
+                }
+                
+                container.innerHTML = servers.map(server => `
+                    <div class="server-card">
+                        <div class="server-header">
+                            <span class="server-name">${server.name}</span>
+                            <span class="server-status status-${server.status}">${server.status.toUpperCase()}</span>
+                        </div>
+                        <div style="margin-top: 10px; color: #666; font-size: 0.85rem;">
+                            CPU: ${server.cpu}% | RAM: ${server.ram}% | Disk: ${server.disk}%
+                        </div>
+                    </div>
+                `).join('');
+            }, 1000);
+        }
+        
+        // Load timeline
+        function loadTimeline() {
+            const frame = document.getElementById('timelineFrame');
+            frame.src = 'timeline-cau-orchestration.html';
+            frame.style.display = 'block';
+            addLog('info', 'Timeline CAU chargée');
+        }
+        
+        // Console logging
+        function addLog(type, message) {
+            const console = document.getElementById('console');
+            if (!console) return;
+            
+            const time = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.className = 'console-line';
+            line.innerHTML = `
+                <span class="console-time">[${time}]</span>
+                <span class="console-${type}">${message}</span>
+            `;
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        // Load logs
+        function loadLogs() {
+            const logs = [
+                { type: 'success', msg: 'Connexion SharePoint établie' },
+                { type: 'info', msg: 'Synchronisation des données serveurs' },
+                { type: 'warning', msg: 'SYAGA-VEEAM01 : Espace disque faible (45% libre)' },
+                { type: 'success', msg: '127 serveurs synchronisés avec succès' },
+                { type: 'info', msg: 'Analyse IA des contraintes en cours...' },
+                { type: 'success', msg: 'Fenêtre optimale trouvée : Mardi 03:00-04:30' },
+                { type: 'error', msg: 'LAA-DC01 : Connexion perdue' },
+                { type: 'info', msg: 'Tentative de reconnexion à LAA-DC01...' }
+            ];
+            
+            logs.forEach(log => addLog(log.type, log.msg));
+        }
+        
+        // Action functions
+        function startOrchestration() {
+            if (confirm('Démarrer l\'orchestration pour 127 serveurs?\nTemps estimé : 7.5 heures')) {
+                addLog('success', '🚀 Orchestration démarrée pour 127 serveurs');
+                addLog('info', 'Phase 1/4 : Collecte des métriques...');
+            }
+        }
+        
+        function analyzeWithAI() {
+            addLog('info', '🧠 Analyse IA Claude en cours...');
+            setTimeout(() => {
+                addLog('success', 'Analyse terminée : 3 fenêtres optimales identifiées');
+                addLog('info', 'Fenêtre 1 : Mardi 03:00-04:30 (87% compatibilité)');
+                addLog('info', 'Fenêtre 2 : Jeudi 02:00-03:30 (76% compatibilité)');
+                addLog('info', 'Fenêtre 3 : Samedi 04:00-05:30 (92% compatibilité)');
+            }, 2000);
+        }
+        
+        function emergencyStop() {
+            if (confirm('ATTENTION: Arrêter toutes les opérations en cours?')) {
+                addLog('error', '🛑 ARRÊT D\'URGENCE ACTIVÉ');
+                addLog('warning', 'Toutes les opérations ont été interrompues');
+            }
+        }
+        
+        // Live updates simulation
+        function startLiveUpdates() {
+            setInterval(() => {
+                const randomEvents = [
+                    { type: 'info', msg: 'Collecte métriques serveurs...' },
+                    { type: 'success', msg: 'Snapshot Hyper-V créé avec succès' },
+                    { type: 'warning', msg: 'Job Veeam en attente' },
+                    { type: 'info', msg: 'Analyse des jobs SQL Server' }
+                ];
+                
+                if (Math.random() > 0.7) {
+                    const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+                    addLog(event.type, event.msg);
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
