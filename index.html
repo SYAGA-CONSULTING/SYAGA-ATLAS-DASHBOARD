@@ -892,10 +892,10 @@
                     AgentVersion: 'v0.21',
                     AutoUpdate: true,
                     LastUpdate: '2025-09-01 08:42', 
-                    PendingUpdates: 5,
-                    CPU: 45,
-                    RAM: 67,
-                    DiskSpaceGB: 234,
+                    PendingUpdates: '?', // PAS DE DONNÉES RÉELLES
+                    CPU: '?',
+                    RAM: '?',
+                    DiskSpaceGB: '?',
                     LastContact: '2 min'
                 },
                 { 
@@ -904,10 +904,10 @@
                     AgentVersion: 'v0.21',
                     AutoUpdate: true,
                     LastUpdate: '2025-09-01 08:40',
-                    PendingUpdates: 3,
-                    CPU: 23,
-                    RAM: 54,
-                    DiskSpaceGB: 512,
+                    PendingUpdates: '?', // PAS DE DONNÉES RÉELLES
+                    CPU: '?',
+                    RAM: '?',
+                    DiskSpaceGB: '?',
                     LastContact: '4 min'
                 }
             ];
@@ -921,9 +921,9 @@
                     <td>${server.AutoUpdate ? '✅ Activé' : '❌ Désactivé'}</td>
                     <td>${server.LastUpdate}</td>
                     <td><strong>${server.PendingUpdates}</strong></td>
-                    <td>${server.CPU}%</td>
-                    <td>${server.RAM}%</td>
-                    <td>${server.DiskSpaceGB} GB</td>
+                    <td>${server.CPU}${server.CPU !== '?' ? '%' : ''}</td>
+                    <td>${server.RAM}${server.RAM !== '?' ? '%' : ''}</td>
+                    <td>${server.DiskSpaceGB}${server.DiskSpaceGB !== '?' ? ' GB' : ''}</td>
                     <td>
                         <button class="btn" onclick="updateServer('${server.Hostname}')" 
                                 style="padding: 5px 10px; font-size: 0.9rem;">
@@ -935,12 +935,13 @@
             
             // Update stats
             document.getElementById('totalServers').textContent = realServers.length;
-            document.getElementById('needUpdate').textContent = realServers.filter(s => s.PendingUpdates > 0).length;
+            document.getElementById('needUpdate').textContent = '?'; // PAS DE DONNÉES RÉELLES
             document.getElementById('agentVersion').textContent = 'v0.21';
             document.getElementById('lastSync').textContent = '2 min';
             
-            addLog('info', `📊 SYAGA-HOST01: Agent v0.21, Auto-update ✅, ${realServers[0].PendingUpdates} updates`);
-            addLog('info', `📊 SYAGA-VEEAM01: Agent v0.21, Auto-update ✅, ${realServers[1].PendingUpdates} updates`);
+            addLog('warning', `⚠️ SYAGA-HOST01: Agent v0.21 connecté - En attente de données réelles`);
+            addLog('warning', `⚠️ SYAGA-VEEAM01: Agent v0.21 connecté - En attente de données réelles`);
+            addLog('info', '🔴 Les métriques (CPU, RAM, Disk, Updates) ne sont pas encore remontées');
             addLog('success', '✅ Agents v0.21 avec capacité auto-update active');
         }
         
