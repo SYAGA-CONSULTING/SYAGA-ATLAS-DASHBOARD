@@ -551,32 +551,105 @@
                     <h2>📋 Plan d'Implémentation</h2>
                     
                     <div class="phase-timeline">
-                        <div class="phase completed">
-                            <div class="phase-circle">✓</div>
-                            <strong>Phase 1</strong>
-                            <p style="font-size: 0.9rem;">POC SYAGA</p>
-                        </div>
                         <div class="phase active">
+                            <div class="phase-circle">1</div>
+                            <strong>Phase 1</strong>
+                            <p style="font-size: 0.9rem;">SYAGA Interne</p>
+                        </div>
+                        <div class="phase">
                             <div class="phase-circle">2</div>
                             <strong>Phase 2</strong>
-                            <p style="font-size: 0.9rem;">Déploiement LAA</p>
+                            <p style="font-size: 0.9rem;">ATLAS v1.0</p>
                         </div>
                         <div class="phase">
                             <div class="phase-circle">3</div>
                             <strong>Phase 3</strong>
-                            <p style="font-size: 0.9rem;">Déploiement PROVENÇALE</p>
+                            <p style="font-size: 0.9rem;">Déploiement LAA</p>
                         </div>
                         <div class="phase">
                             <div class="phase-circle">4</div>
                             <strong>Phase 4</strong>
-                            <p style="font-size: 0.9rem;">Production 100%</p>
+                            <p style="font-size: 0.9rem;">PROVENÇALE</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SYAGA Internal Implementation -->
+                <div class="concept-card">
+                    <h2>🏠 Phase 1 : SYAGA Interne - "Eat our own dog food"</h2>
+                    
+                    <div class="checklist">
+                        <h3 style="margin-bottom: 15px;">TODO Immédiat - Finaliser Agents</h3>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga1" checked>
+                            <label for="syaga1">✅ Agents v0.21 sur SYAGA-HOST01 et SYAGA-VEEAM01</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga2">
+                            <label for="syaga2">Déployer agents sur TOUTES les VMs SYAGA</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga3">
+                            <label for="syaga3">Vérifier remontée RÉELLE des métriques dans SharePoint</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga4">
+                            <label for="syaga4">Implémenter collecte Windows Updates disponibles</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga5">
+                            <label for="syaga5">Collecter jobs SQL Server sur nos bases</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga6">
+                            <label for="syaga6">Mapper tâches planifiées Windows</label>
+                        </div>
+                    </div>
+                    
+                    <div class="checklist">
+                        <h3 style="margin-bottom: 15px;">Pattern IA - Orchestrateur</h3>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga7">
+                            <label for="syaga7">Développer module analyse contraintes avec Claude IA</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga8">
+                            <label for="syaga8">Créer algorithme d'ordonnancement optimal</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga9">
+                            <label for="syaga9">Tester orchestration sur nos propres serveurs</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga10">
+                            <label for="syaga10">Valider pattern complet : snapshot → update → validation → rollback</label>
+                        </div>
+                    </div>
+                    
+                    <div class="checklist">
+                        <h3 style="margin-bottom: 15px;">ATLAS v1.0 - Production Ready</h3>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga11">
+                            <label for="syaga11">Dashboard avec données RÉELLES (pas de '?')</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga12">
+                            <label for="syaga12">Orchestration testée et validée en interne</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga13">
+                            <label for="syaga13">Documentation technique complète</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga14">
+                            <label for="syaga14">Package d'installation automatisé</label>
                         </div>
                     </div>
                 </div>
                 
                 <!-- LAA Implementation -->
                 <div class="concept-card">
-                    <h2>🏢 Implémentation LAA (Septembre 2025)</h2>
+                    <h2>🏢 Phase 3 : Implémentation LAA (Après ATLAS v1.0)</h2>
                     
                     <div class="checklist">
                         <h3 style="margin-bottom: 15px;">Semaine 1 : Préparation</h3>
@@ -641,7 +714,7 @@
                 
                 <!-- PROVENCALE Implementation -->
                 <div class="concept-card">
-                    <h2>🏭 Implémentation PROVENÇALE (Octobre 2025)</h2>
+                    <h2>🏭 Phase 4 : Implémentation PROVENÇALE (Après LAA)</h2>
                     
                     <div class="checklist">
                         <h3 style="margin-bottom: 15px;">Semaine 1 : Analyse</h3>
