@@ -579,70 +579,70 @@
                     <h2>🏠 Phase 1 : SYAGA Interne - "Eat our own dog food"</h2>
                     
                     <div class="checklist">
-                        <h3 style="margin-bottom: 15px;">TODO Immédiat - Finaliser Agents</h3>
+                        <h3 style="margin-bottom: 15px;">🚨 PRIORITÉ 1 : Déploiement Agents (COLLECTE)</h3>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga1" checked>
-                            <label for="syaga1">✅ Agents v0.21 sur SYAGA-HOST01 et SYAGA-VEEAM01</label>
+                            <label for="syaga1">✅ SYAGA-HOST01 - Agent v0.21 déployé</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="syaga1b" checked>
+                            <label for="syaga1b">✅ SYAGA-VEEAM01 - Agent v0.21 déployé</label>
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga2">
-                            <label for="syaga2">Déployer agents sur 12 VMs SYAGA + 4 serveurs physiques (16 total)</label>
+                            <label for="syaga2">⏳ Déployer sur les 14 serveurs restants (TOUT, pas de sélection)</label>
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga3">
-                            <label for="syaga3">Vérifier remontée RÉELLE des métriques dans SharePoint</label>
+                            <label for="syaga3">Vérifier remontée des 16 serveurs dans SharePoint</label>
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga4">
-                            <label for="syaga4">Implémenter collecte Windows Updates disponibles</label>
+                            <label for="syaga4">Collecter TOUTES les métriques : CPU, RAM, Disk, Updates, Jobs, Tasks</label>
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga5">
-                            <label for="syaga5">Collecter jobs SQL Server sur nos bases</label>
-                        </div>
-                        <div class="checklist-item">
-                            <input type="checkbox" id="syaga6">
-                            <label for="syaga6">Mapper tâches planifiées Windows</label>
+                            <label for="syaga5">Dashboard affiche données RÉELLES (plus de '?')</label>
                         </div>
                     </div>
                     
                     <div class="checklist">
-                        <h3 style="margin-bottom: 15px;">Pattern IA - Orchestrateur</h3>
+                        <h3 style="margin-bottom: 15px;">📊 PRIORITÉ 2 : Analyse des Données Collectées</h3>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga7">
-                            <label for="syaga7">Développer module analyse contraintes avec Claude IA</label>
+                            <label for="syaga7">Analyser les 16 serveurs : patterns d'usage, fenêtres, contraintes</label>
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga8">
-                            <label for="syaga8">Créer algorithme d'ordonnancement optimal</label>
+                            <label for="syaga8">Identifier les dépendances entre serveurs</label>
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga9">
-                            <label for="syaga9">Tester orchestration sur nos propres serveurs</label>
+                            <label for="syaga9">Mapper tous les jobs SQL et tâches planifiées</label>
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga10">
-                            <label for="syaga10">Valider pattern complet : snapshot → update → validation → rollback</label>
+                            <label for="syaga10">Développer Pattern IA avec les données RÉELLES collectées</label>
                         </div>
                     </div>
                     
                     <div class="checklist">
-                        <h3 style="margin-bottom: 15px;">ATLAS v1.0 - Production Ready</h3>
+                        <h3 style="margin-bottom: 15px;">✅ PRIORITÉ 3 : Orchestration & Validation</h3>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga11">
-                            <label for="syaga11">Dashboard avec données RÉELLES (pas de '?')</label>
+                            <label for="syaga11">Tester orchestration sur infrastructure SYAGA complète (16 serveurs)</label>
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga12">
-                            <label for="syaga12">Orchestration testée et validée en interne</label>
+                            <label for="syaga12">Valider pattern : snapshot → update → validation → rollback</label>
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga13">
-                            <label for="syaga13">Documentation technique complète</label>
+                            <label for="syaga13">Mesurer : temps réel vs estimation (7.5h pour 16 serveurs ?)</label>
                         </div>
                         <div class="checklist-item">
                             <input type="checkbox" id="syaga14">
-                            <label for="syaga14">Package d'installation automatisé</label>
+                            <label for="syaga14">ATLAS v1.0 certifié "Production Ready"</label>
                         </div>
                     </div>
                 </div>
