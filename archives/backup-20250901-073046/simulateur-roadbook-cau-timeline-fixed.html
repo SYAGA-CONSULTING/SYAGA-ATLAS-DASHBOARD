@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 ATLAS CAU Timeline - Pattern LAA Orchestré</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            padding: 20px;
+            min-width: 1900px;
+        }
+        
+        .container {
+            max-width: 2000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        /* Header métriques */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+            color: #333;
+        }
+        
+        .metric-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2196f3;
+            line-height: 1.2;
+        }
+        
+        .metric-sub {
+            font-size: 0.7rem;
+            color: #999;
+            margin-top: 1px;
+        }
+        
+        /* Timeline principale */
+        .timeline-container {
+            background: #fafafa;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 40px 30px 30px 30px;
+            position: relative;
+            overflow: visible;
+        }
+        
+        /* Grille temporelle */
+        .time-axis {
+            position: absolute;
+            top: 10px;
+            left: 150px;
+            right: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .time-mark {
+            position: relative;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #666;
+            padding: 0 5px;
+            background: #fafafa;
+        }
+        
+        .time-mark::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1px;
+            height: 600px;
+            background: #e8e8e8;
+        }
+        
+        /* Position actuelle */
+        .current-position {
+            position: absolute;
+            top: 40px;
+            bottom: 20px;
+            width: 3px;
+            background: #ff4757;
+            z-index: 100;
+            transition: left 0.3s ease;
+        }
+        
+        .current-position::before {
+            content: '▼ MAINTENANT';
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4757;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(255,71,87,0.3);
+        }
+        
+        /* Swimlanes */
+        .swimlanes {
+            margin-top: 50px;
+            position: relative;
+        }
+        
+        /* Section générique */
+        .timeline-section {
+            margin-bottom: 15px;
+            position: relative;
+            display: flex;
+            align-items: stretch;
+        }
+        
+        .section-label {
+            position: absolute;
+            left: 0;
+            width: 140px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            text-align: right;
+            padding-right: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #5f27cd;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .section-track {
+            margin-left: 150px;
+            position: relative;
+            min-height: 60px;
+            display: flex;
+            gap: 3px;
+            flex: 1;
+        }
+        
+        /* Colonne de serveur */
+        .server-column {
+            flex: 1;
+            min-width: 85px;
+            position: relative;
+        }
+        
+        .server-column.phase {
+            background: rgba(100, 126, 234, 0.05);
+            border-radius: 8px;
+            padding: 5px;
+        }
+        
+        .server-column.host {
+            background: rgba(33, 150, 243, 0.05);
+            border-radius: 8px;
+            padding: 5px;
+        }
+        
+        .server-column.vm {
+            background: rgba(156, 39, 176, 0.05);
+            border-radius: 8px;
+            padding: 5px;
+        }
+        
+        /* Header de serveur */
+        .server-header {
+            height: 50px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+            margin-bottom: 5px;
+            position: relative;
+        }
+        
+        .server-header.phase {
+            background: #f8f9fa;
+        }
+        
+        .server-header.phase.active {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        
+        .server-header.phase.done {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .server-header.host {
+            background: linear-gradient(180deg, #e3f2fd 0%, #bbdefb 100%);
+            border-color: #2196f3;
+        }
+        
+        .server-header.host.active {
+            background: linear-gradient(180deg, #fff3e0 0%, #ffe0b2 100%);
+            border-color: #ff9800;
+            box-shadow: 0 0 0 3px rgba(255,152,0,0.2);
+        }
+        
+        .server-header.host.done {
+            background: linear-gradient(180deg, #c8e6c9 0%, #a5d6a7 100%);
+            border-color: #4caf50;
+        }
+        
+        .server-header.vm {
+            background: linear-gradient(180deg, #f3e5f5 0%, #e1bee7 100%);
+            border-color: #9c27b0;
+        }
+        
+        .server-header.vm.inactive {
+            background: #ffebee !important;
+            border-color: #dc3545 !important;
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+        
+        .server-header.vm.active {
+            background: linear-gradient(180deg, #fff3e0 0%, #ffe0b2 100%);
+            border-color: #ff9800;
+            box-shadow: 0 0 0 3px rgba(255,152,0,0.2);
+        }
+        
+        .server-type {
+            font-size: 0.65rem;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        
+        .server-location {
+            font-size: 0.6rem;
+            color: #999;
+            position: absolute;
+            bottom: 2px;
+        }
+        
+        /* Actions */
+        .actions-under-block {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-top: 8px;
+            padding: 5px;
+            background: rgba(255, 193, 7, 0.08);
+            border-radius: 4px;
+            border-top: 2px solid #ffc107;
+        }
+        
+        .action-item {
+            padding: 4px 6px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            color: #999;
+            opacity: 0.3;
+            transition: all 0.3s;
+        }
+        
+        .action-item.pending {
+            opacity: 0.3;
+            background: #f8f9fa;
+        }
+        
+        .action-item.running {
+            opacity: 1;
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+            animation: blink 1s infinite;
+        }
+        
+        .action-item.done {
+            opacity: 1;
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        @keyframes replicaBlink {
+            0%, 100% { 
+                background: #ff9800;
+                border-color: #f57c00;
+                opacity: 1;
+            }
+            50% { 
+                background: #ffb74d;
+                border-color: #ff9800;
+                opacity: 0.7;
+            }
+        }
+        
+        .vm-bubble.replica-active {
+            animation: replicaBlink 1s infinite !important;
+            background: #ff9800 !important;
+            border-color: #f57c00 !important;
+            opacity: 1 !important;
+        }
+        
+        /* VMs hébergées */
+        .hosted-vms {
+            margin-top: 10px;
+            padding: 0;
+        }
+        
+        .vms-section {
+            padding: 5px;
+            background: rgba(40, 167, 69, 0.08);
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .replicas-section {
+            padding: 5px;
+            background: rgba(33, 150, 243, 0.08);
+            border-radius: 4px;
+            border-top: 2px solid #2196f3;
+            margin-top: 8px;
+        }
+        
+        .section-title {
+            font-size: 0.65rem;
+            color: #666;
+            margin-bottom: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .vm-bubble {
+            padding: 3px 6px;
+            background: #d4edda;
+            border: 1px solid #28a745;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            margin-bottom: 4px;
+            transition: all 0.3s;
+        }
+        
+        .vm-bubble.inactive {
+            background: #ffebee !important;
+            border-color: #dc3545 !important;
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+        
+        /* Contrôles */
+        .controls {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .control-btn:hover {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .speed-control select {
+            padding: 6px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        /* Indicateur CAU */
+        .cau-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,193,7,0.95);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 200;
+            box-shadow: 0 4px 20px rgba(255,193,7,0.4);
+        }
+        
+        .cau-indicator.visible {
+            opacity: 1;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+        }
+        
+        /* Indicateur de failover */
+        .failover-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            opacity: 0;
+            z-index: 300;
+            box-shadow: 0 8px 30px rgba(255,107,107,0.5);
+            pointer-events: none;
+        }
+        
+        .failover-indicator.show {
+            animation: failoverShow 3s ease-in-out;
+        }
+        
+        @keyframes failoverShow {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(-5deg); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(2deg); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.95) rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; margin-bottom: 30px; color: #5f27cd;">
+            🎯 ATLAS CAU Timeline - Orchestration LAA Windows Update
+        </h1>
+        
+        <!-- Métriques -->
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-label">Temps</div>
+                <div class="metric-value" id="current-time">14:00</div>
+                <div class="metric-sub">Heure actuelle</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Écoulé</div>
+                <div class="metric-value" id="elapsed-time">00:00</div>
+                <div class="metric-sub">Sur 4 heures</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Progression</div>
+                <div class="metric-value" id="progress-percent">0%</div>
+                <div class="metric-sub">Intervention</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">VMs Impactées</div>
+                <div class="metric-value" id="vm-count">0/7</div>
+                <div class="metric-sub">Failover actifs</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Phase</div>
+                <div class="metric-value" id="current-phase" style="font-size: 1.3rem;">INIT</div>
+                <div class="metric-sub">En cours</div>
+            </div>
+        </div>
+        
+        <!-- Timeline principale -->
+        <div class="timeline-container">
+            <!-- Axe temporel -->
+            <div class="time-axis">
+                <span class="time-mark">14:00</span>
+                <span class="time-mark">14:30</span>
+                <span class="time-mark">15:00</span>
+                <span class="time-mark">15:30</span>
+                <span class="time-mark">16:00</span>
+                <span class="time-mark">16:30</span>
+                <span class="time-mark">17:00</span>
+                <span class="time-mark">17:30</span>
+                <span class="time-mark">18:00</span>
+            </div>
+            
+            <!-- Position actuelle -->
+            <div class="current-position"></div>
+            
+            <!-- Swimlanes -->
+            <div class="swimlanes">
+                <!-- SERVEURS -->
+                <div class="timeline-section">
+                    <div class="section-label">SERVEURS</div>
+                    <div class="section-track" id="servers-track">
+                        <!-- Headers des serveurs -->
+                    </div>
+                </div>
+                
+                <!-- VMs -->
+                <div class="timeline-section">
+                    <div class="section-label">VMs</div>
+                    <div class="section-track" id="vms-track">
+                        <!-- VMs hébergées -->
+                    </div>
+                </div>
+                
+                <!-- REPLICATION -->
+                <div class="timeline-section">
+                    <div class="section-label">REPLICATION</div>
+                    <div class="section-track" id="replication-track">
+                        <!-- Replicas Hyper-V -->
+                    </div>
+                </div>
+                
+                <!-- VEEAM -->
+                <div class="timeline-section">
+                    <div class="section-label">VEEAM</div>
+                    <div class="section-track" id="veeam-track">
+                        <!-- Replicas Veeam -->
+                    </div>
+                </div>
+                
+                <!-- ACTIONS -->
+                <div class="timeline-section">
+                    <div class="section-label">ACTIONS</div>
+                    <div class="section-track" id="actions-track">
+                        <!-- Actions -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Indicateur CAU -->
+            <div class="cau-indicator" id="cau-indicator"></div>
+            
+            <!-- Indicateur de failover -->
+            <div class="failover-indicator" id="failover-indicator"></div>
+        </div>
+        
+        <!-- Contrôles -->
+        <div class="controls">
+            <button class="control-btn" onclick="resetTimeline()">⏮️ Début</button>
+            <button class="control-btn" onclick="moveBackward()">⏪ Reculer</button>
+            <button class="control-btn" id="playBtn" onclick="togglePlay()">⏸️ Pause</button>
+            <button class="control-btn" onclick="moveForward()">⏩ Avancer</button>
+            <button class="control-btn" onclick="endTimeline()">⏭️ Fin</button>
+            
+            <div class="speed-control">
+                <span>Vitesse:</span>
+                <select id="speedSelect" onchange="changeSpeed()">
+                    <option value="0.5">0.5x</option>
+                    <option value="1" selected>1x</option>
+                    <option value="2">2x</option>
+                    <option value="5">5x</option>
+                    <option value="10">10x</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration de la timeline
+        const TIMELINE = {
+            PRECHECK: { start: 0, end: 11, label: 'PRE-CHECK' },
+            SUSPEND: { start: 11, end: 22, label: 'SUSPEND' },
+            HOST04: { start: 22, end: 33, label: 'HOST04' },
+            HOST02: { start: 33, end: 44, label: 'HOST02' },
+            HOST03: { start: 44, end: 55, label: 'HOST03' },
+            HOST01: { start: 55, end: 66, label: 'HOST01' },
+            UPDATE_VMS: { start: 66, end: 88, label: 'UPDATE VMs' },
+            VALIDATION: { start: 88, end: 95, label: 'VALIDATION' },
+            RESUME: { start: 95, end: 100, label: 'RESUME' }
+        };
+        
+        // Configuration des serveurs (ordre chronologique pour progression linéaire)
+        const SERVERS = [
+            { id: 'precheck', type: 'phase', name: 'PRE-CHECK' },
+            { id: 'suspend', type: 'phase', name: 'SUSPEND' },
+            { id: 'host04', type: 'host', name: 'HOST04', vms: ['VEEAM01'], replicas: ['SQL_R', 'WEB_R', 'SAGE_R'], veeamReplicas: ['DC_VR', 'RDS_VR', 'APP_VR'] },
+            { id: 'host02', type: 'host', name: 'HOST02', vms: ['RDS'], replicas: ['DC_R', 'APP_R'], veeamReplicas: ['SQL_VR', 'WEB_VR', 'SAGE_VR'] },
+            { id: 'host03', type: 'host', name: 'HOST03', vms: ['SQL', 'WEB', 'SAGE'], replicas: ['RDS_R'], veeamReplicas: ['VEEAM01_VR'] },
+            { id: 'host01', type: 'host', name: 'HOST01', vms: ['DC', 'APP'], replicas: ['VEEAM01_R'], veeamReplicas: ['SQL_VR', 'RDS_VR', 'WEB_VR'] },
+            { id: 'veeam01', type: 'vm', name: 'VEEAM01', host: 'HOST04' },
+            { id: 'sql', type: 'vm', name: 'SQL', host: 'HOST03' },
+            { id: 'web', type: 'vm', name: 'WEB', host: 'HOST03' },
+            { id: 'app', type: 'vm', name: 'APP', host: 'HOST01' },
+            { id: 'sage', type: 'vm', name: 'SAGE', host: 'HOST03' },
+            { id: 'rds', type: 'vm', name: 'RDS', host: 'HOST02' },
+            { id: 'dc', type: 'vm', name: 'DC', host: 'HOST01' },
+            { id: 'validation', type: 'phase', name: 'VALIDATION' },
+            { id: 'resume', type: 'phase', name: 'RESUME' }
+        ];
+        
+        // État global
+        let progress = 0; // Démarre au début
+        let isPlaying = false; // Démarre en pause pour voir l'état initial
+        let animationInterval = null;
+        let speed = 1;
+        
+        // Initialisation du DOM
+        function initializeDOM() {
+            // Nettoyer toutes les pistes
+            document.getElementById('servers-track').innerHTML = '';
+            document.getElementById('vms-track').innerHTML = '';
+            document.getElementById('replication-track').innerHTML = '';
+            document.getElementById('veeam-track').innerHTML = '';
+            document.getElementById('actions-track').innerHTML = '';
+            
+            // Créer les colonnes dans chaque ligne
+            SERVERS.forEach(server => {
+                // 1. LIGNE SERVEURS - Headers uniquement
+                const serverCol = document.createElement('div');
+                serverCol.className = `server-column ${server.type}`;
+                serverCol.dataset.server = server.id;
+                
+                // Header
+                const header = document.createElement('div');
+                header.className = `server-header ${server.type}`;
+                header.dataset[server.type] = server.id;
+                
+                if (server.type === 'vm') {
+                    header.innerHTML = `
+                        <span class="server-type">VM</span>
+                        <span>${getVMIcon(server.name)} ${server.name}</span>
+                        <span class="server-location">sur ${server.host}</span>
+                    `;
+                } else if (server.type === 'host') {
+                    header.innerHTML = `
+                        <span class="server-type">PHYSIQUE</span>
+                        <span>${server.name}</span>
+                    `;
+                    
+                    // Conteneur pour VMs et Replicas
+                    const hostedVMs = document.createElement('div');
+                    hostedVMs.className = 'hosted-vms';
+                    
+                    // Section VMs hébergées
+                    const vmsSection = document.createElement('div');
+                    vmsSection.className = 'vms-section';
+                    vmsSection.innerHTML = '<div class="section-title">VMs Hébergées:</div>';
+                    
+                    server.vms.forEach(vm => {
+                        const bubble = document.createElement('div');
+                        bubble.className = 'vm-bubble';
+                        bubble.dataset.vm = vm.toLowerCase();
+                        bubble.textContent = `${getVMIcon(vm)} ${vm}`;
+                        vmsSection.appendChild(bubble);
+                    });
+                    
+                    hostedVMs.appendChild(vmsSection);
+                    
+                    // Section Replicas Hyper-V si présents
+                    if (server.replicas && server.replicas.length > 0) {
+                        const replicasSection = document.createElement('div');
+                        replicasSection.className = 'replicas-section';
+                        replicasSection.innerHTML = '<div class="section-title">Replicas Hyper-V:</div>';
+                        
+                        server.replicas.forEach(replica => {
+                            const replicaBubble = document.createElement('div');
+                            replicaBubble.className = 'vm-bubble';
+                            replicaBubble.style.background = '#e3f2fd';
+                            replicaBubble.style.borderColor = '#2196f3';
+                            const vmName = replica.replace('_R', '');
+                            replicaBubble.textContent = `🔄 ${vmName}`;
+                            replicaBubble.dataset.replica = vmName.toLowerCase();
+                            replicasSection.appendChild(replicaBubble);
+                        });
+                        
+                        hostedVMs.appendChild(replicasSection);
+                    }
+                    
+                    // Section Replicas Veeam si présents
+                    if (server.veeamReplicas && server.veeamReplicas.length > 0) {
+                        const veeamSection = document.createElement('div');
+                        veeamSection.className = 'replicas-section';
+                        veeamSection.style.background = 'rgba(76, 175, 80, 0.08)';
+                        veeamSection.style.borderColor = '#4caf50';
+                        veeamSection.innerHTML = '<div class="section-title">Replicas Veeam:</div>';
+                        
+                        server.veeamReplicas.forEach(replica => {
+                            const veeamBubble = document.createElement('div');
+                            veeamBubble.className = 'vm-bubble';
+                            veeamBubble.style.background = '#c8e6c9';
+                            veeamBubble.style.borderColor = '#4caf50';
+                            const vmName = replica.replace('_VR', '');
+                            veeamBubble.textContent = `💾 ${vmName}`;
+                            veeamBubble.dataset.veeamreplica = vmName.toLowerCase();
+                            veeamSection.appendChild(veeamBubble);
+                        });
+                        
+                        hostedVMs.appendChild(veeamSection);
+                    }
+                    
+                    column.appendChild(header);
+                    column.appendChild(hostedVMs);
+                } else {
+                    header.innerHTML = `<span>${server.name}</span>`;
+                }
+                
+                if (server.type !== 'host') {
+                    column.appendChild(header);
+                }
+                
+                // Actions
+                const actions = document.createElement('div');
+                actions.className = 'actions-under-block';
+                
+                if (server.type === 'host' || server.type === 'vm') {
+                    actions.innerHTML = `
+                        <div class="action-item pending" data-action="${server.id}-update">🔄 Windows Update</div>
+                        <div class="action-item pending" data-action="${server.id}-reboot">🔄 Reboot</div>
+                        <div class="action-item pending" data-action="${server.id}-test">🧪 Tests</div>
+                    `;
+                } else if (server.id === 'precheck') {
+                    actions.innerHTML = `
+                        <div class="action-item pending" data-action="precheck-1">📊 EventLog</div>
+                        <div class="action-item pending" data-action="precheck-2">💾 Services</div>
+                        <div class="action-item pending" data-action="precheck-3">📸 Snapshots</div>
+                        <div class="action-item pending" data-action="precheck-4">⏱️ Baseline</div>
+                    `;
+                } else if (server.id === 'suspend') {
+                    actions.innerHTML = `
+                        <div class="action-item pending" data-action="suspend-1">⏸ Jobs SQL</div>
+                        <div class="action-item pending" data-action="suspend-2">⏸ Veeam</div>
+                        <div class="action-item pending" data-action="suspend-3">✓ Stop-VM</div>
+                        <div class="action-item pending" data-action="suspend-4" style="color: #dc3545;">❌ NO Save</div>
+                    `;
+                } else if (server.id === 'validation') {
+                    actions.innerHTML = `
+                        <div class="action-item pending" data-action="validation-1">📊 EventLog</div>
+                        <div class="action-item pending" data-action="validation-2">✓ Services</div>
+                        <div class="action-item pending" data-action="validation-3">🧪 Tests</div>
+                        <div class="action-item pending" data-action="validation-4">🔄 Réplicas</div>
+                    `;
+                } else if (server.id === 'resume') {
+                    actions.innerHTML = `
+                        <div class="action-item pending" data-action="resume-1">▶ Jobs SQL</div>
+                        <div class="action-item pending" data-action="resume-2">▶ Veeam</div>
+                        <div class="action-item pending" data-action="resume-3">▶ Réplication</div>
+                        <div class="action-item pending" data-action="resume-4">▶ Exchange</div>
+                    `;
+                }
+                
+                column.appendChild(actions);
+                track.appendChild(column);
+            });
+        }
+        
+        function getVMIcon(name) {
+            const icons = {
+                'DC': '💾',
+                'RDS': '🖥️',
+                'SQL': '🗄️',
+                'WEB': '🌐',
+                'APP': '📱',
+                'SAGE': '💼',
+                'VEEAM01': '💾'
+            };
+            return icons[name] || '📦';
+        }
+        
+        // Fonction principale de mise à jour
+        function updatePosition() {
+            // Position de la ligne rouge basée sur les colonnes
+            const position = document.querySelector('.current-position');
+            const track = document.querySelector('.servers-track');
+            const columns = document.querySelectorAll('.server-column');
+            
+            if (!columns.length) return;
+            
+            // Mapping progress -> colonne selon l'ordre chronologique
+            let targetColumn = null;
+            let localProgress = 0;
+            
+            // Ordre chronologique avec colonnes réorganisées
+            if (progress < 11) {
+                // PRE-CHECK (0-11%)
+                targetColumn = columns[0]; // precheck
+                localProgress = progress / 11;
+            } else if (progress < 22) {
+                // SUSPEND (11-22%)
+                targetColumn = columns[1]; // suspend
+                localProgress = (progress - 11) / 11;
+            } else if (progress < 33) {
+                // HOST04 (22-33%)
+                targetColumn = columns[2]; // host04 maintenant à l'index 2
+                localProgress = (progress - 22) / 11;
+            } else if (progress < 44) {
+                // HOST02 (33-44%)
+                targetColumn = columns[3]; // host02 à l'index 3
+                localProgress = (progress - 33) / 11;
+            } else if (progress < 55) {
+                // HOST03 (44-55%)
+                targetColumn = columns[4]; // host03 à l'index 4
+                localProgress = (progress - 44) / 11;
+            } else if (progress < 66) {
+                // HOST01 (55-66%)
+                targetColumn = columns[5]; // host01 maintenant à l'index 5
+                localProgress = (progress - 55) / 11;
+            } else if (progress < 88) {
+                // UPDATE VMs (66-88%) dans l'ordre chronologique
+                const vmProgress = (progress - 66) / 22;
+                const vmOrder = [6, 7, 8, 9, 10, 11, 12]; // veeam01, sql, web, app, sage, rds, dc
+                const vmIndex = Math.min(Math.floor(vmProgress * 7), 6);
+                targetColumn = columns[vmOrder[vmIndex]];
+                localProgress = (vmProgress * 7) % 1;
+            } else if (progress < 95) {
+                // VALIDATION (88-95%)
+                targetColumn = columns[13]; // validation
+                localProgress = (progress - 88) / 7;
+            } else {
+                // RESUME (95-100%)
+                targetColumn = columns[14]; // resume
+                localProgress = (progress - 95) / 5;
+            }
+            
+            // Calculer la position absolue
+            if (targetColumn) {
+                // Obtenir la position absolue de la colonne par rapport au conteneur timeline
+                const container = document.querySelector('.timeline-container');
+                const containerRect = container.getBoundingClientRect();
+                const columnRect = targetColumn.getBoundingClientRect();
+                const columnWidth = targetColumn.offsetWidth;
+                
+                // Position relative au conteneur timeline
+                const relativeLeft = columnRect.left - containerRect.left;
+                const finalPosition = relativeLeft + (localProgress * columnWidth);
+                position.style.left = `${finalPosition}px`;
+            }
+            
+            // Mettre à jour toutes les composantes
+            updateMetrics();
+            updatePhaseHeaders();
+            updateHostHeaders();
+            updateVMStates();
+            updateActions();
+            updateCAUIndicator();
+        }
+        
+        // Mise à jour des métriques
+        function updateMetrics() {
+            // Temps
+            const totalMinutes = 240; // 4 heures
+            const elapsedMinutes = Math.floor(progress / 100 * totalMinutes);
+            const hours = Math.floor(elapsedMinutes / 60);
+            const minutes = elapsedMinutes % 60;
+            
+            document.getElementById('current-time').textContent = 
+                `${(14 + hours).toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            
+            document.getElementById('elapsed-time').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            
+            document.getElementById('progress-percent').textContent = `${Math.floor(progress)}%`;
+            
+            // Phase actuelle
+            let currentPhase = 'INIT';
+            for (const [key, phase] of Object.entries(TIMELINE)) {
+                if (progress >= phase.start && progress < phase.end) {
+                    currentPhase = phase.label;
+                    break;
+                }
+            }
+            document.getElementById('current-phase').textContent = currentPhase;
+            
+            // VMs impactées
+            let vmCount = 0;
+            if (progress >= TIMELINE.HOST04.start) vmCount++; // VEEAM01
+            if (progress >= TIMELINE.HOST02.start) vmCount++; // RDS
+            if (progress >= TIMELINE.HOST03.start) vmCount += 3; // SQL, WEB, SAGE
+            if (progress >= TIMELINE.HOST01.start) vmCount += 2; // DC, APP
+            document.getElementById('vm-count').textContent = `${vmCount}/7`;
+        }
+        
+        // Mise à jour des headers de phases
+        function updatePhaseHeaders() {
+            // PRE-CHECK
+            updatePhaseHeader('precheck', TIMELINE.PRECHECK, 4);
+            
+            // SUSPEND
+            updatePhaseHeader('suspend', TIMELINE.SUSPEND, 4);
+            
+            // VALIDATION
+            updatePhaseHeader('validation', TIMELINE.VALIDATION, 4);
+            
+            // RESUME
+            updatePhaseHeader('resume', TIMELINE.RESUME, 4);
+        }
+        
+        function updatePhaseHeader(id, timeline, actionCount) {
+            const header = document.querySelector(`[data-phase="${id}"]`);
+            const actions = document.querySelectorAll(`[data-action^="${id}-"]`);
+            
+            if (!header) return;
+            
+            if (progress < timeline.start) {
+                // Pas encore commencé
+                header.classList.remove('active', 'done');
+                header.innerHTML = `<span>⏳ ${timeline.label}</span>`;
+                actions.forEach(action => {
+                    action.classList.remove('running', 'done');
+                    action.classList.add('pending');
+                });
+            } else if (progress >= timeline.start && progress < timeline.end) {
+                // En cours
+                header.classList.add('active');
+                header.classList.remove('done');
+                header.innerHTML = `<span>⚡ ${timeline.label}</span>`;
+                
+                const subProgress = (progress - timeline.start) / (timeline.end - timeline.start);
+                const currentAction = Math.floor(subProgress * actionCount);
+                
+                actions.forEach((action, i) => {
+                    action.classList.remove('pending', 'running', 'done');
+                    if (i < currentAction) {
+                        action.classList.add('done');
+                    } else if (i === currentAction) {
+                        action.classList.add('running');
+                    } else {
+                        action.classList.add('pending');
+                    }
+                });
+            } else {
+                // Terminé
+                header.classList.remove('active');
+                header.classList.add('done');
+                header.innerHTML = `<span>✅ ${timeline.label}</span>`;
+                actions.forEach(action => {
+                    action.classList.remove('pending', 'running');
+                    action.classList.add('done');
+                });
+            }
+        }
+        
+        // Mise à jour des headers de hosts
+        function updateHostHeaders() {
+            updateHostHeader('host04', TIMELINE.HOST04);
+            updateHostHeader('host02', TIMELINE.HOST02);
+            updateHostHeader('host03', TIMELINE.HOST03);
+            updateHostHeader('host01', TIMELINE.HOST01);
+        }
+        
+        function updateHostHeader(id, timeline) {
+            const header = document.querySelector(`[data-host="${id}"]`);
+            const actions = document.querySelectorAll(`[data-action^="${id}-"]`);
+            
+            if (!header) return;
+            
+            const name = id.toUpperCase();
+            
+            if (progress < timeline.start) {
+                // Pas encore commencé
+                header.classList.remove('active', 'done');
+                header.innerHTML = `<span class="server-type">PHYSIQUE</span><span>⏳ ${name}</span>`;
+                actions.forEach(action => {
+                    action.classList.remove('running', 'done');
+                    action.classList.add('pending');
+                });
+            } else if (progress >= timeline.start && progress < timeline.end) {
+                // En cours
+                header.classList.add('active');
+                header.classList.remove('done');
+                header.innerHTML = `<span class="server-type">PHYSIQUE</span><span>⚡ ${name}</span>`;
+                
+                const subProgress = (progress - timeline.start) / (timeline.end - timeline.start);
+                
+                // Windows Update (0-40%)
+                // Reboot (40-70%)
+                // Tests (70-100%)
+                actions.forEach((action, i) => {
+                    action.classList.remove('pending', 'running', 'done');
+                    if (i === 0 && subProgress < 0.4) {
+                        action.classList.add('running');
+                    } else if (i === 0 && subProgress >= 0.4) {
+                        action.classList.add('done');
+                    } else if (i === 1 && subProgress >= 0.4 && subProgress < 0.7) {
+                        action.classList.add('running');
+                    } else if (i === 1 && subProgress >= 0.7) {
+                        action.classList.add('done');
+                    } else if (i === 2 && subProgress >= 0.7 && subProgress < 1) {
+                        action.classList.add('running');
+                    } else if (i === 2 && subProgress >= 1) {
+                        action.classList.add('done');
+                    } else {
+                        action.classList.add('pending');
+                    }
+                });
+            } else {
+                // Terminé
+                header.classList.remove('active');
+                header.classList.add('done');
+                header.innerHTML = `<span class="server-type">PHYSIQUE</span><span>✅ ${name}</span>`;
+                actions.forEach(action => {
+                    action.classList.remove('pending', 'running');
+                    action.classList.add('done');
+                });
+            }
+        }
+        
+        // Mise à jour des états des VMs
+        function updateVMStates() {
+            // Réinitialiser
+            document.querySelectorAll('.server-header.vm').forEach(header => {
+                header.classList.remove('inactive', 'active');
+            });
+            document.querySelectorAll('.vm-bubble').forEach(bubble => {
+                bubble.classList.remove('inactive', 'replica-active');
+            });
+            
+            // HOST04 update (22-33%) - VEEAM01 down, son replica sur HOST01 actif
+            if (progress >= TIMELINE.HOST04.start && progress < TIMELINE.HOST04.end) {
+                setVMInactive('veeam01');
+                setReplicaActive('veeam01');
+            }
+            
+            // HOST02 update (33-44%) - RDS down, son replica sur HOST03 actif
+            if (progress >= TIMELINE.HOST02.start && progress < TIMELINE.HOST02.end) {
+                setVMInactive('rds');
+                setReplicaActive('rds');
+            }
+            
+            // HOST03 update (44-55%) - SQL, WEB, SAGE down, leurs replicas sur HOST04 actifs
+            if (progress >= TIMELINE.HOST03.start && progress < TIMELINE.HOST03.end) {
+                setVMInactive('sql');
+                setVMInactive('web');
+                setVMInactive('sage');
+                setReplicaActive('sql');
+                setReplicaActive('web');
+                setReplicaActive('sage');
+            }
+            
+            // HOST01 update (55-66%) - DC, APP down, leurs replicas sur HOST02 actifs
+            if (progress >= TIMELINE.HOST01.start && progress < TIMELINE.HOST01.end) {
+                setVMInactive('dc');
+                setVMInactive('app');
+                setReplicaActive('dc');
+                setReplicaActive('app');
+            }
+            
+            // Update VMs (66-88%)
+            if (progress >= TIMELINE.UPDATE_VMS.start && progress < TIMELINE.UPDATE_VMS.end) {
+                const subProgress = (progress - TIMELINE.UPDATE_VMS.start) / (TIMELINE.UPDATE_VMS.end - TIMELINE.UPDATE_VMS.start);
+                const vmOrder = ['veeam01', 'sql', 'web', 'app', 'sage', 'rds', 'dc'];
+                const currentVm = Math.floor(subProgress * vmOrder.length);
+                
+                vmOrder.forEach((vm, i) => {
+                    const header = document.querySelector(`[data-vm="${vm}"]`);
+                    const actions = document.querySelectorAll(`[data-action^="${vm}-"]`);
+                    
+                    if (i === currentVm) {
+                        header?.classList.add('active');
+                        // Animer les actions de cette VM
+                        const vmSubProgress = (subProgress * vmOrder.length) % 1;
+                        actions.forEach((action, j) => {
+                            action.classList.remove('pending', 'running', 'done');
+                            if (j === 0 && vmSubProgress < 0.33) {
+                                action.classList.add('running');
+                            } else if (j === 0) {
+                                action.classList.add('done');
+                            } else if (j === 1 && vmSubProgress >= 0.33 && vmSubProgress < 0.66) {
+                                action.classList.add('running');
+                            } else if (j === 1 && vmSubProgress >= 0.66) {
+                                action.classList.add('done');
+                            } else if (j === 2 && vmSubProgress >= 0.66) {
+                                action.classList.add('running');
+                            } else {
+                                action.classList.add('pending');
+                            }
+                        });
+                    } else if (i < currentVm) {
+                        actions.forEach(action => {
+                            action.classList.remove('pending', 'running');
+                            action.classList.add('done');
+                        });
+                    }
+                });
+            }
+        }
+        
+        function setVMInactive(vmId) {
+            // Colonne VM
+            const header = document.querySelector(`[data-vm="${vmId}"]`);
+            header?.classList.add('inactive');
+            
+            // Bulle sous le host
+            const bubble = document.querySelector(`.vm-bubble[data-vm="${vmId}"]`);
+            bubble?.classList.add('inactive');
+        }
+        
+        function setReplicaActive(vmId) {
+            // Activer le replica (bulle avec data-replica)
+            const replicaBubble = document.querySelector(`.vm-bubble[data-replica="${vmId}"]`);
+            replicaBubble?.classList.add('replica-active');
+        }
+        
+        // Mise à jour des actions
+        function updateActions() {
+            // Les actions sont déjà gérées dans les fonctions updatePhaseHeaders et updateHostHeaders
+        }
+        
+        // Indicateur CAU
+        function updateCAUIndicator() {
+            const indicator = document.getElementById('cau-indicator');
+            const failoverIndicator = document.getElementById('failover-indicator');
+            let message = '';
+            let show = false;
+            let failoverMessage = '';
+            
+            // Gestion des bascules avec messages détaillés
+            if (progress >= 21 && progress <= 24) {
+                message = '⚡ CAU ACTIF - VEEAM01 → HOST02/03/01';
+                show = true;
+                if (Math.floor(progress) === 22 && !this.failover22Shown) {
+                    showFailover('🔄 FAILOVER: VEEAM01 bascule sur les autres hosts');
+                    this.failover22Shown = true;
+                }
+            } else if (progress >= 32 && progress <= 35) {
+                message = '⚡ CAU ACTIF - RDS → HOST01/03/04';
+                show = true;
+                if (Math.floor(progress) === 33 && !this.failover33Shown) {
+                    showFailover('🔄 FAILOVER: RDS migre temporairement');
+                    this.failover33Shown = true;
+                }
+            } else if (progress >= 43 && progress <= 46) {
+                message = '⚡ CAU ACTIF - SQL+WEB+SAGE → HOST01/02/04';
+                show = true;
+                if (Math.floor(progress) === 44 && !this.failover44Shown) {
+                    showFailover('🔄 FAILOVER: 3 VMs HOST03 redistribuées');
+                    this.failover44Shown = true;
+                }
+            } else if (progress >= 54 && progress <= 57) {
+                message = '⚡ CAU ACTIF - DC+APP → HOST02/03/04';
+                show = true;
+                if (Math.floor(progress) === 55 && !this.failover55Shown) {
+                    showFailover('🔄 FAILOVER: DC et APP failover actif');
+                    this.failover55Shown = true;
+                }
+            } else if (progress >= 65 && progress <= 67) {
+                message = '📍 PHASE VM - Toutes les VMs sur leurs hosts d\'origine';
+                show = true;
+            } else if (progress >= 87 && progress <= 90) {
+                message = '✅ CAU TERMINÉ - Production nominale';
+                show = true;
+                if (Math.floor(progress) === 88 && !this.failover88Shown) {
+                    showFailover('✅ RETOUR: Toutes les VMs opérationnelles');
+                    this.failover88Shown = true;
+                }
+            }
+            
+            if (show) {
+                indicator.textContent = message;
+                indicator.classList.add('visible');
+            } else {
+                indicator.classList.remove('visible');
+            }
+        }
+        
+        // Affichage du failover avec animation
+        let failoverTimeout = null;
+        function showFailover(message) {
+            const failoverIndicator = document.getElementById('failover-indicator');
+            
+            // Annuler l'animation précédente si elle existe
+            if (failoverTimeout) {
+                clearTimeout(failoverTimeout);
+                failoverIndicator.classList.remove('show');
+            }
+            
+            // Mettre le nouveau message
+            failoverIndicator.textContent = message;
+            
+            // Forcer le reflow pour relancer l'animation
+            void failoverIndicator.offsetWidth;
+            
+            // Ajouter la classe d'animation
+            failoverIndicator.classList.add('show');
+            
+            // Retirer la classe après l'animation
+            failoverTimeout = setTimeout(() => {
+                failoverIndicator.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Contrôles
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playBtn');
+            btn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+            
+            if (isPlaying) {
+                startAnimation();
+            } else {
+                stopAnimation();
+            }
+        }
+        
+        function moveForward() {
+            progress = Math.min(100, progress + 2);
+            updatePosition();
+        }
+        
+        function moveBackward() {
+            progress = Math.max(0, progress - 2);
+            updatePosition();
+        }
+        
+        function resetTimeline() {
+            progress = 0;
+            updatePosition();
+        }
+        
+        function endTimeline() {
+            progress = 100;
+            updatePosition();
+        }
+        
+        function changeSpeed() {
+            speed = parseFloat(document.getElementById('speedSelect').value);
+            if (isPlaying) {
+                stopAnimation();
+                startAnimation();
+            }
+        }
+        
+        function startAnimation() {
+            animationInterval = setInterval(() => {
+                if (progress < 100) {
+                    progress += 0.01 * speed;  // Réduit de 0.05 à 0.01 (5x plus lent)
+                    updatePosition();
+                } else {
+                    stopAnimation();
+                    isPlaying = false;
+                    document.getElementById('playBtn').textContent = '▶️ Play';
+                }
+            }, 100);  // Augmenté de 50 à 100ms (2x plus lent) = Total 10x plus lent
+        }
+        
+        function stopAnimation() {
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+        }
+        
+        // Gestion clavier
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowRight':
+                    moveForward();
+                    break;
+                case 'ArrowLeft':
+                    moveBackward();
+                    break;
+                case 'Home':
+                    resetTimeline();
+                    break;
+                case 'End':
+                    endTimeline();
+                    break;
+            }
+        });
+        
+        // Initialisation
+        initializeDOM();
+        updatePosition();
+        // Le bouton doit montrer Play au démarrage car isPlaying = false
+        document.getElementById('playBtn').textContent = '▶️ Play';
+        // Démarrage auto après 2 secondes pour voir l'état initial
+        setTimeout(() => {
+            togglePlay(); // Utilise la fonction togglePlay pour cohérence
+        }, 2000);
+    </script>
+</body>
+</html>

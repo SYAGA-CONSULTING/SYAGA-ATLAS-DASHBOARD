@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 ATLAS Simulateur Visuel - Concept</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            overflow-x: auto;
+        }
+        
+        .concept-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .title {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #888;
+            margin-bottom: 20px;
+        }
+        
+        /* Datacenter 3D View */
+        .datacenter-view {
+            background: linear-gradient(135deg, rgba(0,0,0,0.8), rgba(20,20,40,0.9));
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(100,200,255,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .datacenter-view::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(100,200,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255,100,200,0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .datacenter-title {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #64c8ff;
+        }
+        
+        /* Servers rack */
+        .servers-rack {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+            perspective: 1000px;
+        }
+        
+        .server-unit {
+            background: linear-gradient(145deg, #2a2a3e, #3a3a5e);
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid rgba(100,200,255,0.2);
+            transform: rotateX(15deg) rotateY(5deg);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .server-unit:hover {
+            transform: rotateX(10deg) rotateY(0deg) scale(1.05);
+            border-color: rgba(100,255,100,0.5);
+        }
+        
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .server-name {
+            font-weight: bold;
+            color: #64c8ff;
+        }
+        
+        .server-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* VMs dans chaque serveur */
+        .vms-container {
+            margin-top: 10px;
+        }
+        
+        .vm-box {
+            background: linear-gradient(135deg, rgba(100,200,255,0.2), rgba(150,100,255,0.2));
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 5px 0;
+            font-size: 0.9rem;
+            border: 1px solid rgba(100,200,255,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .vm-box.replicating::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: replication-flow 2s infinite;
+        }
+        
+        @keyframes replication-flow {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .vm-critical {
+            border-color: rgba(255,100,100,0.5);
+            background: linear-gradient(135deg, rgba(255,100,100,0.1), rgba(255,150,100,0.1));
+        }
+        
+        /* Connexions de réplication */
+        .replication-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .replication-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #00ff88, #64c8ff);
+            opacity: 0.6;
+            animation: data-flow 3s infinite;
+        }
+        
+        @keyframes data-flow {
+            0% { 
+                background: linear-gradient(90deg, #00ff88, #64c8ff);
+                opacity: 0.6;
+            }
+            50% { 
+                background: linear-gradient(90deg, #64c8ff, #ff6b6b);
+                opacity: 1;
+            }
+            100% { 
+                background: linear-gradient(90deg, #00ff88, #64c8ff);
+                opacity: 0.6;
+            }
+        }
+        
+        /* Veeam Backup Animation */
+        .backup-animation {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #ff9800;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Timeline de simulation */
+        .simulation-timeline {
+            background: rgba(0,0,0,0.6);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(100,200,255,0.2);
+        }
+        
+        .timeline-header {
+            font-size: 1.3rem;
+            color: #64c8ff;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .timeline-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .timeline-steps::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #00ff88, #64c8ff, #ff9800, #ff6b6b, #9966ff, #00ff88);
+            z-index: 1;
+        }
+        
+        .timeline-step {
+            background: linear-gradient(135deg, #2a2a3e, #3a3a5e);
+            border-radius: 8px;
+            padding: 10px 15px;
+            border: 2px solid rgba(100,200,255,0.3);
+            z-index: 2;
+            position: relative;
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .timeline-step.active {
+            border-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0,255,136,0.3);
+        }
+        
+        /* Features comparison */
+        .features-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .feature-column {
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid;
+        }
+        
+        .current-sim {
+            border-color: rgba(255,152,0,0.3);
+        }
+        
+        .proposed-sim {
+            border-color: rgba(100,255,100,0.3);
+        }
+        
+        .feature-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .current-sim .feature-title {
+            color: #ff9800;
+        }
+        
+        .proposed-sim .feature-title {
+            color: #00ff88;
+        }
+        
+        .feature-list {
+            list-style: none;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .feature-list li::before {
+            margin-right: 10px;
+        }
+        
+        .current-sim .feature-list li::before {
+            content: '📋';
+        }
+        
+        .proposed-sim .feature-list li::before {
+            content: '🎮';
+        }
+        
+        /* Gaming elements */
+        .gaming-hud {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(100,200,255,0.3);
+            min-width: 200px;
+        }
+        
+        .hud-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+        
+        .hud-value {
+            color: #00ff88;
+            font-weight: bold;
+        }
+        
+        /* Floating particles */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #64c8ff;
+            border-radius: 50%;
+            animation: float 10s infinite linear;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0px);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) translateX(100px);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles">
+        <!-- Particules générées par JS -->
+    </div>
+    
+    <div class="gaming-hud">
+        <div style="color: #64c8ff; font-weight: bold; margin-bottom: 10px;">🎮 ATLAS Gaming HUD</div>
+        <div class="hud-item">
+            <span>Hosts:</span>
+            <span class="hud-value">4/4</span>
+        </div>
+        <div class="hud-item">
+            <span>VMs:</span>
+            <span class="hud-value">4 Active</span>
+        </div>
+        <div class="hud-item">
+            <span>Réplications:</span>
+            <span class="hud-value">3 Sync</span>
+        </div>
+        <div class="hud-item">
+            <span>Backup Jobs:</span>
+            <span class="hud-value">Running</span>
+        </div>
+        <div class="hud-item">
+            <span>Score IA:</span>
+            <span class="hud-value">97%</span>
+        </div>
+    </div>
+
+    <div class="concept-container">
+        <div class="header">
+            <h1 class="title">🎮 ATLAS Simulateur Visuel</h1>
+            <p class="subtitle">Concept "Jeu Vidéo" pour Simulation d'Infrastructure</p>
+        </div>
+
+        <!-- Vue 3D du Datacenter -->
+        <div class="datacenter-view">
+            <h2 class="datacenter-title">🏢 Datacenter LAA - Vue 3D Interactive</h2>
+            
+            <div class="servers-rack">
+                <!-- LAA-HOST01 -->
+                <div class="server-unit">
+                    <div class="server-header">
+                        <span class="server-name">LAA-HOST01</span>
+                        <div class="server-status"></div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #888;">Hyper-V Host</div>
+                    <div class="vms-container">
+                        <div class="vm-box vm-critical replicating">
+                            💾 LAA-DC (Active Directory)
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- LAA-HOST02 -->
+                <div class="server-unit">
+                    <div class="server-header">
+                        <span class="server-name">LAA-HOST02</span>
+                        <div class="server-status"></div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #888;">Hyper-V Host</div>
+                    <div class="vms-container">
+                        <div class="vm-box vm-critical replicating">
+                            🖥️ LAA-RDS (Terminal Server)
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- LAA-HOST03 -->
+                <div class="server-unit">
+                    <div class="server-header">
+                        <span class="server-name">LAA-HOST03</span>
+                        <div class="server-status"></div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #888;">Hyper-V Host</div>
+                    <div class="vms-container">
+                        <div class="vm-box vm-critical replicating">
+                            🗄️ LAA-SQL (Database)
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- LAA-HOST04 -->
+                <div class="server-unit">
+                    <div class="server-header">
+                        <span class="server-name">LAA-HOST04</span>
+                        <div class="server-status" style="background: #ff9800; box-shadow: 0 0 10px #ff9800;"></div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #888;">Hyper-V Host</div>
+                    <div class="vms-container">
+                        <div class="vm-box" style="border-color: rgba(255,152,0,0.5);">
+                            💾 LAA-VEEAM01 (Backup)
+                            <div class="backup-animation"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lignes de réplication animées -->
+            <div class="replication-lines">
+                <div class="replication-line" style="top: 25%; left: 23%; width: 25%; transform: rotate(15deg);"></div>
+                <div class="replication-line" style="top: 25%; left: 48%; width: 25%; transform: rotate(-15deg);"></div>
+                <div class="replication-line" style="top: 25%; left: 73%; width: 25%; transform: rotate(-45deg);"></div>
+            </div>
+        </div>
+        
+        <!-- Timeline de Simulation Gaming -->
+        <div class="simulation-timeline">
+            <div class="timeline-header">🎯 Timeline Simulation Interactive</div>
+            <div class="timeline-steps">
+                <div class="timeline-step active">
+                    <div style="font-weight: bold;">🤖 PRE</div>
+                    <div style="font-size: 0.8rem;">15min</div>
+                </div>
+                <div class="timeline-step">
+                    <div style="font-weight: bold;">HOST04</div>
+                    <div style="font-size: 0.8rem;">45min</div>
+                </div>
+                <div class="timeline-step">
+                    <div style="font-weight: bold;">HOST02</div>
+                    <div style="font-size: 0.8rem;">55min</div>
+                </div>
+                <div class="timeline-step">
+                    <div style="font-weight: bold;">HOST01</div>
+                    <div style="font-size: 0.8rem;">50min</div>
+                </div>
+                <div class="timeline-step">
+                    <div style="font-weight: bold;">HOST03</div>
+                    <div style="font-size: 0.8rem;">60min</div>
+                </div>
+                <div class="timeline-step">
+                    <div style="font-weight: bold;">🤖 POST</div>
+                    <div style="font-size: 0.8rem;">20min</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparaison Actuel vs Proposé -->
+        <div class="features-comparison">
+            <div class="feature-column current-sim">
+                <h3 class="feature-title">📋 Simulateur Actuel</h3>
+                <ul class="feature-list">
+                    <li>Interface textuelle avec barres de progression</li>
+                    <li>Timeline linéaire</li>
+                    <li>Métriques en chiffres</li>
+                    <li>Modal popup</li>
+                    <li>Export JSON</li>
+                    <li>Simulation temporelle</li>
+                </ul>
+            </div>
+            
+            <div class="feature-column proposed-sim">
+                <h3 class="feature-title">🎮 Simulateur Gaming Proposé</h3>
+                <ul class="feature-list">
+                    <li>Vue 3D interactive des serveurs physiques</li>
+                    <li>Animation des VMs qui migrent entre hosts</li>
+                    <li>Flux de réplication visualisés en temps réel</li>
+                    <li>Effets visuels pour jobs Veeam</li>
+                    <li>HUD gaming avec scores et métriques</li>
+                    <li>Particules et effets de transition</li>
+                    <li>Sons et notifications immersives</li>
+                    <li>Mode caméra libre pour explorer</li>
+                    <li>Zoom sur détails serveur/VM</li>
+                    <li>Histogrammes et graphiques 3D</li>
+                    <li>Mode "Matrix" avec flux de données</li>
+                    <li>Sauvegarde de "parties" de simulation</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Éléments Gaming Additionnels -->
+        <div style="background: rgba(0,0,0,0.6); border-radius: 15px; padding: 25px; margin: 30px 0; border: 2px solid rgba(100,255,100,0.3);">
+            <h3 style="color: #00ff88; text-align: center; margin-bottom: 20px;">🎮 Éléments Gaming Révolutionnaires</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="background: rgba(100,200,255,0.1); padding: 15px; border-radius: 10px;">
+                    <h4 style="color: #64c8ff;">🏆 Système de Score</h4>
+                    <p style="font-size: 0.9rem; opacity: 0.8;">Points basés sur efficacité, temps, zéro downtime</p>
+                </div>
+                <div style="background: rgba(255,100,200,0.1); padding: 15px; border-radius: 10px;">
+                    <h4 style="color: #ff64c8;">⚡ Effets Visuels</h4>
+                    <p style="font-size: 0.9rem; opacity: 0.8;">Migrations avec trails lumineux, snapshots avec flash</p>
+                </div>
+                <div style="background: rgba(100,255,100,0.1); padding: 15px; border-radius: 10px;">
+                    <h4 style="color: #64ff64;">🎵 Audio Immersif</h4>
+                    <p style="font-size: 0.9rem; opacity: 0.8;">Sons de serveurs, alertes, musique d'ambiance datacenter</p>
+                </div>
+                <div style="background: rgba(255,255,100,0.1); padding: 15px; border-radius: 10px;">
+                    <h4 style="color: #ffff64;">🎯 Challenges</h4>
+                    <p style="font-size: 0.9rem; opacity: 0.8;">Objectifs: "Zéro downtime", "Sous 4h", "100% success"</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Générer des particules flottantes
+        function createParticles() {
+            const particlesContainer = document.querySelector('.particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 10 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Animation des serveurs au hover
+        document.querySelectorAll('.server-unit').forEach(server => {
+            server.addEventListener('mouseenter', () => {
+                server.style.transform = 'rotateX(5deg) rotateY(10deg) scale(1.1)';
+                server.style.boxShadow = '0 30px 60px rgba(100,200,255,0.3)';
+            });
+            
+            server.addEventListener('mouseleave', () => {
+                server.style.transform = 'rotateX(15deg) rotateY(5deg) scale(1)';
+                server.style.boxShadow = '0 20px 40px rgba(0,0,0,0.5)';
+            });
+        });
+        
+        // Simulation du HUD qui se met à jour
+        function updateHUD() {
+            const replicationCount = Math.floor(Math.random() * 4) + 1;
+            document.querySelector('.hud-item:nth-child(3) .hud-value').textContent = replicationCount + ' Sync';
+            
+            const score = 95 + Math.floor(Math.random() * 5);
+            document.querySelector('.hud-item:nth-child(5) .hud-value').textContent = score + '%';
+        }
+        
+        // Initialisation
+        createParticles();
+        setInterval(updateHUD, 3000);
+        
+        // Animation de la timeline
+        let currentStep = 0;
+        setInterval(() => {
+            document.querySelectorAll('.timeline-step').forEach((step, index) => {
+                step.classList.toggle('active', index === currentStep);
+            });
+            currentStep = (currentStep + 1) % 6;
+        }, 2000);
+    </script>
+</body>
+</html>

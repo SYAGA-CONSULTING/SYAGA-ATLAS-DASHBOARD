@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 ATLAS Simulateur - Style SSIS Workflow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .workflow-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #0078d4, #106ebe);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .title {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+        
+        .execution-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .btn.primary {
+            background: #107c10;
+            border-color: #107c10;
+        }
+        
+        /* SSIS-style workflow canvas */
+        .workflow-canvas {
+            background: #fafafa;
+            border: 1px solid #d1d1d1;
+            border-radius: 4px;
+            padding: 30px;
+            margin: 20px 0;
+            min-height: 600px;
+            position: relative;
+            overflow: auto;
+        }
+        
+        /* Task boxes */
+        .task-box {
+            position: absolute;
+            width: 180px;
+            height: 80px;
+            background: white;
+            border: 2px solid #0078d4;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .task-box:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            transform: translateY(-1px);
+        }
+        
+        .task-box.executing {
+            border-color: #ff8c00;
+            background: #fff8f0;
+        }
+        
+        .task-box.completed {
+            border-color: #107c10;
+            background: #f3f9f1;
+        }
+        
+        .task-box.error {
+            border-color: #d83b01;
+            background: #fdf2f2;
+        }
+        
+        .task-box.pending {
+            border-color: #8a8886;
+            background: #f8f8f8;
+        }
+        
+        .task-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .task-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        /* Connecteurs style SSIS */
+        .connector {
+            position: absolute;
+            z-index: 1;
+        }
+        
+        .connector-line {
+            stroke: #0078d4;
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead);
+        }
+        
+        .connector-line.active {
+            stroke: #ff8c00;
+            stroke-width: 3;
+            animation: flow 2s infinite;
+        }
+        
+        .connector-line.completed {
+            stroke: #107c10;
+            stroke-width: 2;
+        }
+        
+        @keyframes flow {
+            0% { stroke-dasharray: 0 10; }
+            100% { stroke-dasharray: 10 0; }
+        }
+        
+        /* Progress panel */
+        .progress-panel {
+            background: white;
+            border: 1px solid #d1d1d1;
+            border-radius: 4px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .progress-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #323130;
+        }
+        
+        .progress-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .progress-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .progress-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .progress-icon.success {
+            background: #107c10;
+        }
+        
+        .progress-icon.warning {
+            background: #ff8c00;
+        }
+        
+        .progress-icon.error {
+            background: #d83b01;
+        }
+        
+        .progress-icon.pending {
+            background: #8a8886;
+        }
+        
+        .progress-text {
+            font-size: 0.9rem;
+        }
+        
+        /* Logs panel */
+        .logs-panel {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.85rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        
+        .log-entry.info {
+            color: #4fc1ff;
+        }
+        
+        .log-entry.success {
+            color: #73c991;
+        }
+        
+        .log-entry.warning {
+            color: #ffcc02;
+        }
+        
+        .log-entry.error {
+            color: #f48771;
+        }
+        
+        .timestamp {
+            color: #8a8886;
+        }
+        
+        /* Properties panel */
+        .properties-panel {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            width: 300px;
+            background: white;
+            border: 1px solid #d1d1d1;
+            border-radius: 4px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .properties-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #edebe9;
+        }
+        
+        .property-group {
+            margin-bottom: 15px;
+        }
+        
+        .property-label {
+            font-size: 0.85rem;
+            color: #605e5c;
+            margin-bottom: 4px;
+        }
+        
+        .property-value {
+            font-size: 0.9rem;
+            padding: 4px 8px;
+            background: #f8f8f8;
+            border-radius: 2px;
+            border: 1px solid #edebe9;
+        }
+        
+        /* Server visualization */
+        .servers-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .server-box {
+            background: white;
+            border: 1px solid #d1d1d1;
+            border-radius: 4px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .server-box.active {
+            border-color: #ff8c00;
+            background: #fff8f0;
+        }
+        
+        .server-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .server-status {
+            font-size: 0.8rem;
+            color: #605e5c;
+            margin-bottom: 8px;
+        }
+        
+        .vm-list {
+            font-size: 0.8rem;
+            color: #323130;
+        }
+        
+        .vm-item {
+            background: #f8f8f8;
+            padding: 4px 8px;
+            margin: 2px 0;
+            border-radius: 2px;
+            border-left: 3px solid #0078d4;
+        }
+        
+        .vm-item.replicating {
+            border-left-color: #ff8c00;
+            background: #fff8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="workflow-container">
+        <!-- Header avec contrôles -->
+        <div class="header">
+            <div class="title">🔄 ATLAS Pattern Execution - LAA Infrastructure</div>
+            <div class="execution-controls">
+                <button class="btn" onclick="validatePattern()">🔍 Validate</button>
+                <button class="btn" onclick="debugPattern()">🐛 Debug</button>
+                <button class="btn primary" onclick="executePattern()">▶️ Execute</button>
+            </div>
+        </div>
+        
+        <!-- Panel des serveurs -->
+        <div class="servers-panel">
+            <div class="server-box" id="server-host01">
+                <div class="server-name">LAA-HOST01</div>
+                <div class="server-status">Hyper-V Host - Ready</div>
+                <div class="vm-list">
+                    <div class="vm-item">💾 LAA-DC</div>
+                </div>
+            </div>
+            
+            <div class="server-box" id="server-host02">
+                <div class="server-name">LAA-HOST02</div>
+                <div class="server-status">Hyper-V Host - Ready</div>
+                <div class="vm-list">
+                    <div class="vm-item">🖥️ LAA-RDS</div>
+                </div>
+            </div>
+            
+            <div class="server-box" id="server-host03">
+                <div class="server-name">LAA-HOST03</div>
+                <div class="server-status">Hyper-V Host - Ready</div>
+                <div class="vm-list">
+                    <div class="vm-item">🗄️ LAA-SQL</div>
+                </div>
+            </div>
+            
+            <div class="server-box" id="server-host04">
+                <div class="server-name">LAA-HOST04</div>
+                <div class="server-status">Hyper-V Host - Ready</div>
+                <div class="vm-list">
+                    <div class="vm-item">💾 LAA-VEEAM01</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas workflow style SSIS -->
+        <div class="workflow-canvas">
+            <svg width="100%" height="100%" style="position: absolute; top: 0; left: 0;">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#0078d4" />
+                    </marker>
+                </defs>
+                
+                <!-- Connecteurs entre les tâches -->
+                <path class="connector-line" d="M 180 120 L 250 120 L 250 220 L 280 220" id="conn1" />
+                <path class="connector-line" d="M 460 220 L 530 220 L 530 320 L 560 320" id="conn2" />
+                <path class="connector-line" d="M 740 320 L 810 320 L 810 420 L 840 420" id="conn3" />
+                <path class="connector-line" d="M 1020 420 L 1090 420 L 1090 520 L 1120 520" id="conn4" />
+                <path class="connector-line" d="M 1300 520 L 1370 520 L 1370 620 L 1400 620" id="conn5" />
+            </svg>
+            
+            <!-- Tâches du workflow -->
+            <div class="task-box completed" style="top: 80px; left: 50px;" onclick="selectTask('pre-agent')">
+                <div class="task-icon">🤖</div>
+                <div class="task-name">Pre-Agent<br>Validation</div>
+            </div>
+            
+            <div class="task-box executing" style="top: 180px; left: 280px;" onclick="selectTask('host04-update')">
+                <div class="task-icon">🖥️</div>
+                <div class="task-name">LAA-HOST04<br>Update</div>
+            </div>
+            
+            <div class="task-box pending" style="top: 280px; left: 560px;" onclick="selectTask('host02-update')">
+                <div class="task-icon">🖥️</div>
+                <div class="task-name">LAA-HOST02<br>Update</div>
+            </div>
+            
+            <div class="task-box pending" style="top: 380px; left: 840px;" onclick="selectTask('host01-update')">
+                <div class="task-icon">🖥️</div>
+                <div class="task-name">LAA-HOST01<br>Update</div>
+            </div>
+            
+            <div class="task-box pending" style="top: 480px; left: 1120px;" onclick="selectTask('host03-update')">
+                <div class="task-icon">🖥️</div>
+                <div class="task-name">LAA-HOST03<br>Update</div>
+            </div>
+            
+            <div class="task-box pending" style="top: 580px; left: 1400px;" onclick="selectTask('post-agent')">
+                <div class="task-icon">🤖</div>
+                <div class="task-name">Post-Agent<br>Validation</div>
+            </div>
+        </div>
+        
+        <!-- Panel de progression -->
+        <div class="progress-panel">
+            <div class="progress-header">📊 Execution Progress</div>
+            <div class="progress-details">
+                <div class="progress-item">
+                    <div class="progress-icon success"></div>
+                    <div class="progress-text">Pre-Agent validation completed</div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-icon warning"></div>
+                    <div class="progress-text">LAA-HOST04 update in progress (45%)</div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-icon pending"></div>
+                    <div class="progress-text">4 tasks remaining</div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-icon pending"></div>
+                    <div class="progress-text">Estimated completion: 3h 20min</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel des logs -->
+        <div class="logs-panel" id="logs">
+            <div class="log-entry info"><span class="timestamp">[14:30:15]</span> Starting ATLAS pattern execution for LAA infrastructure...</div>
+            <div class="log-entry success"><span class="timestamp">[14:30:18]</span> Pre-Agent: Hyper-V replication status validated</div>
+            <div class="log-entry success"><span class="timestamp">[14:30:22]</span> Pre-Agent: Veeam backup jobs paused successfully</div>
+            <div class="log-entry info"><span class="timestamp">[14:30:25]</span> Pre-Agent: All validations passed, proceeding to LAA-HOST04</div>
+            <div class="log-entry info"><span class="timestamp">[14:32:10]</span> LAA-HOST04: Stopping LAA-VEEAM01 services</div>
+            <div class="log-entry info"><span class="timestamp">[14:32:15]</span> LAA-HOST04: Creating VM snapshot</div>
+            <div class="log-entry warning"><span class="timestamp">[14:35:42]</span> LAA-HOST04: Download in progress - KB5030211 (657MB)</div>
+            <div class="log-entry info"><span class="timestamp">[14:42:18]</span> LAA-HOST04: Installing updates (2 of 3)</div>
+        </div>
+    </div>
+    
+    <!-- Panel des propriétés -->
+    <div class="properties-panel">
+        <div class="properties-header">🔧 Task Properties</div>
+        
+        <div class="property-group">
+            <div class="property-label">Task Name:</div>
+            <div class="property-value">LAA-HOST04 Update</div>
+        </div>
+        
+        <div class="property-group">
+            <div class="property-label">Status:</div>
+            <div class="property-value">Executing</div>
+        </div>
+        
+        <div class="property-group">
+            <div class="property-label">Host:</div>
+            <div class="property-value">LAA-HOST04.syaga.local</div>
+        </div>
+        
+        <div class="property-group">
+            <div class="property-label">VM:</div>
+            <div class="property-value">LAA-VEEAM01</div>
+        </div>
+        
+        <div class="property-group">
+            <div class="property-label">Updates:</div>
+            <div class="property-value">KB5030211, KB5030214</div>
+        </div>
+        
+        <div class="property-group">
+            <div class="property-label">Duration:</div>
+            <div class="property-value">45 minutes</div>
+        </div>
+        
+        <div class="property-group">
+            <div class="property-label">Progress:</div>
+            <div class="property-value">45% (22min elapsed)</div>
+        </div>
+        
+        <div class="property-group">
+            <div class="property-label">Constraints:</div>
+            <div class="property-value">No replication available</div>
+        </div>
+        
+        <div class="property-group">
+            <div class="property-label">Pre-Actions:</div>
+            <div class="property-value">Pause Veeam jobs, VM snapshot</div>
+        </div>
+        
+        <div class="property-group">
+            <div class="property-label">Post-Actions:</div>
+            <div class="property-value">Test backup jobs, restart services</div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        let isExecuting = false;
+        let selectedTask = null;
+        
+        // Configuration du workflow LAA
+        const workflow = {
+            steps: [
+                {
+                    id: 'pre-agent',
+                    name: 'Pre-Agent Validation',
+                    icon: '🤖',
+                    host: 'All Hosts',
+                    duration: 300,
+                    actions: ['Validate replication status', 'Pause Veeam jobs', 'Create snapshots'],
+                    status: 'completed'
+                },
+                {
+                    id: 'host04-update',
+                    name: 'LAA-HOST04 Update',
+                    icon: '🖥️',
+                    host: 'LAA-HOST04',
+                    vm: 'LAA-VEEAM01',
+                    duration: 2700,
+                    actions: ['Stop Veeam services', 'Download updates', 'Install KB patches', 'Reboot if needed'],
+                    status: 'executing',
+                    progress: 45,
+                    updates: ['KB5030211', 'KB5030214'],
+                    constraint: 'No replication available'
+                },
+                {
+                    id: 'host02-update',
+                    name: 'LAA-HOST02 Update',
+                    icon: '🖥️',
+                    host: 'LAA-HOST02',
+                    vm: 'LAA-RDS',
+                    duration: 1800,
+                    actions: ['Migrate VM to HOST01', 'Update host', 'Migrate back', 'Test RDS services'],
+                    status: 'pending'
+                },
+                {
+                    id: 'host01-update',
+                    name: 'LAA-HOST01 Update',
+                    icon: '🖥️',
+                    host: 'LAA-HOST01',
+                    vm: 'LAA-DC',
+                    duration: 1500,
+                    actions: ['Migrate DC to HOST03', 'Update host', 'Migrate back', 'Verify AD services'],
+                    status: 'pending'
+                },
+                {
+                    id: 'host03-update',
+                    name: 'LAA-HOST03 Update',
+                    icon: '🖥️',
+                    host: 'LAA-HOST03',
+                    vm: 'LAA-SQL',
+                    duration: 2100,
+                    actions: ['Backup SQL', 'Migrate to HOST01', 'Update host', 'Migrate back', 'Test SQL'],
+                    status: 'pending'
+                },
+                {
+                    id: 'post-agent',
+                    name: 'Post-Agent Validation',
+                    icon: '🤖',
+                    host: 'All Hosts',
+                    duration: 600,
+                    actions: ['Resume Veeam jobs', 'Test all services', 'Generate report'],
+                    status: 'pending'
+                }
+            ]
+        };
+        
+        // Fonction d'exécution principale
+        function executePattern() {
+            if (isExecuting) {
+                addLog('warning', 'Pattern execution already in progress');
+                return;
+            }
+            
+            isExecuting = true;
+            addLog('info', 'ATLAS Pattern execution started for LAA infrastructure');
+            addLog('info', 'Total estimated duration: 2h 15min for 4 hosts');
+            
+            // Activer la première connexion active
+            document.getElementById('conn1').classList.add('active');
+            
+            // Simuler la progression
+            simulateExecution();
+        }
+        
+        function simulateExecution() {
+            const steps = [
+                {
+                    delay: 3000,
+                    actions: () => {
+                        completeStep('pre-agent');
+                        startStep('host04-update');
+                        updateServerStatus('server-host04', 'Updating...', true);
+                        addLog('info', 'LAA-HOST04: Starting update sequence');
+                        addLog('info', 'LAA-HOST04: LAA-VEEAM01 VM services stopped');
+                    }
+                },
+                {
+                    delay: 8000,
+                    actions: () => {
+                        addLog('info', 'LAA-HOST04: Downloading KB5030211 (657MB)');
+                        updateTaskProgress('host04-update', 25);
+                    }
+                },
+                {
+                    delay: 15000,
+                    actions: () => {
+                        addLog('success', 'LAA-HOST04: KB5030211 installed successfully');
+                        addLog('info', 'LAA-HOST04: Installing KB5030214');
+                        updateTaskProgress('host04-update', 70);
+                    }
+                },
+                {
+                    delay: 22000,
+                    actions: () => {
+                        completeStep('host04-update');
+                        startStep('host02-update');
+                        updateServerStatus('server-host04', 'Updated ✅', false);
+                        updateServerStatus('server-host02', 'Updating...', true);
+                        
+                        // Animation des connexions
+                        document.getElementById('conn1').classList.remove('active');
+                        document.getElementById('conn1').classList.add('completed');
+                        document.getElementById('conn2').classList.add('active');
+                        
+                        addLog('success', 'LAA-HOST04: Update completed successfully');
+                        addLog('info', 'LAA-HOST02: Starting Live Migration for LAA-RDS');
+                    }
+                },
+                {
+                    delay: 30000,
+                    actions: () => {
+                        addLog('info', 'LAA-HOST02: LAA-RDS migrated to LAA-HOST01');
+                        addLog('info', 'LAA-HOST02: Installing updates');
+                        updateVMStatus('LAA-RDS', 'replicating');
+                    }
+                },
+                {
+                    delay: 45000,
+                    actions: () => {
+                        completeStep('host02-update');
+                        startStep('host01-update');
+                        updateServerStatus('server-host02', 'Updated ✅', false);
+                        updateServerStatus('server-host01', 'Updating...', true);
+                        
+                        document.getElementById('conn2').classList.remove('active');
+                        document.getElementById('conn2').classList.add('completed');
+                        document.getElementById('conn3').classList.add('active');
+                        
+                        addLog('success', 'LAA-HOST02: Update completed, LAA-RDS migrated back');
+                        addLog('info', 'LAA-HOST01: Starting DC migration sequence');
+                    }
+                },
+                {
+                    delay: 60000,
+                    actions: () => {
+                        completeStep('host01-update');
+                        startStep('host03-update');
+                        updateServerStatus('server-host01', 'Updated ✅', false);
+                        updateServerStatus('server-host03', 'Updating...', true);
+                        
+                        document.getElementById('conn3').classList.remove('active');
+                        document.getElementById('conn3').classList.add('completed');
+                        document.getElementById('conn4').classList.add('active');
+                        
+                        addLog('success', 'LAA-HOST01: DC updated successfully');
+                        addLog('info', 'LAA-HOST03: Starting SQL migration and update');
+                    }
+                },
+                {
+                    delay: 80000,
+                    actions: () => {
+                        completeStep('host03-update');
+                        startStep('post-agent');
+                        updateServerStatus('server-host03', 'Updated ✅', false);
+                        
+                        document.getElementById('conn4').classList.remove('active');
+                        document.getElementById('conn4').classList.add('completed');
+                        document.getElementById('conn5').classList.add('active');
+                        
+                        addLog('success', 'LAA-HOST03: SQL server updated successfully');
+                        addLog('info', 'Post-Agent: Starting final validation');
+                    }
+                },
+                {
+                    delay: 90000,
+                    actions: () => {
+                        completeStep('post-agent');
+                        document.getElementById('conn5').classList.remove('active');
+                        document.getElementById('conn5').classList.add('completed');
+                        
+                        addLog('success', 'Post-Agent: All services validated');
+                        addLog('success', 'ATLAS Pattern execution completed successfully!');
+                        addLog('info', 'Total execution time: 1h 32min (23min faster than estimated)');
+                        
+                        isExecuting = false;
+                        updateProgressPanel();
+                    }
+                }
+            ];
+            
+            steps.forEach(step => {
+                setTimeout(step.actions, step.delay);
+            });
+        }
+        
+        function completeStep(stepId) {
+            const taskBox = document.querySelector(`[onclick="selectTask('${stepId}')"]`);
+            if (taskBox) {
+                taskBox.classList.remove('executing', 'pending');
+                taskBox.classList.add('completed');
+            }
+            
+            // Mettre à jour le workflow
+            const step = workflow.steps.find(s => s.id === stepId);
+            if (step) {
+                step.status = 'completed';
+                step.progress = 100;
+            }
+        }
+        
+        function startStep(stepId) {
+            const taskBox = document.querySelector(`[onclick="selectTask('${stepId}')"]`);
+            if (taskBox) {
+                taskBox.classList.remove('pending');
+                taskBox.classList.add('executing');
+            }
+            
+            // Mettre à jour le workflow
+            const step = workflow.steps.find(s => s.id === stepId);
+            if (step) {
+                step.status = 'executing';
+                step.progress = 0;
+            }
+        }
+        
+        function updateTaskProgress(stepId, progress) {
+            const step = workflow.steps.find(s => s.id === stepId);
+            if (step) {
+                step.progress = progress;
+                updateProgressPanel();
+            }
+        }
+        
+        function updateServerStatus(serverId, status, active) {
+            const server = document.getElementById(serverId);
+            if (server) {
+                server.querySelector('.server-status').textContent = status;
+                if (active) {
+                    server.classList.add('active');
+                } else {
+                    server.classList.remove('active');
+                }
+            }
+        }
+        
+        function updateVMStatus(vmName, status) {
+            const vmItems = document.querySelectorAll('.vm-item');
+            vmItems.forEach(item => {
+                if (item.textContent.includes(vmName)) {
+                    if (status === 'replicating') {
+                        item.classList.add('replicating');
+                    } else {
+                        item.classList.remove('replicating');
+                    }
+                }
+            });
+        }
+        
+        function addLog(type, message) {
+            const logsPanel = document.getElementById('logs');
+            const timestamp = new Date().toTimeString().split(' ')[0];
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            logsPanel.appendChild(logEntry);
+            logsPanel.scrollTop = logsPanel.scrollHeight;
+        }
+        
+        function selectTask(taskId) {
+            selectedTask = taskId;
+            const step = workflow.steps.find(s => s.id === taskId);
+            if (step) {
+                updatePropertiesPanel(step);
+            }
+            
+            // Highlight selected task
+            document.querySelectorAll('.task-box').forEach(box => {
+                box.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            });
+            
+            const selectedBox = document.querySelector(`[onclick="selectTask('${taskId}')"]`);
+            if (selectedBox) {
+                selectedBox.style.boxShadow = '0 0 0 3px #ff8c00';
+            }
+        }
+        
+        function updatePropertiesPanel(step) {
+            const panel = document.querySelector('.properties-panel');
+            panel.innerHTML = `
+                <div class="properties-header">🔧 Task Properties</div>
+                
+                <div class="property-group">
+                    <div class="property-label">Task Name:</div>
+                    <div class="property-value">${step.name}</div>
+                </div>
+                
+                <div class="property-group">
+                    <div class="property-label">Status:</div>
+                    <div class="property-value">${step.status.charAt(0).toUpperCase() + step.status.slice(1)}</div>
+                </div>
+                
+                <div class="property-group">
+                    <div class="property-label">Host:</div>
+                    <div class="property-value">${step.host}</div>
+                </div>
+                
+                ${step.vm ? `
+                <div class="property-group">
+                    <div class="property-label">VM:</div>
+                    <div class="property-value">${step.vm}</div>
+                </div>
+                ` : ''}
+                
+                ${step.updates ? `
+                <div class="property-group">
+                    <div class="property-label">Updates:</div>
+                    <div class="property-value">${step.updates.join(', ')}</div>
+                </div>
+                ` : ''}
+                
+                <div class="property-group">
+                    <div class="property-label">Duration:</div>
+                    <div class="property-value">${Math.floor(step.duration / 60)} minutes</div>
+                </div>
+                
+                ${step.progress !== undefined ? `
+                <div class="property-group">
+                    <div class="property-label">Progress:</div>
+                    <div class="property-value">${step.progress}%</div>
+                </div>
+                ` : ''}
+                
+                ${step.constraint ? `
+                <div class="property-group">
+                    <div class="property-label">Constraints:</div>
+                    <div class="property-value">${step.constraint}</div>
+                </div>
+                ` : ''}
+                
+                <div class="property-group">
+                    <div class="property-label">Actions:</div>
+                    <div class="property-value">${step.actions.join(', ')}</div>
+                </div>
+            `;
+        }
+        
+        function updateProgressPanel() {
+            const completedSteps = workflow.steps.filter(s => s.status === 'completed').length;
+            const executingSteps = workflow.steps.filter(s => s.status === 'executing');
+            const pendingSteps = workflow.steps.filter(s => s.status === 'pending').length;
+            
+            const progressDetails = document.querySelector('.progress-details');
+            progressDetails.innerHTML = `
+                <div class="progress-item">
+                    <div class="progress-icon success"></div>
+                    <div class="progress-text">${completedSteps} tasks completed</div>
+                </div>
+                ${executingSteps.length > 0 ? `
+                <div class="progress-item">
+                    <div class="progress-icon warning"></div>
+                    <div class="progress-text">${executingSteps[0].name} in progress (${executingSteps[0].progress || 0}%)</div>
+                </div>
+                ` : ''}
+                <div class="progress-item">
+                    <div class="progress-icon pending"></div>
+                    <div class="progress-text">${pendingSteps} tasks remaining</div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-icon ${isExecuting ? 'warning' : 'success'}"></div>
+                    <div class="progress-text">${isExecuting ? 'Execution in progress' : 'Ready for execution'}</div>
+                </div>
+            `;
+        }
+        
+        function validatePattern() {
+            addLog('info', 'Pattern validation started');
+            addLog('info', 'Checking Hyper-V replication status...');
+            setTimeout(() => {
+                addLog('success', 'All Hyper-V replications healthy');
+                addLog('success', 'Veeam backup jobs operational');
+                addLog('success', 'All hosts accessible via WinRM');
+                addLog('success', 'Pattern validation completed successfully');
+            }, 2000);
+        }
+        
+        function debugPattern() {
+            addLog('info', 'Debug mode enabled');
+            addLog('info', 'Detailed logging activated');
+            addLog('info', 'Constraint analysis mode: ON');
+            
+            // Afficher les contraintes détectées
+            setTimeout(() => {
+                addLog('warning', 'DEBUG: LAA-VEEAM01 has no replication (by design)');
+                addLog('info', 'DEBUG: Scheduled backup jobs at 23:00 daily');
+                addLog('info', 'DEBUG: RDS sessions will be migrated during HOST02 update');
+                addLog('info', 'DEBUG: Domain Controller failover configured');
+            }, 1000);
+        }
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            // Sélectionner la première tâche en cours
+            selectTask('host04-update');
+            updateProgressPanel();
+            
+            // Animation des serveurs actifs
+            setInterval(() => {
+                const activeServers = document.querySelectorAll('.server-box.active');
+                activeServers.forEach(server => {
+                    server.style.borderColor = server.style.borderColor === 'rgb(255, 140, 0)' ? '#ff8c00' : '#ff6600';
+                });
+            }, 800);
+        });
+    </script>
+</body>
+</html>

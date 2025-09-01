@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 ATLAS v0.23 - Centre d'Orchestration Intelligent</title>
+    
+    <!-- MSAL pour Azure AD Auth -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        /* Container principal */
+        .dashboard-container {
+            max-width: 2400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header principal */
+        .main-header {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-title h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #5f27cd 0%, #00d2d3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .version-badge {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(46, 213, 115, 0.1);
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #2ed573;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+        
+        /* Navigation tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 5px;
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 12px 20px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .nav-tab:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+        }
+        
+        .nav-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .nav-tab-icon {
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+            display: block;
+        }
+        
+        /* Contenu principal */
+        .content-area {
+            display: none;
+        }
+        
+        .content-area.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Grille de métriques */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .metric-label {
+            font-size: 0.85rem;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 5px;
+        }
+        
+        .metric-trend {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .trend-up {
+            background: rgba(46, 213, 115, 0.15);
+            color: #2ed573;
+        }
+        
+        .trend-down {
+            background: rgba(255, 107, 107, 0.15);
+            color: #ff6b6b;
+        }
+        
+        /* Section serveurs */
+        .servers-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .servers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .server-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .server-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+        
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .server-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .server-status {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-ok {
+            background: rgba(46, 213, 115, 0.15);
+            color: #2ed573;
+        }
+        
+        .status-warning {
+            background: rgba(254, 202, 87, 0.15);
+            color: #f39c12;
+        }
+        
+        .status-critical {
+            background: rgba(255, 107, 107, 0.15);
+            color: #ff6b6b;
+        }
+        
+        .server-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .server-metric {
+            text-align: center;
+        }
+        
+        .server-metric-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .server-metric-label {
+            font-size: 0.7rem;
+            color: #999;
+            text-transform: uppercase;
+        }
+        
+        /* Actions rapides */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .action-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .action-btn:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+        }
+        
+        .action-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .action-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .action-desc {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        /* Timeline intégrée */
+        .timeline-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            height: 400px;
+            position: relative;
+        }
+        
+        .timeline-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+        }
+        
+        /* Console de logs */
+        .log-console {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .log-time {
+            color: #64748b;
+            margin-right: 10px;
+        }
+        
+        .log-info { color: #60a5fa; }
+        .log-success { color: #34d399; }
+        .log-warning { color: #fbbf24; }
+        .log-error { color: #f87171; }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            position: relative;
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 15px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-close:hover {
+            color: #333;
+        }
+        
+        /* Boutons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #2ed573 0%, #26de81 100%);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .nav-tabs {
+                flex-wrap: wrap;
+            }
+            
+            .nav-tab {
+                min-width: 150px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .servers-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header principal -->
+        <div class="main-header">
+            <div class="header-title">
+                <h1>🚀 ATLAS Centre d'Orchestration</h1>
+                <span class="version-badge">v0.23 TRINITÉ</span>
+            </div>
+            <div class="header-controls">
+                <div class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span>Connecté à SharePoint</span>
+                </div>
+                <button class="btn btn-primary" onclick="showSettings()">⚙️ Paramètres</button>
+            </div>
+        </div>
+        
+        <!-- Navigation tabs -->
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="switchTab('overview')">
+                <span class="nav-tab-icon">📊</span>
+                Vue d'ensemble
+            </div>
+            <div class="nav-tab" onclick="switchTab('orchestration')">
+                <span class="nav-tab-icon">🎯</span>
+                Orchestration
+            </div>
+            <div class="nav-tab" onclick="switchTab('timeline')">
+                <span class="nav-tab-icon">📅</span>
+                Timeline CAU
+            </div>
+            <div class="nav-tab" onclick="switchTab('windows-update')">
+                <span class="nav-tab-icon">🔄</span>
+                Windows Update
+            </div>
+            <div class="nav-tab" onclick="switchTab('veeam')">
+                <span class="nav-tab-icon">🛡️</span>
+                Veeam Backup
+            </div>
+            <div class="nav-tab" onclick="switchTab('hyperv')">
+                <span class="nav-tab-icon">💻</span>
+                Hyper-V
+            </div>
+            <div class="nav-tab" onclick="switchTab('ia-patterns')">
+                <span class="nav-tab-icon">🧠</span>
+                Patterns IA
+            </div>
+            <div class="nav-tab" onclick="switchTab('planning')">
+                <span class="nav-tab-icon">📆</span>
+                Planification
+            </div>
+        </div>
+        
+        <!-- Vue d'ensemble -->
+        <div id="overview" class="content-area active">
+            <!-- Métriques globales -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value">127</div>
+                    <div class="metric-label">Serveurs Gérés</div>
+                    <span class="metric-trend trend-up">↑ 12% ce mois</span>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">98.7%</div>
+                    <div class="metric-label">Disponibilité</div>
+                    <span class="metric-trend trend-up">↑ 0.3%</span>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">47</div>
+                    <div class="metric-label">MAJ en attente</div>
+                    <span class="metric-trend trend-down">↓ 23 depuis hier</span>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">7.5h</div>
+                    <div class="metric-label">Temps Orchestration</div>
+                    <span class="metric-trend trend-up">Optimisé</span>
+                </div>
+            </div>
+            
+            <!-- Actions rapides -->
+            <div class="quick-actions">
+                <div class="action-btn" onclick="startGlobalOrchestration()">
+                    <div class="action-icon">🚀</div>
+                    <div class="action-title">Orchestration Globale</div>
+                    <div class="action-desc">Lancer l'orchestration complète</div>
+                </div>
+                <div class="action-btn" onclick="analyzeConstraints()">
+                    <div class="action-icon">🧠</div>
+                    <div class="action-title">Analyse IA</div>
+                    <div class="action-desc">Trouver fenêtres optimales</div>
+                </div>
+                <div class="action-btn" onclick="showTimeline()">
+                    <div class="action-icon">📊</div>
+                    <div class="action-title">Timeline CAU</div>
+                    <div class="action-desc">Visualiser le pattern LAA</div>
+                </div>
+                <div class="action-btn" onclick="emergencyStop()">
+                    <div class="action-icon">🛑</div>
+                    <div class="action-title">Arrêt d'urgence</div>
+                    <div class="action-desc">Stopper toutes les actions</div>
+                </div>
+            </div>
+            
+            <!-- Liste des serveurs -->
+            <div class="servers-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>🖥️</span>
+                        <span>Serveurs Actifs</span>
+                    </div>
+                    <button class="btn btn-success" onclick="refreshServers()">🔄 Actualiser</button>
+                </div>
+                <div class="servers-grid" id="serversGrid">
+                    <!-- Serveurs chargés dynamiquement -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Orchestration -->
+        <div id="orchestration" class="content-area">
+            <div class="servers-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>🎯</span>
+                        <span>Orchestration Multi-Client</span>
+                    </div>
+                </div>
+                <div style="padding: 20px; text-align: center;">
+                    <h3>Pattern d'orchestration ATLAS v0.23</h3>
+                    <p style="margin: 20px 0; color: #666;">
+                        Orchestration parallèle multi-client avec pseudo-CAU.<br>
+                        100 clients × 10 serveurs = 7.5 heures au lieu de 31 jours.
+                    </p>
+                    <button class="btn btn-primary" onclick="configureOrchestration()">
+                        Configurer l'orchestration
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Timeline -->
+        <div id="timeline" class="content-area">
+            <div class="timeline-container">
+                <iframe src="timeline-cau-orchestration.html" class="timeline-iframe"></iframe>
+            </div>
+        </div>
+        
+        <!-- Windows Update -->
+        <div id="windows-update" class="content-area">
+            <div class="servers-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>🔄</span>
+                        <span>Gestion Windows Update</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="scanUpdates()">🔍 Scanner MAJ</button>
+                </div>
+                <div id="updatesList" style="padding: 20px;">
+                    <!-- Liste des mises à jour -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Veeam -->
+        <div id="veeam" class="content-area">
+            <div class="servers-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>🛡️</span>
+                        <span>Veeam Backup & Replication</span>
+                    </div>
+                </div>
+                <div id="veeamJobs" style="padding: 20px;">
+                    <!-- Jobs Veeam -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hyper-V -->
+        <div id="hyperv" class="content-area">
+            <div class="servers-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>💻</span>
+                        <span>Hyper-V Management</span>
+                    </div>
+                </div>
+                <div id="hypervVMs" style="padding: 20px;">
+                    <!-- VMs Hyper-V -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Patterns IA -->
+        <div id="ia-patterns" class="content-area">
+            <div class="servers-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>🧠</span>
+                        <span>Analyse IA Claude</span>
+                    </div>
+                </div>
+                <div style="padding: 20px;">
+                    <h3>Trinité ATLAS</h3>
+                    <ol style="line-height: 2; color: #666;">
+                        <li><strong>Agents PowerShell</strong> : Collectent toutes les données</li>
+                        <li><strong>Claude IA</strong> : Analyse 1000+ contraintes</li>
+                        <li><strong>Expertise Humaine</strong> : Valide et ajuste</li>
+                    </ol>
+                    <button class="btn btn-primary" onclick="runAIAnalysis()">
+                        Lancer analyse IA
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Planification -->
+        <div id="planning" class="content-area">
+            <div class="servers-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>📆</span>
+                        <span>Planification Intelligente</span>
+                    </div>
+                </div>
+                <div id="planningCalendar" style="padding: 20px;">
+                    <!-- Calendrier de planification -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Console de logs -->
+        <div class="log-console" id="logConsole">
+            <div class="log-entry log-info">
+                <span class="log-time">09:42:15</span>
+                Système ATLAS v0.23 initialisé avec succès
+            </div>
+            <div class="log-entry log-success">
+                <span class="log-time">09:42:16</span>
+                Connexion SharePoint établie
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Titre</h2>
+            </div>
+            <div id="modalBody">
+                <!-- Contenu dynamique -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // État global
+        let currentTab = 'overview';
+        let servers = [];
+        let isAuthenticated = false;
+        
+        // MSAL Configuration
+        const msalConfig = {
+            auth: {
+                clientId: "f66a8c6c-1037-41b8-be3c-4f6e67c1f49e",
+                authority: "https://login.microsoftonline.com/organizations",
+                redirectUri: window.location.origin
+            }
+        };
+        
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        
+        // Switch tabs
+        function switchTab(tabName) {
+            // Update tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.nav-tab').classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.content-area').forEach(area => {
+                area.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            
+            currentTab = tabName;
+            addLog('info', `Navigation vers : ${tabName}`);
+        }
+        
+        // Logging
+        function addLog(type, message) {
+            const console = document.getElementById('logConsole');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<span class="log-time">${time}</span>${message}`;
+            console.appendChild(entry);
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        // Actions
+        function startGlobalOrchestration() {
+            addLog('info', '🚀 Démarrage orchestration globale...');
+            showModal('Orchestration Globale', `
+                <p>Lancement de l'orchestration pour 127 serveurs.</p>
+                <p>Temps estimé : <strong>7.5 heures</strong></p>
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="confirmOrchestration()">
+                        Confirmer
+                    </button>
+                    <button class="btn btn-danger" onclick="closeModal()">
+                        Annuler
+                    </button>
+                </div>
+            `);
+        }
+        
+        function analyzeConstraints() {
+            addLog('info', '🧠 Analyse IA des contraintes...');
+            showModal('Analyse IA Claude', `
+                <p>Analyse de 1000+ contraintes pour trouver les fenêtres optimales.</p>
+                <ul style="margin: 20px 0; line-height: 1.8;">
+                    <li>Jobs SQL Server</li>
+                    <li>Sauvegardes Veeam</li>
+                    <li>Réplications Hyper-V</li>
+                    <li>Processus métier</li>
+                </ul>
+                <button class="btn btn-primary" onclick="runAIAnalysis()">
+                    Lancer l'analyse
+                </button>
+            `);
+        }
+        
+        function showTimeline() {
+            switchTab('timeline');
+        }
+        
+        function emergencyStop() {
+            addLog('error', '🛑 ARRÊT D\'URGENCE ACTIVÉ');
+            showModal('Arrêt d\'urgence', `
+                <p style="color: #ff6b6b; font-weight: bold;">
+                    Arrêt de toutes les opérations en cours !
+                </p>
+                <button class="btn btn-danger" onclick="confirmEmergencyStop()">
+                    Confirmer l'arrêt
+                </button>
+            `);
+        }
+        
+        function refreshServers() {
+            addLog('info', '🔄 Actualisation des serveurs...');
+            loadServers();
+        }
+        
+        // Modal
+        function showModal(title, content) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalBody').innerHTML = content;
+            document.getElementById('modal').style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+        
+        // Chargement des serveurs
+        function loadServers() {
+            const grid = document.getElementById('serversGrid');
+            
+            // Serveurs de démonstration
+            const demoServers = [
+                { name: 'SYAGA-HOST01', status: 'ok', cpu: 23, ram: 45, updates: 0 },
+                { name: 'SYAGA-HOST02', status: 'warning', cpu: 67, ram: 78, updates: 3 },
+                { name: 'SYAGA-HOST03', status: 'ok', cpu: 12, ram: 34, updates: 0 },
+                { name: 'SYAGA-HOST04', status: 'critical', cpu: 89, ram: 92, updates: 7 },
+                { name: 'SYAGA-VEEAM01', status: 'ok', cpu: 45, ram: 56, updates: 1 },
+                { name: 'SYAGA-SQL01', status: 'warning', cpu: 78, ram: 85, updates: 2 }
+            ];
+            
+            grid.innerHTML = '';
+            demoServers.forEach(server => {
+                const card = document.createElement('div');
+                card.className = 'server-card';
+                card.innerHTML = `
+                    <div class="server-header">
+                        <div class="server-name">${server.name}</div>
+                        <div class="server-status status-${server.status}">
+                            ${server.status.toUpperCase()}
+                        </div>
+                    </div>
+                    <div class="server-metrics">
+                        <div class="server-metric">
+                            <div class="server-metric-value">${server.cpu}%</div>
+                            <div class="server-metric-label">CPU</div>
+                        </div>
+                        <div class="server-metric">
+                            <div class="server-metric-value">${server.ram}%</div>
+                            <div class="server-metric-label">RAM</div>
+                        </div>
+                        <div class="server-metric">
+                            <div class="server-metric-value">${server.updates}</div>
+                            <div class="server-metric-label">MAJ</div>
+                        </div>
+                    </div>
+                `;
+                card.onclick = () => showServerDetails(server);
+                grid.appendChild(card);
+            });
+            
+            addLog('success', `✅ ${demoServers.length} serveurs chargés`);
+        }
+        
+        function showServerDetails(server) {
+            showModal(`Détails : ${server.name}`, `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <strong>État:</strong> ${server.status}<br>
+                        <strong>CPU:</strong> ${server.cpu}%<br>
+                        <strong>RAM:</strong> ${server.ram}%<br>
+                        <strong>MAJ en attente:</strong> ${server.updates}
+                    </div>
+                    <div>
+                        <strong>OS:</strong> Windows Server 2022<br>
+                        <strong>Rôle:</strong> Hyper-V Host<br>
+                        <strong>Cluster:</strong> SYAGA-CLUSTER-01<br>
+                        <strong>Dernier contact:</strong> Il y a 2 min
+                    </div>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button class="btn btn-primary">🔄 Mettre à jour</button>
+                    <button class="btn btn-warning">🔁 Redémarrer</button>
+                    <button class="btn btn-success">📸 Snapshot</button>
+                </div>
+            `);
+        }
+        
+        function showSettings() {
+            showModal('Paramètres', `
+                <h3>Configuration ATLAS v0.23</h3>
+                <div style="margin: 20px 0;">
+                    <label>URL SharePoint:</label>
+                    <input type="text" value="https://syagaconsulting.sharepoint.com" 
+                           style="width: 100%; padding: 8px; margin-top: 5px;">
+                </div>
+                <div style="margin: 20px 0;">
+                    <label>Intervalle de rafraîchissement:</label>
+                    <select style="width: 100%; padding: 8px; margin-top: 5px;">
+                        <option>30 secondes</option>
+                        <option selected>2 minutes</option>
+                        <option>5 minutes</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="saveSettings()">
+                    Enregistrer
+                </button>
+            `);
+        }
+        
+        function saveSettings() {
+            addLog('success', '✅ Paramètres enregistrés');
+            closeModal();
+        }
+        
+        // Initialisation
+        window.onload = async function() {
+            addLog('info', '🚀 Initialisation ATLAS v0.23...');
+            
+            // Tentative d'authentification
+            try {
+                const accounts = await msalInstance.getAllAccounts();
+                if (accounts.length > 0) {
+                    isAuthenticated = true;
+                    addLog('success', '✅ Authentification réussie');
+                }
+            } catch (error) {
+                addLog('warning', '⚠️ Mode démonstration activé');
+            }
+            
+            // Charger les serveurs
+            loadServers();
+            
+            // Actualisation automatique
+            setInterval(() => {
+                if (currentTab === 'overview') {
+                    loadServers();
+                }
+            }, 120000); // 2 minutes
+        };
+        
+        // Fermer modal en cliquant dehors
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

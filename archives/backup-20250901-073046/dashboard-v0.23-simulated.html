@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- NO CACHE FOR DEBUG -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 ATLAS v0.23 - Smart Matrix Dashboard (SIMULATED)</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .version-badge {
+            background: #10b981;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        /* Mode Indicator */
+        .mode-indicator {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            padding: 0.75rem 1.5rem;
+            margin: 1rem 2rem;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            transition: all 0.5s ease;
+        }
+        
+        .mode-indicator.normal {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+        
+        /* Client Matrix */
+        .matrix-container {
+            padding: 1rem 2rem;
+        }
+        
+        .client-section {
+            margin-bottom: 2rem;
+            transition: all 0.5s ease;
+        }
+        
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .section-header.critical {
+            color: #ff6b6b;
+            border-color: rgba(255, 107, 107, 0.5);
+        }
+        
+        .section-header.active {
+            color: #4ade80;
+            border-color: rgba(74, 222, 128, 0.5);
+        }
+        
+        .section-header.waiting {
+            color: #94a3b8;
+            border-color: rgba(148, 163, 184, 0.5);
+        }
+        
+        /* Client Row */
+        .client-row {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: grid;
+            grid-template-columns: 150px 1fr 150px 100px;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .client-row:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .client-row.updating::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: sweep 2s linear infinite;
+        }
+        
+        @keyframes sweep {
+            to { left: 100%; }
+        }
+        
+        .client-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            position: relative;
+            height: 24px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+            border-radius: 12px;
+            position: relative;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            padding: 0 0.75rem;
+        }
+        
+        .progress-bar.warning {
+            background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+        }
+        
+        .progress-bar.critical {
+            background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+        }
+        
+        .progress-text {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+        }
+        
+        .end-time {
+            text-align: right;
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+        
+        .status-icon {
+            font-size: 1.25rem;
+        }
+        
+        /* Animations */
+        @keyframes pulse-orange {
+            0%, 100% { 
+                opacity: 1; 
+                box-shadow: 0 0 0 0 rgba(251, 146, 60, 0);
+            }
+            50% { 
+                opacity: 0.9; 
+                box-shadow: 0 0 20px 5px rgba(251, 146, 60, 0.3);
+            }
+        }
+        
+        @keyframes flash-red {
+            0%, 100% { 
+                opacity: 1; 
+                box-shadow: 0 0 30px 10px rgba(239, 68, 68, 0.5);
+            }
+            50% { 
+                opacity: 0.7; 
+                box-shadow: 0 0 40px 15px rgba(239, 68, 68, 0.7);
+            }
+        }
+        
+        .client-row.warning {
+            animation: pulse-orange 2s ease-in-out infinite;
+        }
+        
+        .client-row.critical {
+            animation: flash-red 1s ease-in-out infinite;
+        }
+        
+        /* Global Controls */
+        .global-controls {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-radius: 12px;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-start {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-pause {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-stop {
+            background: #ef4444;
+            color: white;
+        }
+        
+        /* Stats Bar */
+        .stats-bar {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.warning {
+            background: rgba(245, 158, 11, 0.9);
+        }
+        
+        .notification.error {
+            background: rgba(239, 68, 68, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <span>🚀 ATLAS v0.23</span>
+            <span class="version-badge">Smart Matrix</span>
+        </div>
+        <div class="user-info">
+            <span>sebastien.questier@syaga.fr</span>
+            <button onclick="toggleMode()" style="background: none; border: 1px solid white; color: white; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">
+                Mode: <span id="modeText">Auto</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Mode Indicator -->
+    <div class="mode-indicator" id="modeIndicator">
+        <strong>MODE:</strong> <span id="modeStatus">Initialisation...</span>
+    </div>
+    
+    <!-- Client Matrix -->
+    <div class="matrix-container" id="clientMatrix">
+        <!-- Dynamically populated -->
+    </div>
+    
+    <!-- Global Controls -->
+    <div class="global-controls">
+        <button class="control-btn btn-start" onclick="startOrchestration()">
+            <span>▶️</span>
+            <span>Start</span>
+        </button>
+        <button class="control-btn btn-pause" onclick="pauseOrchestration()">
+            <span>⏸️</span>
+            <span>Pause</span>
+        </button>
+        <button class="control-btn btn-stop" onclick="stopOrchestration()">
+            <span>🛑</span>
+            <span>Stop</span>
+        </button>
+    </div>
+    
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <span class="stat-label">Global:</span>
+            <span class="stat-value" id="globalProgress">0/0 serveurs (0%)</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">ETA:</span>
+            <span class="stat-value" id="etaTime">--:--</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Vitesse:</span>
+            <span class="stat-value" id="speed">0 serveurs/h</span>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+    
+    <div style="height: 100px;"></div> <!-- Spacer for fixed footer -->
+    
+    <script>
+        // Simulation data
+        const clients = [
+            { name: 'UAI', servers: 10, critical: false },
+            { name: 'BUQUET', servers: 8, critical: false },
+            { name: 'LAA', servers: 15, critical: false },
+            { name: 'PROVENÇALE', servers: 12, critical: false },
+            { name: 'PHARMABEST', servers: 6, critical: false },
+            { name: 'SYAGA', servers: 4, critical: false },
+            { name: 'CLIENT007', servers: 5, critical: false },
+            { name: 'CLIENT008', servers: 3, critical: false },
+            { name: 'CLIENT009', servers: 7, critical: false },
+            { name: 'CLIENT010', servers: 4, critical: false }
+        ];
+        
+        let isRunning = false;
+        let isPaused = false;
+        let totalServers = 0;
+        let completedServers = 0;
+        let startTime = null;
+        let updateInterval = null;
+        
+        // Initialize dashboard
+        function initDashboard() {
+            totalServers = clients.reduce((sum, client) => sum + client.servers, 0);
+            clients.forEach(client => {
+                client.progress = 0;
+                client.status = 'waiting';
+                client.endTime = '--:--';
+                client.currentServer = 0;
+            });
+            renderClients();
+            updateStats();
+            showNotification('Dashboard initialisé - 10 clients, ' + totalServers + ' serveurs', 'success');
+        }
+        
+        // Render clients
+        function renderClients() {
+            const matrix = document.getElementById('clientMatrix');
+            const critical = clients.filter(c => c.status === 'critical');
+            const active = clients.filter(c => c.status === 'active' || c.status === 'completed');
+            const waiting = clients.filter(c => c.status === 'waiting');
+            
+            let html = '';
+            
+            // Critical section
+            if (critical.length > 0) {
+                html += `
+                    <div class="client-section">
+                        <div class="section-header critical">
+                            <span>🔥</span>
+                            <span>CRITIQUES (${critical.length} clients)</span>
+                        </div>`;
+                critical.forEach(client => html += renderClientRow(client));
+                html += '</div>';
+            }
+            
+            // Active section
+            if (active.length > 0) {
+                html += `
+                    <div class="client-section">
+                        <div class="section-header active">
+                            <span>✅</span>
+                            <span>EN COURS (${active.length} clients)</span>
+                        </div>`;
+                active.forEach(client => html += renderClientRow(client));
+                html += '</div>';
+            }
+            
+            // Waiting section
+            if (waiting.length > 0) {
+                html += `
+                    <div class="client-section">
+                        <div class="section-header waiting">
+                            <span>⏸️</span>
+                            <span>EN ATTENTE (${waiting.length} clients)</span>
+                        </div>`;
+                waiting.forEach(client => html += renderClientRow(client));
+                html += '</div>';
+            }
+            
+            matrix.innerHTML = html;
+            updateModeIndicator();
+        }
+        
+        // Render single client row
+        function renderClientRow(client) {
+            const progressPercent = Math.round(client.progress);
+            let rowClass = 'client-row';
+            let barClass = 'progress-bar';
+            let statusIcon = '⏳';
+            let progressText = progressPercent + '%';
+            
+            if (client.status === 'active') {
+                rowClass += ' updating';
+                statusIcon = '🔄';
+                if (client.currentServer > 0) {
+                    progressText = `${progressPercent}% - Serveur ${client.currentServer}/${client.servers}`;
+                }
+            } else if (client.status === 'completed') {
+                statusIcon = '✅';
+                progressText = '100% - Terminé';
+            } else if (client.status === 'critical') {
+                rowClass += ' critical';
+                barClass += ' critical';
+                statusIcon = '🔥';
+                progressText = `${progressPercent}% - ERREUR CRITIQUE!`;
+            } else if (client.progress > 70 && client.status === 'active') {
+                rowClass += ' warning';
+                barClass += ' warning';
+                statusIcon = '⚠️';
+                progressText = `${progressPercent}% - Ralentissement`;
+            }
+            
+            return `
+                <div class="${rowClass}" onclick="clientDetails('${client.name}')">
+                    <div class="client-name">${client.name}</div>
+                    <div class="progress-container">
+                        <div class="${barClass}" style="width: ${progressPercent}%;">
+                            <span class="progress-text">${progressText}</span>
+                        </div>
+                    </div>
+                    <div class="end-time">${client.endTime}</div>
+                    <div class="status-icon">${statusIcon}</div>
+                </div>`;
+        }
+        
+        // Start orchestration
+        function startOrchestration() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            isPaused = false;
+            startTime = Date.now();
+            
+            // Reset completed clients
+            clients.forEach(client => {
+                if (client.status === 'completed') {
+                    client.progress = 0;
+                    client.status = 'waiting';
+                    client.currentServer = 0;
+                }
+            });
+            
+            // Start first 3 clients
+            clients.slice(0, 3).forEach(client => {
+                client.status = 'active';
+            });
+            
+            showNotification('🚀 Orchestration démarrée!', 'success');
+            
+            // Update loop
+            updateInterval = setInterval(() => {
+                if (!isPaused) {
+                    updateSimulation();
+                }
+            }, 1000);
+            
+            renderClients();
+        }
+        
+        // Pause orchestration
+        function pauseOrchestration() {
+            if (!isRunning) return;
+            isPaused = !isPaused;
+            showNotification(isPaused ? '⏸️ Orchestration en pause' : '▶️ Orchestration reprise', 'warning');
+        }
+        
+        // Stop orchestration
+        function stopOrchestration() {
+            if (!isRunning) return;
+            
+            isRunning = false;
+            isPaused = false;
+            clearInterval(updateInterval);
+            
+            clients.forEach(client => {
+                if (client.status === 'active') {
+                    client.status = 'waiting';
+                }
+            });
+            
+            showNotification('🛑 Orchestration arrêtée', 'error');
+            renderClients();
+        }
+        
+        // Update simulation
+        function updateSimulation() {
+            let hasChanges = false;
+            completedServers = 0;
+            
+            // Simulate random critical issue (1% chance)
+            if (Math.random() < 0.01) {
+                const activeClients = clients.filter(c => c.status === 'active');
+                if (activeClients.length > 0) {
+                    const randomClient = activeClients[Math.floor(Math.random() * activeClients.length)];
+                    randomClient.status = 'critical';
+                    showNotification(`🔥 ${randomClient.name}: Erreur critique détectée!`, 'error');
+                    hasChanges = true;
+                }
+            }
+            
+            // Update active clients
+            clients.forEach(client => {
+                if (client.status === 'active') {
+                    // Progress speed: 2-5% per second
+                    const speed = 2 + Math.random() * 3;
+                    client.progress = Math.min(100, client.progress + speed);
+                    client.currentServer = Math.ceil((client.progress / 100) * client.servers);
+                    
+                    // Calculate ETA
+                    if (client.progress > 0 && client.progress < 100) {
+                        const remainingPercent = 100 - client.progress;
+                        const secondsRemaining = remainingPercent / speed;
+                        const eta = new Date(Date.now() + secondsRemaining * 1000);
+                        client.endTime = eta.toTimeString().slice(0, 5);
+                    }
+                    
+                    // Complete client
+                    if (client.progress >= 100) {
+                        client.status = 'completed';
+                        client.progress = 100;
+                        client.endTime = 'Terminé';
+                        showNotification(`✅ ${client.name}: Migration terminée!`, 'success');
+                        
+                        // Start next waiting client
+                        const nextClient = clients.find(c => c.status === 'waiting');
+                        if (nextClient) {
+                            nextClient.status = 'active';
+                            showNotification(`🚀 ${nextClient.name}: Démarrage...`, 'success');
+                        }
+                    }
+                    hasChanges = true;
+                }
+                
+                // Fix critical after some time
+                if (client.status === 'critical' && Math.random() < 0.1) {
+                    client.status = 'active';
+                    showNotification(`✅ ${client.name}: Problème résolu`, 'success');
+                    hasChanges = true;
+                }
+                
+                // Count completed servers
+                completedServers += Math.floor((client.progress / 100) * client.servers);
+            });
+            
+            if (hasChanges) {
+                renderClients();
+                updateStats();
+            }
+            
+            // Check if all done
+            if (clients.every(c => c.status === 'completed')) {
+                stopOrchestration();
+                showNotification('🎉 Orchestration terminée avec succès!', 'success');
+            }
+        }
+        
+        // Update statistics
+        function updateStats() {
+            const globalPercent = Math.round((completedServers / totalServers) * 100);
+            document.getElementById('globalProgress').textContent = 
+                `${completedServers}/${totalServers} serveurs (${globalPercent}%)`;
+            
+            // Calculate ETA
+            if (isRunning && completedServers > 0) {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const rate = completedServers / elapsed;
+                const remaining = totalServers - completedServers;
+                const etaSeconds = remaining / rate;
+                const etaDate = new Date(Date.now() + etaSeconds * 1000);
+                document.getElementById('etaTime').textContent = etaDate.toTimeString().slice(0, 5);
+                document.getElementById('speed').textContent = Math.round(rate * 3600) + ' serveurs/h';
+            } else {
+                document.getElementById('etaTime').textContent = '--:--';
+                document.getElementById('speed').textContent = '0 serveurs/h';
+            }
+        }
+        
+        // Update mode indicator
+        function updateModeIndicator() {
+            const indicator = document.getElementById('modeIndicator');
+            const status = document.getElementById('modeStatus');
+            const critical = clients.filter(c => c.status === 'critical').length;
+            
+            if (critical > 0) {
+                indicator.className = 'mode-indicator';
+                status.textContent = `Alertes critiques (${critical} problèmes détectés)`;
+            } else if (isRunning) {
+                indicator.className = 'mode-indicator normal';
+                status.textContent = 'Orchestration en cours - Tout va bien';
+            } else {
+                indicator.className = 'mode-indicator normal';
+                status.textContent = 'En attente de démarrage';
+            }
+        }
+        
+        // Toggle display mode
+        let displayMode = 'auto';
+        function toggleMode() {
+            const modes = ['auto', 'compact', 'detailed'];
+            const currentIndex = modes.indexOf(displayMode);
+            displayMode = modes[(currentIndex + 1) % modes.length];
+            document.getElementById('modeText').textContent = 
+                displayMode.charAt(0).toUpperCase() + displayMode.slice(1);
+            showNotification(`Mode d'affichage: ${displayMode}`, 'success');
+        }
+        
+        // Show client details
+        function clientDetails(clientName) {
+            const client = clients.find(c => c.name === clientName);
+            if (client) {
+                const details = `
+                    ${client.name}:
+                    - Serveurs: ${client.servers}
+                    - Progression: ${Math.round(client.progress)}%
+                    - État: ${client.status}
+                    - Serveur actuel: ${client.currentServer}/${client.servers}
+                `;
+                showNotification(details, 'success');
+            }
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification show';
+            if (type === 'warning') notification.classList.add('warning');
+            if (type === 'error') notification.classList.add('error');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Initialize on load
+        window.onload = () => {
+            initDashboard();
+            
+            // Auto-start after 2 seconds for demo
+            setTimeout(() => {
+                showNotification('🎬 Démarrage automatique de la simulation...', 'success');
+                setTimeout(startOrchestration, 1000);
+            }, 2000);
+        };
+    </script>
+</body>
+</html>
