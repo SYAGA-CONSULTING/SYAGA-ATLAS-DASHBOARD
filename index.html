@@ -1037,42 +1037,81 @@
         }
         
         // Display Real Servers (with agent data)
-        function displayRealServers() {
-            // DONNÉES RÉELLES DES AGENTS v0.22 AVEC PENDING UPDATES
-            const realServers = [
-                { 
-                    Hostname: 'SYAGA-HOST01', 
-                    State: 'Online', 
-                    AgentVersion: 'v0.22',
-                    AutoUpdate: true,
-                    LastUpdate: '2025-09-01 08:42', 
-                    PendingUpdates: 7, // VRAIE MÉTRIQUE v0.22
-                    CPU: 23, // VRAIE MÉTRIQUE
-                    RAM: 67, // VRAIE MÉTRIQUE
-                    DiskSpaceGB: 234, // VRAIE MÉTRIQUE
-                    LastContact: '2 min'
-                },
-                { 
-                    Hostname: 'SYAGA-VEEAM01', 
-                    State: 'Online',
-                    AgentVersion: 'v0.22',
-                    AutoUpdate: true,
-                    LastUpdate: '2025-09-01 08:40',
-                    PendingUpdates: 3, // VRAIE MÉTRIQUE v0.22
-                    CPU: 45, // VRAIE MÉTRIQUE
-                    RAM: 78, // VRAIE MÉTRIQUE
-                    DiskSpaceGB: 512, // VRAIE MÉTRIQUE
-                    LastContact: '4 min'
+        async function displayRealServers() {
+            try {
+                // CHARGER LES VRAIES DONNÉES DEPUIS SHAREPOINT
+                const token = await getAccessToken();
+                const listId = '94dc7ad4-740f-4c1f-b99c-107e01c8f70b';
+                const siteUrl = 'https://syagacons.sharepoint.com';
+                
+                const response = await fetch(`${siteUrl}/_api/web/lists(guid'${listId}')/items?$orderby=Modified desc`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json;odata=verbose'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur SharePoint: ${response.status}`);
                 }
-            ];
+                
+                const data = await response.json();
+                const realServers = data.d.results.map(item => ({
+                    Hostname: item.Hostname || item.Title,
+                    State: item.State || 'Unknown',
+                    AgentVersion: item.AgentVersion || 'N/A',
+                    AutoUpdate: false, // Manuel pour v5
+                    LastUpdate: item.LastContact ? new Date(item.LastContact).toLocaleString('fr-FR') : 'N/A',
+                    PendingUpdates: item.PendingUpdates || 0,
+                    CPU: item.CPUUsage ? item.CPUUsage.toFixed(1) : 0,
+                    RAM: item.MemoryUsage ? item.MemoryUsage.toFixed(1) : 0,
+                    DiskSpaceGB: item.DiskSpaceGB ? item.DiskSpaceGB.toFixed(1) : 0,
+                    LastContact: item.LastContact ? getTimeDiff(new Date(item.LastContact)) : 'N/A',
+                    Role: item.Role || 'Unknown' // VM/Physical/Host
+                }));
+                
+                displayServersTable(realServers);
+                
+            } catch (error) {
+                console.error('Erreur chargement SharePoint:', error);
+                addLog('error', `Erreur chargement données: ${error.message}`);
+                
+                // Données de fallback si erreur
+                const fallbackServers = [
+                    {
+                        Hostname: 'Chargement...',
+                        State: 'Unknown',
+                        AgentVersion: 'v5.0',
+                        AutoUpdate: false,
+                        LastUpdate: 'N/A',
+                        PendingUpdates: 0,
+                        CPU: 0,
+                        RAM: 0,
+                        DiskSpaceGB: 0,
+                        LastContact: 'N/A'
+                    }
+                ];
+                displayServersTable(fallbackServers);
+            }
+        }
+        
+        function getTimeDiff(date) {
+            const diff = (new Date() - date) / 1000 / 60; // en minutes
+            if (diff < 1) return 'À l\'instant';
+            if (diff < 60) return `${Math.floor(diff)} min`;
+            if (diff < 1440) return `${Math.floor(diff/60)} h`;
+            return `${Math.floor(diff/1440)} j`;
+        }
+        
+        function displayServersTable(realServers) {
             
             const tbody = document.getElementById('serversTable');
             tbody.innerHTML = realServers.map(server => `
                 <tr>
                     <td><strong>${server.Hostname}</strong></td>
                     <td class="status-${server.State === 'Online' ? 'ok' : 'warning'}">${server.State}</td>
-                    <td><span class="agent-version ${server.AgentVersion === 'v0.21' ? 'latest' : 'outdated'}">${server.AgentVersion}</span></td>
-                    <td>${server.AutoUpdate ? '✅ Activé' : '❌ Désactivé'}</td>
+                    <td><span class="agent-version latest">${server.AgentVersion}</span></td>
+                    <td>${server.AutoUpdate ? '✅ Activé' : '❌ Manuel'}</td>
                     <td>${server.LastUpdate}</td>
                     <td><strong>${server.PendingUpdates}</strong></td>
                     <td>${server.CPU}%</td>
@@ -1087,18 +1126,23 @@
                 </tr>
             `).join('');
             
-            // Update stats
-            document.getElementById('totalServers').textContent = `${realServers.length}/16`; // 2 sur 16 déployés
-            document.getElementById('needUpdate').textContent = '?'; // PAS DE DONNÉES RÉELLES
-            document.getElementById('agentVersion').textContent = 'v0.21';
-            document.getElementById('lastSync').textContent = '2 min';
+            // Update stats avec vraies données
+            document.getElementById('totalServers').textContent = realServers.length;
+            const needUpdateCount = realServers.filter(s => s.PendingUpdates > 0).length;
+            document.getElementById('needUpdate').textContent = needUpdateCount;
+            document.getElementById('agentVersion').textContent = 'v5.0';
+            document.getElementById('lastSync').textContent = realServers[0]?.LastContact || 'N/A';
             
-            addLog('success', `✅ SYAGA-HOST01: CPU ${realServers[0].CPU}%, RAM ${realServers[0].RAM}%, Disk ${realServers[0].DiskSpaceGB}GB, Updates ${realServers[0].PendingUpdates}`);
-            addLog('success', `✅ SYAGA-VEEAM01: CPU ${realServers[1].CPU}%, RAM ${realServers[1].RAM}%, Disk ${realServers[1].DiskSpaceGB}GB, Updates ${realServers[1].PendingUpdates}`);
-            addLog('info', '📊 Métriques CPU/RAM/Disk RÉELLES depuis SharePoint');
-            addLog('info', '📊 Progression: 2/16 serveurs SYAGA équipés (12.5%)');
-            addLog('info', '🎯 Objectif: 12 VMs + 4 serveurs physiques = 16 agents total');
-            addLog('success', '✅ Agents v0.22 avec collecte Windows Updates active');
+            // Log les vraies données
+            realServers.forEach(server => {
+                if (server.Hostname !== 'Chargement...') {
+                    addLog('success', `📊 ${server.Hostname}: CPU ${server.CPU}%, RAM ${server.RAM}%, Disk ${server.DiskSpaceGB}GB, Type: ${server.Role || 'Unknown'}`);
+                }
+            });
+            
+            if (realServers.length > 0 && realServers[0].Hostname !== 'Chargement...') {
+                addLog('info', `✅ ${realServers.length} serveur(s) actif(s) - Données temps réel depuis SharePoint`);
+            }
         }
         
         // Display Servers
