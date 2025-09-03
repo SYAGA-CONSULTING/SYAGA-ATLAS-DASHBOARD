@@ -10,6 +10,38 @@ Write-Host "  ATLAS INSTALLER - Derniere version: v$LATEST_VERSION" -ForegroundC
 Write-Host "===================================================" -ForegroundColor Cyan
 Write-Host ""
 
+# SÉCURITÉ : Token temporaire de 15 minutes
+$tokenFile = "C:\Windows\Temp\atlas_install_token.txt"
+if (Test-Path $tokenFile) {
+    $tokenData = Get-Content $tokenFile | ConvertFrom-Json
+    $tokenAge = (Get-Date) - [DateTime]$tokenData.Created
+    if ($tokenAge.TotalMinutes -lt 15) {
+        Write-Host "[OK] Token valide encore $([math]::Round(15 - $tokenAge.TotalMinutes, 1)) minutes" -ForegroundColor Green
+    } else {
+        Write-Host "[SECURITE] Token expire - Installation refusee" -ForegroundColor Red
+        Write-Host "Veuillez regenerer un nouveau lien depuis le dashboard" -ForegroundColor Yellow
+        Remove-Item $tokenFile -Force
+        exit 1
+    }
+} else {
+    # Créer token pour 15 minutes
+    @{
+        Created = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+        ValidUntil = (Get-Date).AddMinutes(15).ToString("yyyy-MM-dd HH:mm:ss")
+        Type = "Installation"
+    } | ConvertTo-Json | Out-File $tokenFile -Force
+    Write-Host "[SECURITE] Token cree - Valable 15 minutes" -ForegroundColor Yellow
+}
+
+# AUTO-SUPPRESSION après 15 minutes
+$cleanupTask = @"
+Start-Sleep -Seconds 900
+if (Test-Path '$tokenFile') { Remove-Item '$tokenFile' -Force }
+if (Test-Path '$($MyInvocation.MyCommand.Path)') { Remove-Item '$($MyInvocation.MyCommand.Path)' -Force }
+"@
+Start-Job -ScriptBlock ([ScriptBlock]::Create($cleanupTask)) | Out-Null
+Write-Host "[SECURITE] Auto-nettoyage programme dans 15 minutes" -ForegroundColor DarkGray
+
 # Créer structure
 $atlasPath = "C:\SYAGA-ATLAS"
 New-Item -ItemType Directory -Path $atlasPath -Force | Out-Null
