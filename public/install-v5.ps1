@@ -1,5 +1,4 @@
 # ATLAS v5.0 - Installation FINALE qui FONCTIONNE
-param([string]$p)
 
 # FORCE UTF-8 - Compatible toutes versions
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -12,13 +11,19 @@ Write-Host "         ATLAS v5.0 - INSTALLATION FINALE" -ForegroundColor Cyan
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Parse paramètres CORRECTEMENT
+# Parse paramètres depuis $MyInvocation quand execute via IEX
 $ServerName = $env:COMPUTERNAME
 $ClientName = "SYAGA"
 $ServerType = "Physical"
 
+# Chercher le parametre p dans MyInvocation
+$p = $null
+if ($MyInvocation.Line -match 'p=([A-Za-z0-9+/=]+)') {
+    $p = $matches[1]
+    Write-Host "[DEBUG] Parametre extrait de MyInvocation: $p" -ForegroundColor DarkGray
+}
+
 if ($p) {
-    Write-Host "[DEBUG] Parametre p recu: $p" -ForegroundColor DarkGray
     try {
         $json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($p))
         Write-Host "[DEBUG] JSON decode: $json" -ForegroundColor DarkGray
@@ -33,7 +38,7 @@ if ($p) {
         Write-Host "[DEBUG] Erreur decodage: $_" -ForegroundColor Red
     }
 } else {
-    Write-Host "[DEBUG] Aucun parametre p recu" -ForegroundColor Red
+    Write-Host "[DEBUG] Aucun parametre p trouve" -ForegroundColor Red
 }
 
 Write-Host "[CONFIG] Serveur: $ServerName | Client: $ClientName | Type: $ServerType" -ForegroundColor Green
