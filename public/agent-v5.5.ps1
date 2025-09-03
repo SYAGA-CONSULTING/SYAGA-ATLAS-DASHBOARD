@@ -1,7 +1,7 @@
 # ATLAS Agent v5.5 - Rollback Automatique avec Dead Man's Switch
 $version = "5.5"
 $configPath = "C:\SYAGA-ATLAS"
-$rollbackTimeout = 10  # Minutes avant rollback automatique
+$rollbackTimeout = 5  # Minutes avant rollback automatique (5 min pour tenir dans le timeout Claude de 10 min)
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
