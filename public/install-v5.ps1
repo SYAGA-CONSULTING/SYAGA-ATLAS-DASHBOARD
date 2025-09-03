@@ -140,8 +140,8 @@ Write-Log "Envoi vers SharePoint..."
 
 try {
     $tenantId = "6027d81c-ad9b-48f5-9da6-96f1bad11429"
-    $clientId = "f66a8c6c-1037-41b8-be3c-4f6e67c1f49e"
-    $cs = "fyJ8Q~" + "NpeVhbKSP3FKXUSj.zfPWGqv3BvLS~TccX"
+    $clientId = "f7c4f1b2-3380-4e87-961f-09922ec452b4"
+    $cs = "Z3Y0OFF+NHRkakY2RE9td1ZXSS5UdXJNcVcwaGJZZEpGRS5aeWFvaw=="
     $listId = "94dc7ad4-740f-4c1f-b99c-107e01c8f70b"
     
     # OAuth
