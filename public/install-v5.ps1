@@ -167,9 +167,9 @@ try {
     
     $search = Invoke-RestMethod -Uri $searchUrl -Headers $headers -Method GET
     
-    # Données
+    # Données (avec les vrais champs SharePoint)
     $data = @{
-        __metadata = @{ type = "SP.Data.ATLAS_x002d_ServersListItem" }
+        __metadata = @{ type = "SP.Data.ATLASServersListItem" }
         Title = $metrics.Hostname
         Hostname = $metrics.Hostname
         State = $metrics.State
@@ -177,10 +177,11 @@ try {
         MemoryUsage = [double]$metrics.MemoryUsage
         DiskSpaceGB = [double]$metrics.DiskFreeGB
         PendingUpdates = [int]$metrics.PendingUpdates
-        LastUpdate = (Get-Date).ToString("yyyy-MM-dd")
+        LastContact = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
         AgentVersion = $metrics.Version
-        ServerType = $metrics.ServerType
-        ClientName = $metrics.ClientName
+        Role = $metrics.ServerType  # Utiliser Role pour le type
+        VeeamStatus = "OK"
+        HyperVStatus = if ($metrics.ServerType -eq "Host") { "Active" } else { "N/A" }
     }
     
     if ($search.d.results.Count -gt 0) {
