@@ -56,16 +56,16 @@ function Check-Update {
         foreach ($item in $items.d.results) {
             if ($item.Title -eq "UPDATE_COMMAND_$hostname" -or $item.Title -eq "UPDATE_ALL") {
                 Write-Log "!!! COMMANDE UPDATE DETECTEE !!!" "UPDATE"
-                Write-Log "Mise a jour vers v5.2..." "NEW"
+                Write-Log "Mise a jour vers v5.3..." "NEW"
                 
                 # Telecharger nouvelle version
-                $newAgentUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v5.2.ps1"
-                Write-Log "Telechargement v5.2 depuis Azure..." "UPDATE"
+                $newAgentUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v5.3.ps1"
+                Write-Log "Telechargement v5.3 depuis Azure..." "UPDATE"
                 
                 $newAgent = Invoke-RestMethod -Uri $newAgentUrl
                 $newAgent | Out-File "$configPath\agent.ps1" -Encoding UTF8 -Force
                 
-                Write-Log ">>> AGENT MIS A JOUR VERS v5.2 <<<" "NEW"
+                Write-Log ">>> AGENT MIS A JOUR VERS v5.3 <<<" "NEW"
                 
                 # Supprimer la commande
                 $deleteUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$listId')/items($($item.Id))"

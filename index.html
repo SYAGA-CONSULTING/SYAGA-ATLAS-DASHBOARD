@@ -500,16 +500,17 @@
             <!-- Deploy Tab -->
             <div id="deploy" class="content-section">
                 <div class="concept-card">
-                    <h2>🚀 Déploiement Agent ATLAS v5.2</h2>
+                    <h2>🚀 Déploiement Agent ATLAS v5.3</h2>
                     
                     <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                        <h4>ℹ️ Agent v5.2 - AUTO-UPDATE ENHANCED</h4>
+                        <h4>🔒 Agent v5.3 - SÉCURITÉ MAXIMALE</h4>
                         <ul style="margin: 10px 0; line-height: 1.8;">
-                            <li>✅ Auto-update automatique chaque minute</li>
-                            <li>✅ Mise à jour via dashboard ou automatique</li>
-                            <li>🆕 Détection services critiques (SQL, Veeam, Hyper-V)</li>
-                            <li>🆕 Logs d'update dans SharePoint</li>
-                            <li>🆕 Statut enrichi avec services actifs</li>
+                            <li>🔐 Lien chiffré avec nom du serveur comme clé</li>
+                            <li>⏱️ Token temporaire 15 minutes</li>
+                            <li>🎯 Lien unique par serveur - Non réutilisable</li>
+                            <li>✅ Auto-update intelligent</li>
+                            <li>📊 Détection services étendus (SQL, Veeam, IIS, Exchange)</li>
+                            <li>⏰ Affichage uptime serveur</li>
                         </ul>
                     </div>
                     
@@ -1240,7 +1241,7 @@
         
         // Mise à jour manuelle d'un agent depuis le dashboard
         async function updateServer(hostname) {
-            if (!confirm(`Voulez-vous mettre à jour l'agent sur ${hostname} vers la v5.2?`)) {
+            if (!confirm(`Voulez-vous mettre à jour l'agent sur ${hostname} vers la v5.3?`)) {
                 return;
             }
             
@@ -1259,7 +1260,7 @@
                     Title: `UPDATE_COMMAND_${hostname}`,
                     Hostname: hostname,
                     State: "UPDATE_PENDING",
-                    AgentVersion: "5.2",
+                    AgentVersion: "5.3",
                     Role: "Command"
                 };
                 
@@ -1310,7 +1311,7 @@
                         Title: "UPDATE_ALL",
                         Hostname: "ALL_SERVERS",
                         State: "UPDATE_PENDING",
-                        AgentVersion: "5.2",
+                        AgentVersion: "5.3",
                         Role: "Command"
                     };
                     

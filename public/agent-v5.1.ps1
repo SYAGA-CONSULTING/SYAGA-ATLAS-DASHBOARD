@@ -58,13 +58,13 @@ function Check-Update {
                 Write-Log "COMMANDE UPDATE DETECTEE!" "UPDATE"
                 
                 # Telecharger nouvelle version
-                $newAgentUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v5.2.ps1"
-                Write-Log "Telechargement v5.2..." "UPDATE"
+                $newAgentUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v5.3.ps1"
+                Write-Log "Telechargement v5.3..." "UPDATE"
                 
                 $newAgent = Invoke-RestMethod -Uri $newAgentUrl
                 $newAgent | Out-File "$configPath\agent.ps1" -Encoding UTF8 -Force
                 
-                Write-Log "Agent mis a jour vers v5.2!" "OK"
+                Write-Log "Agent mis a jour vers v5.3!" "OK"
                 
                 # Supprimer la commande
                 $deleteUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$listId')/items($($item.Id))"
