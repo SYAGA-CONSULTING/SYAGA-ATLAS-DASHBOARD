@@ -1,8 +1,11 @@
 # ATLAS v4.0 - Agent avec Mise à Jour MANUELLE depuis Dashboard
 # PAS d'auto-update ! Uniquement sur commande depuis le dashboard
 
+# Force UTF-8 PARTOUT
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
+[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+chcp 65001 | Out-Null
 
 Write-Host ""
 Write-Host "╔══════════════════════════════════════════════════════╗" -ForegroundColor Cyan
@@ -10,13 +13,13 @@ Write-Host "║      ATLAS v4.0 - MISE À JOUR MANUELLE ONLY         ║" -Foreg
 Write-Host "╚══════════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
 
-# Parse paramètres depuis URL
-$fullCommand = $MyInvocation.Line
+# Parse paramètres depuis URL ou arguments
 $ServerName = $env:COMPUTERNAME
 $ClientName = "SYAGA"
 $ServerType = "Physical"
 
-if ($fullCommand -match 'p=([A-Za-z0-9+/=]+)') {
+# Essayer de récupérer depuis l'URL
+if ($args -and $args[0] -match 'p=([A-Za-z0-9+/=]+)') {
     $base64 = $matches[1]
     try {
         $json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
@@ -24,6 +27,17 @@ if ($fullCommand -match 'p=([A-Za-z0-9+/=]+)') {
         if ($params.server) { $ServerName = $params.server }
         if ($params.client) { $ClientName = $params.client }
         if ($params.type) { $ServerType = $params.type }
+        Write-Host "[DEBUG] Paramètres décodés depuis args" -ForegroundColor DarkGray
+    } catch {}
+} elseif ($MyInvocation.Line -match 'p=([A-Za-z0-9+/=]+)') {
+    $base64 = $matches[1]
+    try {
+        $json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
+        $params = $json | ConvertFrom-Json
+        if ($params.server) { $ServerName = $params.server }
+        if ($params.client) { $ClientName = $params.client }
+        if ($params.type) { $ServerType = $params.type }
+        Write-Host "[DEBUG] Paramètres décodés depuis MyInvocation" -ForegroundColor DarkGray
     } catch {}
 }
 
@@ -188,16 +202,16 @@ Unregister-ScheduledTask -TaskName "SYAGA-ATLAS-Updater" -Confirm:$false -EA Sil
 # 3. Se met à jour SI et SEULEMENT SI vous avez cliqué dans le dashboard
 
 $action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
-    -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -Command `"irm https://white-river-053fc6703.2.azurestaticapps.net/agent/current | iex`""
+    -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -Command `"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; irm https://white-river-053fc6703.2.azurestaticapps.net/public/agent.ps1 | iex`""
 
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(5) `
-    -RepetitionInterval (New-TimeSpan -Seconds 10)  # 10s pour DEV
+    -RepetitionInterval (New-TimeSpan -Minutes 1)  # 1 min minimum (Windows limitation)
 
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 
 Register-ScheduledTask "SYAGA-ATLAS-Agent" -Action $action -Trigger $trigger -Principal $principal | Out-Null
 
-Write-Host "  ✅ Agent: check toutes les 10 secondes (MODE DEV)" -ForegroundColor Yellow
+Write-Host "  ✅ Agent: check toutes les minutes" -ForegroundColor Yellow
 Write-Host "  ✅ Mise à jour: UNIQUEMENT sur commande dashboard" -ForegroundColor Green
 
 # Test
