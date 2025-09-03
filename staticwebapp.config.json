@@ -6,23 +6,10 @@
   },
   "routes": [
     {
-      "route": "/deploy/*.ps1",
+      "route": "/public/*.ps1",
       "headers": {
-        "Content-Type": "text/plain; charset=utf-8"
-      }
-    },
-    {
-      "route": "/api/agent-current",
-      "rewrite": "/api/agent-current.ps1",
-      "headers": {
-        "Content-Type": "text/plain; charset=utf-8"
-      }
-    },
-    {
-      "route": "/agent/current",
-      "rewrite": "/api/agent-current.ps1",
-      "headers": {
-        "Content-Type": "text/plain; charset=utf-8"
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache"
       }
     },
     {
