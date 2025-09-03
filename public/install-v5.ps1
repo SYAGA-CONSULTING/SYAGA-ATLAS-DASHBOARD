@@ -11,19 +11,16 @@ Write-Host "         ATLAS v5.0 - INSTALLATION FINALE" -ForegroundColor Cyan
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Parse paramètres depuis $MyInvocation quand execute via IEX
+# Parse paramètres depuis variable d'environnement
 $ServerName = $env:COMPUTERNAME
 $ClientName = "SYAGA"
 $ServerType = "Physical"
 
-# Chercher le parametre p dans MyInvocation
-$p = $null
-if ($MyInvocation.Line -match 'p=([A-Za-z0-9+/=]+)') {
-    $p = $matches[1]
-    Write-Host "[DEBUG] Parametre extrait de MyInvocation: $p" -ForegroundColor DarkGray
-}
+# Lire le parametre depuis la variable d'environnement
+$p = $env:ATLAS_PARAMS
 
 if ($p) {
+    Write-Host "[INFO] Parametres recus via variable d'environnement" -ForegroundColor Green
     try {
         $json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($p))
         Write-Host "[DEBUG] JSON decode: $json" -ForegroundColor DarkGray
@@ -32,13 +29,13 @@ if ($p) {
         if ($params.client) { $ClientName = $params.client }
         if ($params.type) { 
             $ServerType = $params.type
-            Write-Host "[DEBUG] Type extrait: $ServerType" -ForegroundColor Yellow
+            Write-Host "[INFO] Type detecte: $ServerType" -ForegroundColor Green
         }
     } catch {
-        Write-Host "[DEBUG] Erreur decodage: $_" -ForegroundColor Red
+        Write-Host "[ERROR] Erreur decodage: $_" -ForegroundColor Red
     }
 } else {
-    Write-Host "[DEBUG] Aucun parametre p trouve" -ForegroundColor Red
+    Write-Host "[WARNING] Aucun parametre trouve - utilisation des valeurs par defaut" -ForegroundColor Yellow
 }
 
 Write-Host "[CONFIG] Serveur: $ServerName | Client: $ClientName | Type: $ServerType" -ForegroundColor Green
@@ -144,7 +141,7 @@ Write-Log "Envoi vers SharePoint..."
 try {
     $tenantId = "6027d81c-ad9b-48f5-9da6-96f1bad11429"
     $clientId = "f66a8c6c-1037-41b8-be3c-4f6e67c1f49e"
-    $cs = "r2e8Q" + "~wQa~j8pOI41hxSp4hAz.bQnvpMGPtUrbkB"
+    $cs = "fyJ8Q~" + "NpeVhbKSP3FKXUSj.zfPWGqv3BvLS~TccX"
     $listId = "94dc7ad4-740f-4c1f-b99c-107e01c8f70b"
     
     # OAuth
