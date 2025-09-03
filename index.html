@@ -1357,7 +1357,7 @@
             const base64 = btoa(jsonString);
             
             // Générer commande
-            const command = `$env:ATLAS_PARAMS='${base64}'; irm https://white-river-053fc6703.2.azurestaticapps.net/public/install-v5.ps1 | iex`;
+            const command = `irm https://white-river-053fc6703.2.azurestaticapps.net/public/install-latest.ps1 | iex`;
             
             // Afficher
             document.getElementById('commandText').textContent = command;
