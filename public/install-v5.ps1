@@ -1,16 +1,15 @@
 # ATLAS v5.0 - Installation FINALE qui FONCTIONNE
 param([string]$p)
 
-# FORCE UTF-8 VRAIMENT
-$Host.UI.RawUI.OutputEncoding = [System.Text.Encoding]::UTF8
+# FORCE UTF-8 - Compatible toutes versions
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
-chcp 65001 | Out-Null
+chcp 65001 | Out-Null 2>$null
 
 Write-Host ""
-Write-Host "╔══════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║         ATLAS v5.0 - INSTALLATION FINALE             ║" -ForegroundColor Cyan
-Write-Host "╚══════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host "=================================================================" -ForegroundColor Cyan
+Write-Host "         ATLAS v5.0 - INSTALLATION FINALE" -ForegroundColor Cyan  
+Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Parse paramètres CORRECTEMENT
@@ -19,10 +18,10 @@ $ClientName = "SYAGA"
 $ServerType = "Physical"
 
 if ($p) {
-    Write-Host "[DEBUG] Paramètre p reçu: $p" -ForegroundColor DarkGray
+    Write-Host "[DEBUG] Parametre p recu: $p" -ForegroundColor DarkGray
     try {
         $json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($p))
-        Write-Host "[DEBUG] JSON décodé: $json" -ForegroundColor DarkGray
+        Write-Host "[DEBUG] JSON decode: $json" -ForegroundColor DarkGray
         $params = $json | ConvertFrom-Json
         if ($params.server) { $ServerName = $params.server }
         if ($params.client) { $ClientName = $params.client }
@@ -31,8 +30,10 @@ if ($p) {
             Write-Host "[DEBUG] Type extrait: $ServerType" -ForegroundColor Yellow
         }
     } catch {
-        Write-Host "[DEBUG] Erreur décodage: $_" -ForegroundColor Red
+        Write-Host "[DEBUG] Erreur decodage: $_" -ForegroundColor Red
     }
+} else {
+    Write-Host "[DEBUG] Aucun parametre p recu" -ForegroundColor Red
 }
 
 Write-Host "[CONFIG] Serveur: $ServerName | Client: $ClientName | Type: $ServerType" -ForegroundColor Green
@@ -50,7 +51,7 @@ New-Item -ItemType Directory -Path $atlasPath -Force | Out-Null
     Version = "5.0"
 } | ConvertTo-Json | Out-File "$atlasPath\config.json" -Encoding UTF8
 
-Write-Host "[OK] Configuration sauvegardée avec Type: $ServerType" -ForegroundColor Green
+Write-Host "[OK] Configuration sauvegardee avec Type: $ServerType" -ForegroundColor Green
 
 # AGENT v5.0 AVEC SHAREPOINT
 $agentCode = @'
@@ -189,17 +190,17 @@ try {
         $headers["X-HTTP-Method"] = "MERGE"
         
         Invoke-RestMethod -Uri $updateUrl -Headers $headers -Method POST -Body ($data | ConvertTo-Json -Depth 10)
-        Write-Log "✅ DONNÉES MISES À JOUR DANS SHAREPOINT (Type: $($metrics.ServerType))" "OK"
+        Write-Log "[OK] DONNEES MISES A JOUR DANS SHAREPOINT (Type: $($metrics.ServerType))" "OK"
     } else {
         # CREATE
         $createUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$listId')/items"
         $headers["Content-Type"] = "application/json;odata=verbose"
         
         Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body ($data | ConvertTo-Json -Depth 10)
-        Write-Log "✅ NOUVEAU SERVEUR CRÉÉ DANS SHAREPOINT (Type: $($metrics.ServerType))" "OK"
+        Write-Log "[OK] NOUVEAU SERVEUR CREE DANS SHAREPOINT (Type: $($metrics.ServerType))" "OK"
     }
     
-    Write-Log "📊 CPU=$($metrics.CPUUsage)%, RAM=$($metrics.MemoryUsage)%, Disk=$($metrics.DiskFreeGB)GB, Type=$($metrics.ServerType)"
+    Write-Log "Stats: CPU=$($metrics.CPUUsage)%, RAM=$($metrics.MemoryUsage)%, Disk=$($metrics.DiskFreeGB)GB, Type=$($metrics.ServerType)"
     
 } catch {
     Write-Log "Erreur SharePoint: $_" "ERROR"
@@ -210,11 +211,11 @@ Write-Log "Agent terminé"
 
 # Sauvegarder agent
 $agentCode | Out-File "$atlasPath\agent.ps1" -Encoding UTF8
-Write-Host "[OK] Agent v5.0 installé" -ForegroundColor Green
+Write-Host "[OK] Agent v5.0 installe" -ForegroundColor Green
 
 # CRÉER TÂCHE
 Write-Host ""
-Write-Host "[TÂCHE] Création tâche planifiée..." -ForegroundColor Cyan
+Write-Host "[TACHE] Creation tache planifiee..." -ForegroundColor Cyan
 
 Unregister-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -Confirm:$false -EA SilentlyContinue
 
@@ -228,20 +229,20 @@ $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccou
 
 Register-ScheduledTask "SYAGA-ATLAS-Agent" -Action $action -Trigger $trigger -Principal $principal | Out-Null
 
-Write-Host "  ✅ Agent s'exécute toutes les minutes" -ForegroundColor Green
+Write-Host "  [OK] Agent s'execute toutes les minutes" -ForegroundColor Green
 
 # Test
 Write-Host ""
-Write-Host "[TEST] Exécution initiale..." -ForegroundColor Cyan
+Write-Host "[TEST] Execution initiale..." -ForegroundColor Cyan
 & PowerShell.exe -ExecutionPolicy Bypass -File "$atlasPath\agent.ps1"
 
 Write-Host ""
-Write-Host "╔══════════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║              ✅ INSTALLATION RÉUSSIE !               ║" -ForegroundColor Green
-Write-Host "╚══════════════════════════════════════════════════════╝" -ForegroundColor Green
+Write-Host "=========================================================" -ForegroundColor Green
+Write-Host "              [OK] INSTALLATION REUSSIE !" -ForegroundColor Green
+Write-Host "=========================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "📊 Configuration finale:" -ForegroundColor Yellow
-Write-Host "  • Serveur: $ServerName" -ForegroundColor White
-Write-Host "  • Type: $ServerType" -ForegroundColor White
-Write-Host "  • Client: $ClientName" -ForegroundColor White
+Write-Host "Configuration finale:" -ForegroundColor Yellow
+Write-Host "  - Serveur: $ServerName" -ForegroundColor White
+Write-Host "  - Type: $ServerType" -ForegroundColor White
+Write-Host "  - Client: $ClientName" -ForegroundColor White
 Write-Host ""
