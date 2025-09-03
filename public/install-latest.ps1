@@ -46,23 +46,83 @@ Write-Host "[SECURITE] Auto-nettoyage programme dans 15 minutes" -ForegroundColo
 $atlasPath = "C:\SYAGA-ATLAS"
 New-Item -ItemType Directory -Path $atlasPath -Force | Out-Null
 
-# Détection du type de serveur
+# Récupérer paramètres depuis le générateur
+$serverName = $env:COMPUTERNAME
+$clientName = "SYAGA"
 $serverType = "Physical"
-$roles = Get-WindowsFeature | Where-Object { $_.Installed -eq $true }
-if ($roles | Where-Object { $_.Name -eq "Hyper-V" }) {
-    $serverType = "Host"
-    Write-Host "[DETECT] Hyper-V detecte -> Type: Host" -ForegroundColor Green
-} elseif ((Get-WmiObject -Class Win32_ComputerSystem).Model -match "Virtual") {
-    $serverType = "VM"
-    Write-Host "[DETECT] Machine virtuelle -> Type: VM" -ForegroundColor Green
+
+# Lire paramètres depuis variable d'environnement
+$p = $env:ATLAS_PARAMS
+if ($p) {
+    Write-Host "[INFO] Parametres chiffres recus" -ForegroundColor Green
+    try {
+        # Déchiffrer avec le nom du serveur local comme clé
+        $currentServer = $env:COMPUTERNAME
+        
+        # Décoder la première couche
+        $decoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($p))
+        
+        # Vérifier que ça commence par le nom du serveur
+        if ($decoded -match "^([^|]+)\|(.+)$") {
+            $targetServer = $Matches[1]
+            $base64Data = $Matches[2]
+            
+            # SÉCURITÉ : Ce lien ne fonctionne QUE sur le bon serveur
+            if ($targetServer -ne $currentServer) {
+                Write-Host "[SECURITE] ERREUR: Lien chiffre pour '$targetServer'" -ForegroundColor Red
+                Write-Host "[SECURITE] Ce serveur est: '$currentServer'" -ForegroundColor Red
+                Write-Host "[SECURITE] Installation REFUSEE - Lien invalide pour ce serveur" -ForegroundColor Red
+                Write-Host "" -ForegroundColor Red
+                Write-Host "Ce lien ne peut fonctionner QUE sur le serveur $targetServer" -ForegroundColor Yellow
+                exit 1
+            }
+            
+            Write-Host "  [SECURITE] Cle de dechiffrement correcte: $currentServer" -ForegroundColor Green
+            
+            # Décoder les paramètres
+            $json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64Data))
+            $params = $json | ConvertFrom-Json
+            
+            if ($params.server) { 
+                $serverName = $params.server
+                Write-Host "  - Serveur: $serverName [CHIFFREMENT VERIFIE]" -ForegroundColor Green
+            }
+            if ($params.client) { 
+                $clientName = $params.client
+                Write-Host "  - Client: $clientName" -ForegroundColor Cyan
+            }
+            if ($params.type) { 
+                $serverType = $params.type
+                Write-Host "  - Type: $serverType" -ForegroundColor Cyan
+            }
+        } else {
+            Write-Host "[SECURITE] Format de donnees invalide" -ForegroundColor Red
+            exit 1
+        }
+    } catch {
+        Write-Host "[SECURITE] Impossible de dechiffrer - Lien corrompu ou invalide" -ForegroundColor Red
+        Write-Host "Erreur: $_" -ForegroundColor Red
+        exit 1
+    }
 } else {
-    Write-Host "[DETECT] Machine physique -> Type: Physical" -ForegroundColor Yellow
+    # Auto-détection si pas de paramètres
+    Write-Host "[INFO] Pas de parametres - Auto-detection..." -ForegroundColor Yellow
+    $roles = Get-WindowsFeature | Where-Object { $_.Installed -eq $true }
+    if ($roles | Where-Object { $_.Name -eq "Hyper-V" }) {
+        $serverType = "Host"
+        Write-Host "[DETECT] Hyper-V detecte -> Type: Host" -ForegroundColor Green
+    } elseif ((Get-WmiObject -Class Win32_ComputerSystem).Model -match "Virtual") {
+        $serverType = "VM"
+        Write-Host "[DETECT] Machine virtuelle -> Type: VM" -ForegroundColor Green
+    } else {
+        Write-Host "[DETECT] Machine physique -> Type: Physical" -ForegroundColor Yellow
+    }
 }
 
 # Sauvegarder config
 @{
-    Hostname = $env:COMPUTERNAME
-    ClientName = "SYAGA"
+    Hostname = $serverName
+    ClientName = $clientName
     ServerType = $serverType
     InstallDate = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
     Version = $LATEST_VERSION

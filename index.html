@@ -1357,8 +1357,12 @@
             const jsonString = JSON.stringify(params);
             const base64 = btoa(jsonString);
             
+            // Chiffrer avec le nom du serveur comme clé (simulation simple)
+            // En prod, on devrait utiliser un vrai algo de chiffrement
+            const encrypted = btoa(serverName + '|' + base64);
+            
             // Générer commande
-            const command = `irm https://white-river-053fc6703.2.azurestaticapps.net/public/install-latest.ps1 | iex`;
+            const command = `$env:ATLAS_PARAMS='${encrypted}'; irm https://white-river-053fc6703.2.azurestaticapps.net/public/install-latest.ps1 | iex`;
             
             // Afficher
             document.getElementById('commandText').textContent = command;
