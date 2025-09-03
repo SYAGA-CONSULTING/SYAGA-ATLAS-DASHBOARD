@@ -418,6 +418,7 @@
         <!-- Navigation Tabs -->
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('deploy')">🚀 Déployer</button>
             <button class="nav-tab" onclick="switchTab('concept')">💡 Concept</button>
             <button class="nav-tab" onclick="switchTab('implementation')">📋 Implémentation</button>
             <button class="nav-tab" onclick="switchTab('timeline')">⏱️ Timeline</button>
@@ -492,6 +493,61 @@
                     <div class="log-line">
                         <span class="log-time">[00:00:00]</span>
                         <span class="log-info">Console ATLAS v0.23 initialisée</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Deploy Tab -->
+            <div id="deploy" class="content-section">
+                <div class="concept-card">
+                    <h2>🚀 Déploiement Agent ATLAS v4.0</h2>
+                    
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <h4>ℹ️ Agent v4.0 - Mise à jour MANUELLE uniquement</h4>
+                        <ul style="margin: 10px 0; line-height: 1.8;">
+                            <li>✅ PAS d'auto-update automatique</li>
+                            <li>✅ Mise à jour uniquement via bouton dashboard</li>
+                            <li>✅ Agent téléchargé dynamiquement depuis Azure</li>
+                            <li>✅ Collecte métriques toutes les 10 secondes</li>
+                        </ul>
+                    </div>
+                    
+                    <h3>Générer le lien d'installation</h3>
+                    
+                    <div style="display: grid; gap: 15px; margin-top: 20px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Nom du serveur:</label>
+                            <input type="text" id="serverName" placeholder="Ex: SYAGA-VM01" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" />
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Client:</label>
+                            <input type="text" id="clientName" value="SYAGA" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" />
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Type de serveur:</label>
+                            <select id="serverType" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="VM">Machine Virtuelle (VM)</option>
+                                <option value="Physical">Serveur Physique</option>
+                                <option value="Host">Hôte Hyper-V</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="generateDeployCommand()" style="padding: 12px 30px; font-size: 1rem; margin-top: 10px;">
+                            📦 Générer Commande d'Installation
+                        </button>
+                    </div>
+                    
+                    <div id="deployCommand" style="display:none; margin-top: 30px;">
+                        <h3 style="color: #28a745;">✅ Commande PowerShell générée :</h3>
+                        <div style="background: #1e1e1e; color: #4ec9b0; padding: 20px; border-radius: 5px; margin: 15px 0; font-family: 'Consolas', monospace;">
+                            <code id="commandText" style="word-break: break-all;"></code>
+                        </div>
+                        <button onclick="copyCommand()" class="btn" style="background: #28a745; color: white;">
+                            📋 Copier la commande
+                        </button>
+                        <span id="copyFeedback" style="display: none; color: #28a745; margin-left: 15px;">✅ Copiée !</span>
                     </div>
                 </div>
             </div>
@@ -1148,6 +1204,47 @@
                 addLog('success', '✅ SYAGA-VEEAM01: Agent v0.21 → v0.23 (auto-update)');
                 addLog('success', '✅ Tous les agents mis à jour avec succès');
             }
+        }
+        
+        // Generate Deploy Command
+        function generateDeployCommand() {
+            const serverName = document.getElementById('serverName').value || 'SERVER';
+            const clientName = document.getElementById('clientName').value || 'SYAGA';
+            const serverType = document.getElementById('serverType').value || 'Physical';
+            
+            // Créer objet params
+            const params = {
+                server: serverName,
+                client: clientName,
+                type: serverType
+            };
+            
+            // Encoder en base64
+            const jsonString = JSON.stringify(params);
+            const base64 = btoa(jsonString);
+            
+            // Générer commande
+            const command = `irm https://white-river-053fc6703.2.azurestaticapps.net/public/install.ps1?p=${base64} | iex`;
+            
+            // Afficher
+            document.getElementById('commandText').textContent = command;
+            document.getElementById('deployCommand').style.display = 'block';
+            
+            addLog('success', `✅ Commande générée pour ${serverName} (${serverType})`);
+        }
+        
+        // Copy Command to Clipboard
+        function copyCommand() {
+            const commandText = document.getElementById('commandText').textContent;
+            navigator.clipboard.writeText(commandText).then(() => {
+                document.getElementById('copyFeedback').style.display = 'inline';
+                setTimeout(() => {
+                    document.getElementById('copyFeedback').style.display = 'none';
+                }, 3000);
+                addLog('info', '📋 Commande copiée dans le presse-papiers');
+            }).catch(err => {
+                addLog('error', '❌ Erreur lors de la copie');
+            });
         }
         
         // Console Log
