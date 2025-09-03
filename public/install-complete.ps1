@@ -1,9 +1,12 @@
 # ATLAS v4.0 - Installation COMPLÈTE avec SharePoint
 # TOUT est dans ce script, aucun téléchargement supplémentaire
 
-# Force UTF-8
+# Force UTF-8 VRAIMENT PARTOUT
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
+[System.Console]::InputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 chcp 65001 | Out-Null
 
 Write-Host ""
@@ -17,9 +20,19 @@ $ServerName = $env:COMPUTERNAME
 $ClientName = "SYAGA"
 $ServerType = "Physical"
 
-# Décoder le paramètre base64 depuis l'URL
+# Décoder le paramètre base64 depuis l'URL - Méthode alternative
 $urlParam = $MyInvocation.MyCommand.Name
-if ($MyInvocation.Line -match 'p=([A-Za-z0-9+/=]+)') {
+if ($args -and $args[0] -match 'p=([A-Za-z0-9+/=]+)') {
+    $base64 = $matches[1]
+    try {
+        $json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
+        $params = $json | ConvertFrom-Json
+        if ($params.server) { $ServerName = $params.server }
+        if ($params.client) { $ClientName = $params.client }
+        if ($params.type) { $ServerType = $params.type }
+        Write-Host "[DEBUG] Type détecté via args: $ServerType" -ForegroundColor DarkGray
+    } catch {}
+} elseif ($MyInvocation.Line -match 'p=([A-Za-z0-9+/=]+)') {
     $base64 = $matches[1]
     try {
         $json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
@@ -45,6 +58,7 @@ $version = "4.0"
 $configPath = "C:\SYAGA-ATLAS"
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
 function Write-Log {
