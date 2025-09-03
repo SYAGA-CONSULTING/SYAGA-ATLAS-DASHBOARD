@@ -1,5 +1,5 @@
-# ATLAS Agent v5.1 - Avec Auto-Update
-$version = "5.1"
+# ATLAS Agent v5.2 - Auto-Update Enhanced
+$version = "5.2"
 $configPath = "C:\SYAGA-ATLAS"
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -13,13 +13,13 @@ function Write-Log {
         New-Item -ItemType Directory -Path $configPath -Force | Out-Null
     }
     Add-Content "$configPath\agent.log" -Value $log -Encoding UTF8
-    $color = @{INFO="White"; OK="Green"; ERROR="Red"; UPDATE="Cyan"; WARNING="Yellow"}[$Level]
+    $color = @{INFO="White"; OK="Green"; ERROR="Red"; UPDATE="Cyan"; WARNING="Yellow"; NEW="Magenta"}[$Level]
     Write-Host $log -ForegroundColor $color
 }
 
-Write-Log "Agent ATLAS v$version demarre"
+Write-Log "Agent ATLAS v$version demarre" "NEW"
 
-# FONCTION AUTO-UPDATE
+# FONCTION AUTO-UPDATE AMELIOREE v5.2
 function Check-Update {
     Write-Log "Verification mise a jour..." "UPDATE"
     
@@ -55,16 +55,17 @@ function Check-Update {
         # Chercher item UPDATE_COMMAND
         foreach ($item in $items.d.results) {
             if ($item.Title -eq "UPDATE_COMMAND_$hostname" -or $item.Title -eq "UPDATE_ALL") {
-                Write-Log "COMMANDE UPDATE DETECTEE!" "UPDATE"
+                Write-Log "!!! COMMANDE UPDATE DETECTEE !!!" "UPDATE"
+                Write-Log "Mise a jour vers v5.2..." "NEW"
                 
                 # Telecharger nouvelle version
                 $newAgentUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v5.2.ps1"
-                Write-Log "Telechargement v5.2..." "UPDATE"
+                Write-Log "Telechargement v5.2 depuis Azure..." "UPDATE"
                 
                 $newAgent = Invoke-RestMethod -Uri $newAgentUrl
                 $newAgent | Out-File "$configPath\agent.ps1" -Encoding UTF8 -Force
                 
-                Write-Log "Agent mis a jour vers v5.2!" "OK"
+                Write-Log ">>> AGENT MIS A JOUR VERS v5.2 <<<" "NEW"
                 
                 # Supprimer la commande
                 $deleteUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$listId')/items($($item.Id))"
@@ -73,6 +74,28 @@ function Check-Update {
                 Invoke-RestMethod -Uri $deleteUrl -Headers $headers -Method POST
                 
                 Write-Log "Commande update supprimee" "OK"
+                
+                # NOUVEAU v5.2: Logger la mise à jour dans SharePoint
+                $updateLog = @{
+                    __metadata = @{ type = "SP.Data.ATLASServersListItem" }
+                    Title = "UPDATE_LOG_$hostname"
+                    Hostname = $hostname
+                    State = "UPDATE_SUCCESS"
+                    AgentVersion = "5.2"
+                    Role = "UpdateLog"
+                    VeeamStatus = "Updated from 5.1 to 5.2 at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+                }
+                
+                $headers = @{
+                    "Authorization" = "Bearer $token"
+                    "Accept" = "application/json;odata=verbose"
+                    "Content-Type" = "application/json;odata=verbose"
+                }
+                
+                $createUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$listId')/items"
+                Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body ($updateLog | ConvertTo-Json -Depth 10)
+                
+                Write-Log "Log de mise a jour envoye" "OK"
                 
                 # Redemarrer l'agent
                 Write-Log "Redemarrage de l'agent..." "UPDATE"
@@ -101,7 +124,7 @@ if (Test-Path "$configPath\config.json") {
     }
 }
 
-# VERIFIER UPDATE (v5.1 uniquement)
+# VERIFIER UPDATE (v5.2 enhanced)
 Check-Update
 
 # COLLECTER METRIQUES
@@ -115,10 +138,17 @@ $metrics = @{
 }
 
 try {
-    Write-Log "Collecte des metriques..."
+    Write-Log "Collecte des metriques v5.2..."
     
     $os = Get-CimInstance Win32_OperatingSystem
     $disk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'"
+    
+    # NOUVEAU v5.2: Detection services critiques
+    $services = @{
+        SQLRunning = (Get-Service -Name "MSSQLSERVER" -EA SilentlyContinue).Status -eq "Running"
+        VeeamRunning = (Get-Service -Name "Veeam*" -EA SilentlyContinue | Where-Object {$_.Status -eq "Running"}).Count -gt 0
+        HyperVRunning = (Get-Service -Name "vmms" -EA SilentlyContinue).Status -eq "Running"
+    }
     
     $cpuUsage = 0
     try {
@@ -137,16 +167,17 @@ try {
     $metrics.MemoryUsage = [math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / $os.TotalVisibleMemorySize * 100, 2)
     $metrics.DiskFreeGB = [math]::Round($disk.FreeSpace / 1GB, 2)
     $metrics.PendingUpdates = $pendingUpdates
+    $metrics.Services = $services
     
     $metrics | ConvertTo-Json | Out-File "$configPath\metrics.json" -Encoding UTF8
-    Write-Log "Metriques collectees - Type: $serverType" "OK"
+    Write-Log "Metriques v5.2 collectees - Type: $serverType" "OK"
     
 } catch {
     Write-Log "Erreur: $_" "ERROR"
 }
 
 # ENVOYER A SHAREPOINT
-Write-Log "Envoi vers SharePoint..."
+Write-Log "Envoi vers SharePoint (v5.2 protocol)..."
 
 try {
     $tenantId = "6027d81c-ad9b-48f5-9da6-96f1bad11429"
@@ -168,7 +199,7 @@ try {
     $token = $tokenResponse.access_token
     Write-Log "Token obtenu" "OK"
     
-    # Chercher si existe (avec un filtre qui fonctionne vraiment)
+    # Chercher si existe
     $searchUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$listId')/items"
     $headers = @{
         "Authorization" = "Bearer $token"
@@ -186,7 +217,12 @@ try {
         }
     }
     
-    # Donnees (avec les vrais champs SharePoint)
+    # Donnees v5.2 enrichies
+    $statusText = "v5.2"
+    if ($metrics.Services.SQLRunning) { $statusText += " | SQL:ON" }
+    if ($metrics.Services.VeeamRunning) { $statusText += " | Veeam:ON" }
+    if ($metrics.Services.HyperVRunning) { $statusText += " | HyperV:ON" }
+    
     $data = @{
         __metadata = @{ type = "SP.Data.ATLASServersListItem" }
         Title = $metrics.Hostname
@@ -198,13 +234,13 @@ try {
         PendingUpdates = [int]$metrics.PendingUpdates
         LastContact = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
         AgentVersion = $metrics.Version
-        Role = $metrics.ServerType  # Utiliser Role pour le type
-        VeeamStatus = "OK"
-        HyperVStatus = if ($metrics.ServerType -eq "Host") { "Active" } else { "N/A" }
+        Role = $metrics.ServerType
+        VeeamStatus = $statusText
+        HyperVStatus = if ($metrics.Services.HyperVRunning) { "Active" } elseif ($metrics.ServerType -eq "Host") { "Stopped" } else { "N/A" }
     }
     
     if ($existingItem) {
-        # UPDATE - Un item existe deja pour ce serveur
+        # UPDATE
         $id = $existingItem.Id
         Write-Log "Item existant trouve avec ID: $id" "INFO"
         $updateUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$listId')/items($id)"
@@ -213,20 +249,20 @@ try {
         $headers["X-HTTP-Method"] = "MERGE"
         
         Invoke-RestMethod -Uri $updateUrl -Headers $headers -Method POST -Body ($data | ConvertTo-Json -Depth 10)
-        Write-Log "[OK] DONNEES MISES A JOUR DANS SHAREPOINT (Type: $($metrics.ServerType))" "OK"
+        Write-Log "[v5.2] DONNEES MISES A JOUR DANS SHAREPOINT (Type: $($metrics.ServerType))" "NEW"
     } else {
         # CREATE
         $createUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$listId')/items"
         $headers["Content-Type"] = "application/json;odata=verbose"
         
         Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body ($data | ConvertTo-Json -Depth 10)
-        Write-Log "[OK] NOUVEAU SERVEUR CREE DANS SHAREPOINT (Type: $($metrics.ServerType))" "OK"
+        Write-Log "[v5.2] NOUVEAU SERVEUR CREE DANS SHAREPOINT (Type: $($metrics.ServerType))" "NEW"
     }
     
-    Write-Log "Stats: CPU=$($metrics.CPUUsage)%, RAM=$($metrics.MemoryUsage)%, Disk=$($metrics.DiskFreeGB)GB, Type=$($metrics.ServerType)"
+    Write-Log "Stats v5.2: CPU=$($metrics.CPUUsage)%, RAM=$($metrics.MemoryUsage)%, Disk=$($metrics.DiskFreeGB)GB, Type=$($metrics.ServerType)"
     
 } catch {
     Write-Log "Erreur SharePoint: $_" "ERROR"
 }
 
-Write-Log "Agent v$version termine"
+Write-Log "Agent v$version termine" "NEW"
