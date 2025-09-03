@@ -836,9 +836,34 @@
             
             <!-- Timeline Section -->
             <div id="timeline" class="content-section">
-                <div class="servers-section">
-                    <h2 style="margin-bottom: 15px;">Timeline CAU Pattern LAA</h2>
-                    <iframe src="timeline-cau-orchestration.html" style="width: 100%; height: 700px; border: none; border-radius: 8px;"></iframe>
+                <div class="concept-card">
+                    <h2>⏱️ Timeline Orchestration CAU - Pattern LAA</h2>
+                    <p style="margin: 15px 0; color: #666;">
+                        Visualisation de l'orchestration Windows Update pour 127 serveurs en 7h30 avec le pattern Pseudo-CAU.
+                    </p>
+                    <iframe src="timeline-cau-orchestration.html" style="width: 100%; height: 800px; border: 1px solid #ddd; border-radius: 8px; background: white;"></iframe>
+                </div>
+                
+                <div class="concept-card" style="margin-top: 20px;">
+                    <h3>📊 Métriques du Pattern LAA</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div style="background: #e3f2fd; padding: 15px; border-radius: 5px;">
+                            <strong>127 serveurs</strong>
+                            <p style="font-size: 0.9rem; margin-top: 5px;">Total orchestré</p>
+                        </div>
+                        <div style="background: #e8f5e9; padding: 15px; border-radius: 5px;">
+                            <strong>7h30</strong>
+                            <p style="font-size: 0.9rem; margin-top: 5px;">Temps total</p>
+                        </div>
+                        <div style="background: #fff3e0; padding: 15px; border-radius: 5px;">
+                            <strong>10 serveurs</strong>
+                            <p style="font-size: 0.9rem; margin-top: 5px;">Par groupe parallèle</p>
+                        </div>
+                        <div style="background: #fce4ec; padding: 15px; border-radius: 5px;">
+                            <strong>0 plantage</strong>
+                            <p style="font-size: 0.9rem; margin-top: 5px;">Snapshots + rollback</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
