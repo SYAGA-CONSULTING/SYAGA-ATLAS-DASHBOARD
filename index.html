@@ -977,10 +977,10 @@
             document.getElementById('userName').textContent = account.name || account.username;
             
             addLog('success', `✅ Connecté en tant que ${account.name}`);
-            loadServers();
+            displayRealServers();
             
-            // Auto-refresh every 2 minutes
-            setInterval(loadServers, 120000);
+            // Auto-refresh toutes les 30 secondes
+            setInterval(displayRealServers, 30000);
         }
         
         // Switch Tab
@@ -1003,36 +1003,36 @@
         
         // Load Servers from SharePoint
         async function loadServers() {
+            // Rediriger vers displayRealServers qui gère tout
+            await displayRealServers();
+        }
+        
+        // Get SharePoint access token
+        async function getAccessToken() {
             try {
-                const token = await getToken();
-                if (!token) return;
-                
-                addLog('info', '🔄 Chargement des serveurs depuis SharePoint...');
-                
-                const response = await fetch(
-                    "https://graph.microsoft.com/v1.0/sites/syaga.sharepoint.com:/sites/SYAGA:/lists/ATLAS-Servers/items?$expand=fields",
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
-                );
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                const account = msalInstance.getAllAccounts()[0];
+                if (!account) {
+                    throw new Error('Pas de compte connecté');
                 }
                 
-                const data = await response.json();
-                displayServers(data.value || []);
-                updateStats(data.value || []);
+                const response = await msalInstance.acquireTokenSilent({
+                    scopes: ["https://syagacons.sharepoint.com/.default"],
+                    account: account
+                });
                 
-                addLog('success', `✅ ${data.value.length} serveurs avec agents actifs`);
-                
+                return response.accessToken;
             } catch (error) {
-                console.error('Load error:', error);
-                addLog('warning', '⚠️ Mode démo - Données réelles SharePoint');
-                displayRealServers();
+                console.error('Erreur token:', error);
+                // Essayer avec un token popup si le silent échoue
+                try {
+                    const response = await msalInstance.acquireTokenPopup({
+                        scopes: ["https://syagacons.sharepoint.com/.default"]
+                    });
+                    return response.accessToken;
+                } catch (popupError) {
+                    console.error('Erreur popup token:', popupError);
+                    throw popupError;
+                }
             }
         }
         
@@ -1074,16 +1074,22 @@
                 
             } catch (error) {
                 console.error('Erreur chargement SharePoint:', error);
-                addLog('error', `Erreur chargement données: ${error.message}`);
+                addLog('error', `Erreur: ${error.message}`);
                 
-                // Données de fallback si erreur
+                // Réessayer dans 5 secondes
+                setTimeout(() => {
+                    addLog('info', '🔄 Nouvelle tentative de connexion...');
+                    displayRealServers();
+                }, 5000);
+                
+                // Afficher un message d'attente
                 const fallbackServers = [
                     {
-                        Hostname: 'Chargement...',
-                        State: 'Unknown',
+                        Hostname: 'Connexion SharePoint...',
+                        State: 'En attente',
                         AgentVersion: 'v5.0',
                         AutoUpdate: false,
-                        LastUpdate: 'N/A',
+                        LastUpdate: 'Rechargement...',
                         PendingUpdates: 0,
                         CPU: 0,
                         RAM: 0,
