@@ -1056,7 +1056,30 @@
                 }
                 
                 const data = await response.json();
-                const realServers = data.d.results.map(item => ({
+                
+                // Grouper par serveur et garder le plus récent
+                const serverMap = new Map();
+                
+                data.d.results.forEach(item => {
+                    const hostname = item.Hostname || item.Title || '';
+                    // Exclure les items de configuration
+                    if (hostname && 
+                        !hostname.includes('CONFIG') && 
+                        !hostname.includes('UPDATE') &&
+                        hostname !== '' &&
+                        hostname.includes('-')) {
+                        
+                        const existing = serverMap.get(hostname);
+                        const itemDate = new Date(item.Modified || item.Created);
+                        
+                        if (!existing || itemDate > new Date(existing.Modified || existing.Created)) {
+                            serverMap.set(hostname, item);
+                        }
+                    }
+                });
+                
+                // Convertir en array et formater
+                const realServers = Array.from(serverMap.values()).map(item => ({
                     Hostname: item.Hostname || item.Title,
                     State: item.State || 'Unknown',
                     AgentVersion: item.AgentVersion || 'N/A',

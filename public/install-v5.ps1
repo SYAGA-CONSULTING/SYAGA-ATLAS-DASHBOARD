@@ -158,14 +158,23 @@ try {
     $token = $tokenResponse.access_token
     Write-Log "Token obtenu" "OK"
     
-    # Chercher si existe
-    $searchUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$listId')/items?`$filter=Hostname eq '$($metrics.Hostname)'"
+    # Chercher si existe (avec un filtre qui fonctionne vraiment)
+    $searchUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$listId')/items"
     $headers = @{
         "Authorization" = "Bearer $token"
         "Accept" = "application/json;odata=verbose"
     }
     
     $search = Invoke-RestMethod -Uri $searchUrl -Headers $headers -Method GET
+    
+    # Filtrer localement pour trouver notre serveur
+    $existingItem = $null
+    foreach ($item in $search.d.results) {
+        if ($item.Hostname -eq $metrics.Hostname -or $item.Title -eq $metrics.Hostname) {
+            $existingItem = $item
+            break
+        }
+    }
     
     # Données (avec les vrais champs SharePoint)
     $data = @{
@@ -184,9 +193,10 @@ try {
         HyperVStatus = if ($metrics.ServerType -eq "Host") { "Active" } else { "N/A" }
     }
     
-    if ($search.d.results.Count -gt 0) {
-        # UPDATE
-        $id = $search.d.results[0].Id
+    if ($existingItem) {
+        # UPDATE - Un item existe deja pour ce serveur
+        $id = $existingItem.Id
+        Write-Log "Item existant trouve avec ID: $id" "INFO"
         $updateUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$listId')/items($id)"
         $headers["Content-Type"] = "application/json;odata=verbose"
         $headers["IF-MATCH"] = "*"
