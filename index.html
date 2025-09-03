@@ -1249,7 +1249,7 @@
             const base64 = btoa(jsonString);
             
             // Générer commande
-            const command = `irm https://white-river-053fc6703.2.azurestaticapps.net/public/install-complete.ps1?p=${base64} | iex`;
+            const command = `irm https://white-river-053fc6703.2.azurestaticapps.net/public/install-v5.ps1?p=${base64} | iex`;
             
             // Afficher
             document.getElementById('commandText').textContent = command;
