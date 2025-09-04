@@ -72,8 +72,8 @@ function Check-AutoUpdate {
         # STRATÉGIE ULTIME : Récupérer TOUT sans filtre complexe
         Write-Log "Recherche commandes dans SharePoint..." "DEBUG"
         
-        # Récupérer les 100 dernières commandes (SANS AUCUN FILTRE)
-        $searchUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$commandsListId')/items?`$top=100"
+        # IMPORTANT: TOUJOURS utiliser $select sinon SharePoint renvoie 0 !
+        $searchUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$commandsListId')/items?`$select=Id,Title,CommandType,Status,TargetVersion,TargetHostname,CreatedBy,ExecutedBy&`$top=100"
         
         Write-Log "URL simple: $searchUrl" "DEBUG"
         
