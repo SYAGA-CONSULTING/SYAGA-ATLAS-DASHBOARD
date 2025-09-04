@@ -1,8 +1,8 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "10.0"  # 2 TÂCHES SÉPARÉES (AGENT + UPDATER)
-$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v$LATEST_VERSION.ps1"
+$LATEST_VERSION = "10.3"  # VERSION FONDATION STABLE
+$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v10.3.ps1"
 
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Cyan
