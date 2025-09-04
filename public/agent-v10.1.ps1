@@ -1,4 +1,4 @@
-# ATLAS Agent v10.1 - TEST AUTO-UPDATE
+# ATLAS Agent v10.1 - AGENT SIMPLE (PAS D'UPDATE) 
 $script:Version = "10.1"
 $hostname = $env:COMPUTERNAME
 $logFile = "C:\SYAGA-ATLAS\atlas_log.txt"
@@ -39,7 +39,7 @@ function Write-Log {
 }
 
 # ════════════════════════════════════════════════════
-# FONCTION HEARTBEAT (IDENTIQUE v10.0)
+# FONCTION HEARTBEAT (MÉTHODE v9.1 QUI MARCHE)
 # ════════════════════════════════════════════════════
 function Send-HeartbeatWithLogs {
     try {
@@ -127,11 +127,11 @@ function Send-HeartbeatWithLogs {
 }
 
 # ════════════════════════════════════════════════════
-# MAIN
+# MAIN - SIMPLE ET COURT
 # ════════════════════════════════════════════════════
-Write-Log "Agent v$($script:Version) - TEST AUTO-UPDATE" "SUCCESS"
-Write-Log ">>> SI VOUS VOYEZ v10.1 = AUTO-UPDATE MARCHE ! <<<" "SUCCESS"
-Write-Log "Gere par updater.ps1 separe"
+Write-Log "Agent v$($script:Version) - SIMPLE" "SUCCESS"
+Write-Log "Pas d'auto-update (gere par updater.ps1)"
+Write-Log "v10.1: Ameliorations mineures" "INFO"
 
 Send-HeartbeatWithLogs
 

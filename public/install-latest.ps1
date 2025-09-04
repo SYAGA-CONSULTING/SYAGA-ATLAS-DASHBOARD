@@ -2,7 +2,7 @@
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
 $LATEST_VERSION = "10.0"  # 2 TÂCHES SÉPARÉES (AGENT + UPDATER)
-$LATEST_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v$LATEST_VERSION.ps1"
+$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v$LATEST_VERSION.ps1"
 
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Cyan
@@ -130,37 +130,48 @@ if ($p) {
 
 Write-Host "[OK] Configuration sauvegardee (Type: $serverType)" -ForegroundColor Green
 
-# Télécharger la dernière version
-Write-Host "[INFO] Telechargement agent v$LATEST_VERSION..." -ForegroundColor Yellow
+# Télécharger et exécuter install-v10.0.ps1 qui installe agent + updater + 2 tâches
+Write-Host "[INFO] Telechargement installateur v$LATEST_VERSION..." -ForegroundColor Yellow
+Write-Host "URL: $LATEST_INSTALL_URL" -ForegroundColor DarkGray
+
 try {
-    $agent = Invoke-RestMethod -Uri $LATEST_URL
-    $agent | Out-File "$atlasPath\agent.ps1" -Encoding UTF8 -Force
-    Write-Host "[OK] Agent v$LATEST_VERSION installe" -ForegroundColor Green
+    # Télécharger le script d'installation
+    $installer = Invoke-RestMethod -Uri $LATEST_INSTALL_URL -UseBasicParsing
+    $installerPath = "$atlasPath\install-v$LATEST_VERSION.ps1"
+    $installer | Out-File $installerPath -Encoding UTF8 -Force
+    Write-Host "[OK] Installateur telecharge" -ForegroundColor Green
+    
+    # Exécuter le script d'installation qui va installer agent + updater + 2 tâches
+    Write-Host ""
+    Write-Host "[INFO] Execution installateur v$LATEST_VERSION..." -ForegroundColor Yellow
+    Write-Host "  - Installation agent.ps1" -ForegroundColor DarkGray
+    Write-Host "  - Installation updater.ps1" -ForegroundColor DarkGray
+    Write-Host "  - Creation tache SYAGA-ATLAS-Agent" -ForegroundColor DarkGray
+    Write-Host "  - Creation tache SYAGA-ATLAS-Updater" -ForegroundColor DarkGray
+    Write-Host ""
+    
+    & PowerShell.exe -ExecutionPolicy Bypass -File $installerPath
+    
+    # Vérifier que les 2 tâches sont créées
+    $agentTask = Get-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -EA SilentlyContinue
+    $updaterTask = Get-ScheduledTask -TaskName "SYAGA-ATLAS-Updater" -EA SilentlyContinue
+    
+    if ($agentTask -and $updaterTask) {
+        Write-Host ""
+        Write-Host "[OK] Les 2 taches sont installees:" -ForegroundColor Green
+        Write-Host "  ✓ SYAGA-ATLAS-Agent   : Execution toutes les minutes" -ForegroundColor Green
+        Write-Host "  ✓ SYAGA-ATLAS-Updater : Verification MAJ toutes les minutes" -ForegroundColor Green
+    } else {
+        Write-Host "[ERREUR] Installation incomplete - taches manquantes" -ForegroundColor Red
+        if (!$agentTask) { Write-Host "  ✗ SYAGA-ATLAS-Agent manquante" -ForegroundColor Red }
+        if (!$updaterTask) { Write-Host "  ✗ SYAGA-ATLAS-Updater manquante" -ForegroundColor Red }
+        exit 1
+    }
+    
 } catch {
-    Write-Host "[ERREUR] Impossible de telecharger: $_" -ForegroundColor Red
+    Write-Host "[ERREUR] Impossible d'installer: $_" -ForegroundColor Red
     exit 1
 }
-
-# Créer/Recréer tâche planifiée
-Write-Host "[INFO] Configuration tache planifiee..." -ForegroundColor Yellow
-Unregister-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -Confirm:$false -EA SilentlyContinue
-
-$action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
-    -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$atlasPath\agent.ps1`""
-
-$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(5) `
-    -RepetitionInterval (New-TimeSpan -Minutes 1)
-
-$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-
-Register-ScheduledTask "SYAGA-ATLAS-Agent" -Action $action -Trigger $trigger -Principal $principal | Out-Null
-
-Write-Host "[OK] Tache planifiee creee (execution/minute)" -ForegroundColor Green
-
-# Test initial
-Write-Host ""
-Write-Host "[TEST] Execution initiale..." -ForegroundColor Cyan
-& PowerShell.exe -ExecutionPolicy Bypass -File "$atlasPath\agent.ps1"
 
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Green
