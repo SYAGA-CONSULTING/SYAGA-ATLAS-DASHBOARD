@@ -1,0 +1,170 @@
+# ATLAS Updater v10.0 - UPDATER SÉPARÉ
+$script:Version = "10.0"
+$hostname = $env:COMPUTERNAME
+$logFile = "C:\SYAGA-ATLAS\updater_log.txt"
+
+# ════════════════════════════════════════════════════
+# SHAREPOINT CONFIG
+# ════════════════════════════════════════════════════
+$tenantId = "6027d81c-ad9b-48f5-9da6-96f1bad11429"
+$clientId = "f7c4f1b2-3380-4e87-961f-09922ec452b4"
+$clientSecretB64 = "Z3Y0OFF+NHRkakY2RE9td1ZXSS5UdXJNcVcwaGJZZEpGRS5aeWFvaw=="
+$clientSecret = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($clientSecretB64))
+$siteName = "syagacons"
+$commandsListId = "ce76b316-0d45-42e3-9eda-58b90b3ca4c5"
+
+# ════════════════════════════════════════════════════
+# FONCTION LOG
+# ════════════════════════════════════════════════════
+function Write-Log {
+    param($Message, $Level = "INFO")
+    $timestamp = Get-Date -Format "HH:mm:ss"
+    $logEntry = "[$timestamp] [$Level] $Message"
+    
+    switch($Level) {
+        "ERROR" { Write-Host $logEntry -ForegroundColor Red }
+        "WARNING" { Write-Host $logEntry -ForegroundColor Yellow }
+        "SUCCESS" { Write-Host $logEntry -ForegroundColor Green }
+        "UPDATE" { Write-Host $logEntry -ForegroundColor Magenta }
+        default { Write-Host $logEntry }
+    }
+    
+    Add-Content -Path $logFile -Value $logEntry -Encoding UTF8 -ErrorAction SilentlyContinue
+}
+
+# ════════════════════════════════════════════════════
+# CHECK UPDATE (MÉTHODE v9.1 QUI MARCHE)
+# ════════════════════════════════════════════════════
+function Check-And-Update {
+    Write-Log "UPDATER v$($script:Version) - Check update" "UPDATE"
+    
+    try {
+        # Token
+        $tokenBody = @{
+            grant_type = "client_credentials"
+            client_id = "$clientId@$tenantId"
+            client_secret = $clientSecret
+            resource = "00000003-0000-0ff1-ce00-000000000000/${siteName}.sharepoint.com@$tenantId"
+        }
+        
+        $tokenResponse = Invoke-RestMethod -Uri "https://accounts.accesscontrol.windows.net/$tenantId/tokens/OAuth/2" `
+            -Method POST -Body $tokenBody -ContentType "application/x-www-form-urlencoded"
+        
+        $token = $tokenResponse.access_token
+        Write-Log "Token OK" "SUCCESS"
+        
+        # WebClient (méthode v9.1)
+        $webClient = New-Object System.Net.WebClient
+        $webClient.Headers.Add("Authorization", "Bearer $token")
+        $webClient.Headers.Add("Accept", "application/json;odata=verbose")
+        $webClient.Encoding = [System.Text.Encoding]::UTF8
+        
+        $searchUrl = "https://syagacons.sharepoint.com/_api/web/lists(guid'$commandsListId')/items"
+        Write-Log "Recherche commandes..."
+        
+        $jsonResponse = $webClient.DownloadString($searchUrl)
+        
+        # Nettoyer clés dupliquées
+        $cleanedJson = $jsonResponse -replace ',"ID":\d+', ''
+        
+        $response = $cleanedJson | ConvertFrom-Json
+        $allCommands = $response.d.results
+        
+        Write-Log "Total: $($allCommands.Count) commandes"
+        
+        # Chercher PENDING
+        $updateCommand = $null
+        foreach ($cmd in $allCommands) {
+            if ($cmd.Status -eq "PENDING") {
+                $targetHost = if ($cmd.TargetHostname) { $cmd.TargetHostname } else { "ALL" }
+                
+                if ($targetHost -eq "ALL" -or $targetHost -eq $hostname) {
+                    if ($cmd.CommandType -eq "UPDATE_ALL" -or $cmd.CommandType -eq "UPDATE") {
+                        $updateCommand = $cmd
+                        Write-Log ">>> UPDATE DETECTE: v$($cmd.TargetVersion) <<<" "SUCCESS"
+                        break
+                    }
+                }
+            }
+        }
+        
+        if ($updateCommand) {
+            $newVersion = $updateCommand.TargetVersion
+            Write-Log "Telechargement agent v$newVersion..." "UPDATE"
+            
+            $newAgentUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v$newVersion.ps1"
+            $tempPath = "C:\SYAGA-ATLAS\agent_temp.ps1"
+            
+            # Télécharger
+            Invoke-WebRequest -Uri $newAgentUrl -OutFile $tempPath -UseBasicParsing
+            
+            if (Test-Path $tempPath) {
+                Write-Log "Agent telecharge OK" "SUCCESS"
+                
+                # Arrêter la tâche agent si en cours
+                Stop-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -ErrorAction SilentlyContinue
+                Start-Sleep -Seconds 2
+                
+                # Remplacer
+                $agentPath = "C:\SYAGA-ATLAS\agent.ps1"
+                $backupPath = "C:\SYAGA-ATLAS\agent_backup.ps1"
+                
+                if (Test-Path $agentPath) {
+                    Copy-Item $agentPath $backupPath -Force
+                }
+                
+                Move-Item $tempPath $agentPath -Force
+                
+                Write-Log ">>> MISE A JOUR REUSSIE vers v$newVersion <<<" "SUCCESS"
+                
+                # Marquer DONE
+                if ($updateCommand.Id) {
+                    $updateUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$commandsListId')/items($($updateCommand.Id))"
+                    $updateBody = @{
+                        "__metadata" = @{ type = "SP.Data.ATLASCommandsListItem" }
+                        Status = "DONE"
+                        ExecutedBy = $hostname
+                    } | ConvertTo-Json
+                    
+                    $updateHeaders = @{
+                        "Authorization" = "Bearer $token"
+                        "Accept" = "application/json;odata=verbose"
+                        "Content-Type" = "application/json;odata=verbose;charset=utf-8"
+                        "X-HTTP-Method" = "MERGE"
+                        "IF-MATCH" = "*"
+                    }
+                    
+                    try {
+                        Invoke-RestMethod -Uri $updateUrl -Headers $updateHeaders -Method POST -Body $updateBody
+                        Write-Log "Commande marquee DONE" "SUCCESS"
+                    } catch {
+                        Write-Log "Erreur marquage: $_" "WARNING"
+                    }
+                }
+                
+                # Relancer la tâche agent
+                Start-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -ErrorAction SilentlyContinue
+                Write-Log "Tache agent relancee"
+            }
+        } else {
+            Write-Log "Aucune mise a jour disponible"
+        }
+        
+        $webClient.Dispose()
+        
+    } catch {
+        Write-Log "Erreur: $_" "ERROR"
+    }
+}
+
+# ════════════════════════════════════════════════════
+# MAIN
+# ════════════════════════════════════════════════════
+Write-Log "="*50
+Write-Log "UPDATER v$($script:Version) demarre" "UPDATE"
+
+Check-And-Update
+
+Write-Log "Fin updater"
+Write-Log "="*50
+exit 0
