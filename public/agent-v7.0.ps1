@@ -1,5 +1,5 @@
-# ATLAS Agent v6.6 - Test final UPDATE_ALL fonctionnel
-$version = "6.6"
+# ATLAS Agent v7.0 - NOUVELLE LISTE dédiée aux commandes
+$version = "7.0"
 $configPath = "C:\SYAGA-ATLAS"
 $rollbackTimeout = 5  # Minutes avant rollback automatique
 
@@ -194,7 +194,7 @@ function Send-RollbackReport {
 }
 
 Write-Log "===== Agent ATLAS v$version DEMARRE =====" "OK"
-Write-Log "[v6.6] Test final avec filtrage UPDATE_ALL fonctionnel" "UPDATE"
+Write-Log "[v7.0] Utilisation liste ATLAS-Commands séparée pour UPDATE_ALL" "UPDATE"
 
 # 1. Vérifier si on vient d'un rollback
 $wasRolledBack = Check-RollbackInfo
