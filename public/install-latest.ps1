@@ -1,7 +1,7 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "7.3"  # LOGS SÉPARÉS POUR ÉVITER TRONCATURE 250 CHAR
+$LATEST_VERSION = "7.4"  # LOGS COMPLETS DANS SHAREPOINT DOCUMENTS
 $LATEST_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v$LATEST_VERSION.ps1"
 
 Write-Host ""
