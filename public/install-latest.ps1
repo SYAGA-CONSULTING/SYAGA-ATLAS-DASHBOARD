@@ -1,7 +1,7 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "6.4"  # Test UPDATE_ALL + Logs + Rollback
+$LATEST_VERSION = "6.5"  # Fix détection UPDATE_ALL avec filtrage SharePoint
 $LATEST_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v$LATEST_VERSION.ps1"
 
 Write-Host ""
