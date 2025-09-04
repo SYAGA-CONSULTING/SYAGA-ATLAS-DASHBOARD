@@ -1,5 +1,5 @@
-# ATLAS Agent v10.3 - AVEC TESTS PHASE 1 VALIDATION
-$script:Version = "10.3-phase1"
+# ATLAS Agent v10.3 - AGENT SIMPLE (PAS D'UPDATE) 
+$script:Version = "10.3"
 $hostname = $env:COMPUTERNAME
 $logFile = "C:\SYAGA-ATLAS\atlas_log.txt"
 
@@ -81,31 +81,6 @@ function Send-HeartbeatWithLogs {
         
         Write-Log "Metriques: CPU=$cpuUsage% MEM=$memUsage% DISK=$diskFreeGB GB"
         
-        # TESTS PHASE 1 - VALIDATION v10.3
-        $validationTests = @{
-            AgentPresent = (Test-Path "C:\SYAGA-ATLAS\agent.ps1")
-            TaskAgent = (Get-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -ErrorAction SilentlyContinue) -ne $null
-            TaskUpdater = (Get-ScheduledTask -TaskName "SYAGA-ATLAS-Updater" -ErrorAction SilentlyContinue) -ne $null
-            BackupExists = (Test-Path "C:\SYAGA-BACKUP-v10.3")
-        }
-        
-        # Si backup n'existe pas, le créer
-        if (-not $validationTests.BackupExists) {
-            Write-Log "Creation backup v10.3..." "WARNING"
-            try {
-                Copy-Item -Path "C:\SYAGA-ATLAS" -Destination "C:\SYAGA-BACKUP-v10.3" -Recurse -Force
-                $validationTests.BackupExists = $true
-                Write-Log "Backup cree avec succes" "SUCCESS"
-            } catch {
-                Write-Log "Erreur creation backup: $_" "ERROR"
-            }
-        }
-        
-        $allTestsPassed = $validationTests.Values -notcontains $false
-        $validationStatus = if ($allTestsPassed) { "VALIDATED" } else { "NEEDS_ATTENTION" }
-        
-        Write-Log "PHASE 1 VALIDATION: $validationStatus" $(if ($allTestsPassed) {"SUCCESS"} else {"WARNING"})
-        
         # Vérifier si existe
         $searchUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$serversListId')/items?`$filter=Hostname eq '$hostname'"
         $existing = Invoke-RestMethod -Uri $searchUrl -Headers $headers -Method GET
@@ -116,14 +91,13 @@ function Send-HeartbeatWithLogs {
             Title = $hostname
             Hostname = $hostname
             IPAddress = $ip
-            State = $validationStatus  # VALIDATED ou NEEDS_ATTENTION
+            State = "ONLINE"
             LastContact = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
             AgentVersion = $script:Version
             CPUUsage = $cpuUsage
             MemoryUsage = $memUsage
             DiskSpaceGB = $diskFreeGB
             Logs = $script:LogsBuffer
-            ValidationTests = ($validationTests | ConvertTo-Json -Compress)
         }
         
         $jsonData = $data | ConvertTo-Json -Depth 10
