@@ -1,5 +1,5 @@
-# ATLAS Agent v10.5 - AGENT SIMPLE (PAS D'UPDATE) 
-$script:Version = "10.5"
+# ATLAS Agent v10.6 - AGENT SIMPLE (PAS D'UPDATE) 
+$script:Version = "10.6"
 $hostname = $env:COMPUTERNAME
 $logFile = "C:\SYAGA-ATLAS\atlas_log.txt"
 
@@ -131,7 +131,7 @@ function Send-HeartbeatWithLogs {
 # ════════════════════════════════════════════════════
 Write-Log "Agent v$($script:Version) - SIMPLE" "SUCCESS"
 Write-Log "Pas d'auto-update (gere par updater.ps1)"
-Write-Log "v10.5: Agent operationnel" "SUCCESS"
+Write-Log "v10.6: Agent operationnel avec fix SharePoint" "SUCCESS"
 
 Send-HeartbeatWithLogs
 
