@@ -1,8 +1,8 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "10.6"  # VERSION AVEC FIX SHAREPOINT ET UPDATER
-$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v10.6.ps1"
+$LATEST_VERSION = "10.7"  # VERSION SANS FILTRE SHAREPOINT (CREATION DIRECTE)
+$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v10.7.ps1"
 
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Cyan
