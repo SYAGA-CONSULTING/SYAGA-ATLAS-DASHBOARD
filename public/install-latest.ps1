@@ -1,8 +1,8 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "10.3"  # VERSION FONDATION STABLE
-$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v10.3.ps1"
+$LATEST_VERSION = "10.6"  # VERSION AVEC FIX SHAREPOINT ET UPDATER
+$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v10.6.ps1"
 
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Cyan
@@ -130,7 +130,7 @@ if ($p) {
 
 Write-Host "[OK] Configuration sauvegardee (Type: $serverType)" -ForegroundColor Green
 
-# Télécharger et exécuter install-v10.0.ps1 qui installe agent + updater + 2 tâches
+# Télécharger et exécuter install-v10.6.ps1 qui installe agent + updater + 2 tâches
 Write-Host "[INFO] Telechargement installateur v$LATEST_VERSION..." -ForegroundColor Yellow
 Write-Host "URL: $LATEST_INSTALL_URL" -ForegroundColor DarkGray
 
