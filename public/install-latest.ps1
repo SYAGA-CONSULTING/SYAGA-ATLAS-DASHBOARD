@@ -1,7 +1,7 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "9.0"  # WEBCLIENT AU LIEU D'INVOKE-RESTMETHOD
+$LATEST_VERSION = "9.1"  # FIX CLÉS DUPLIQUÉES JSON (TESTÉ ET VALIDÉ)
 $LATEST_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v$LATEST_VERSION.ps1"
 
 Write-Host ""
