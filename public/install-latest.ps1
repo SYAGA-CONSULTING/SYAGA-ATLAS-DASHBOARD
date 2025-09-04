@@ -1,7 +1,7 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "7.8"  # SANS EMOJIS - FIX ERREUR 400
+$LATEST_VERSION = "7.9"  # ULTRA DEBUG ERREUR 400
 $LATEST_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v$LATEST_VERSION.ps1"
 
 Write-Host ""
