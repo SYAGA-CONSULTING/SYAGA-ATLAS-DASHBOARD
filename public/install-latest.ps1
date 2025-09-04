@@ -1,7 +1,7 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "7.0"  # NOUVELLE LISTE dédiée aux commandes
+$LATEST_VERSION = "7.1"  # Test AUTO-UPDATE avec liste séparée
 $LATEST_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v$LATEST_VERSION.ps1"
 
 Write-Host ""
