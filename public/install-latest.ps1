@@ -1,7 +1,7 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "7.5"  # LOGS SÉPARÉS DANS LISTE SHAREPOINT
+$LATEST_VERSION = "7.6"  # LOGS DANS LE MÊME UPDATE QUE HEARTBEAT
 $LATEST_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v$LATEST_VERSION.ps1"
 
 Write-Host ""
