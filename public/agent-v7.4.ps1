@@ -161,7 +161,7 @@ function Check-AutoUpdate {
         
         # Recherche commande UPDATE_ALL
         Write-Log "Recherche commandes UPDATE dans ATLAS-Commands..." "DEBUG"
-        $searchUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$commandsListId')/items?`$filter=Status eq 'PENDING' and (TargetHostname eq 'ALL' or TargetHostname eq '$hostname')&`$select=Title,CommandType,Status,Parameters,TargetHostname&`$orderby=Created desc"
+        $searchUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$commandsListId')/items?`$filter=Status eq 'PENDING' and (TargetHostname eq 'ALL' or TargetHostname eq '$hostname')&`$select=Id,Title,CommandType,Status,TargetVersion,TargetHostname&`$orderby=Created desc"
         
         Write-Log "URL: $searchUrl" "DEBUG"
         
@@ -176,12 +176,11 @@ function Check-AutoUpdate {
             if ($cmd.CommandType -eq "UPDATE_ALL" -or $cmd.CommandType -eq "UPDATE") {
                 Write-Log "🚀 COMMANDE UPDATE DÉTECTÉE !" "UPDATE"
                 
-                # Récupérer nouvelle version depuis Parameters
+                # Récupérer nouvelle version depuis TargetVersion
                 $newVersion = "7.4"  # Par défaut
-                if ($cmd.Parameters) {
-                    if ($cmd.Parameters -match "v?([\d\.]+)") {
-                        $newVersion = $matches[1]
-                    }
+                if ($cmd.TargetVersion) {
+                    $newVersion = $cmd.TargetVersion
+                    Write-Log "Version cible: v$newVersion" "DEBUG"
                 }
                 
                 Write-Log "Téléchargement agent v$newVersion..." "UPDATE"
