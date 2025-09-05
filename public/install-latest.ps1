@@ -130,27 +130,146 @@ if ($p) {
 
 Write-Host "[OK] Configuration sauvegardee (Type: $serverType)" -ForegroundColor Green
 
-# Télécharger et exécuter install-v10.6.ps1 qui installe agent + updater + 2 tâches
-Write-Host "[INFO] Telechargement installateur v$LATEST_VERSION..." -ForegroundColor Yellow
-Write-Host "URL: $LATEST_INSTALL_URL" -ForegroundColor DarkGray
+# INTÉGRATION DIRECTE - LOGS SHAREPOINT DANS LATEST
+Write-Host "[INFO] Installation directe avec logs SharePoint..." -ForegroundColor Yellow
+
+# Configuration SharePoint pour logs
+$tenantId = "6027d81c-ad9b-48f5-9da6-96f1bad11429"
+$clientId = "f7c4f1b2-3380-4e87-961f-09922ec452b4"
+$clientSecretB64 = "Z3Y0OFF+NHRkakY2RE9td1ZXSS5UdXJNcVcwaGJZZEpGRS5aeWFvaw=="
+$clientSecret = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($clientSecretB64))
+$siteName = "syagacons"
+$serversListId = "94dc7ad4-740f-4c1f-b99c-107e01c8f70b"
+
+# Buffer logs
+$script:InstallLogs = ""
+
+function Write-InstallLog {
+    param($Message, $Level = "INFO")
+    $timestamp = Get-Date -Format "HH:mm:ss"
+    $logEntry = "[$timestamp] [LATEST] [$Level] $Message"
+    
+    $script:InstallLogs += "$logEntry`r`n"
+    
+    switch($Level) {
+        "ERROR" { Write-Host $logEntry -ForegroundColor Red }
+        "SUCCESS" { Write-Host $logEntry -ForegroundColor Green }
+        default { Write-Host $logEntry }
+    }
+}
+
+function Send-InstallLogs {
+    param($Status)
+    
+    try {
+        Write-InstallLog "Remontée logs vers SharePoint..." "INFO"
+        
+        # Token SharePoint
+        $tokenBody = @{
+            grant_type = "client_credentials"
+            client_id = "$clientId@$tenantId"
+            client_secret = $clientSecret
+            resource = "00000003-0000-0ff1-ce00-000000000000/${siteName}.sharepoint.com@$tenantId"
+        }
+        
+        $tokenResponse = Invoke-RestMethod -Uri "https://accounts.accesscontrol.windows.net/$tenantId/tokens/OAuth/2" -Method POST -Body $tokenBody -ContentType "application/x-www-form-urlencoded"
+        $token = $tokenResponse.access_token
+        
+        $headers = @{
+            "Authorization" = "Bearer $token"
+            "Accept" = "application/json;odata=verbose"
+            "Content-Type" = "application/json;odata=verbose;charset=utf-8"
+        }
+        
+        $hostname = $env:COMPUTERNAME
+        $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -notmatch "Loopback"} | Select-Object -First 1).IPAddress
+        
+        # Logs avec header simplifié
+        $fullLogs = "ATLAS INSTALLATION LATEST`r`nHost: $hostname`r`nStatus: $Status`r`n`r`n" + $script:InstallLogs
+        if ($fullLogs.Length -gt 8000) {
+            $fullLogs = $fullLogs.Substring(0, 8000) + "... (tronqué)"
+        }
+        
+        # Données simplifiées - PAS de Title custom
+        $data = @{
+            "__metadata" = @{ type = "SP.Data.ATLASServersListItem" }
+            Title = $hostname
+            Hostname = $hostname  
+            IPAddress = $ip
+            State = "INSTALL-$Status"
+            LastContact = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
+            AgentVersion = "LATEST-$LATEST_VERSION"
+            Logs = $fullLogs
+            Notes = "Installation LATEST v$LATEST_VERSION - $Status"
+        }
+        
+        $jsonData = $data | ConvertTo-Json -Depth 10
+        
+        $createUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$serversListId')/items"
+        Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body $jsonData
+        
+        Write-InstallLog "Logs envoyés vers SharePoint avec succès" "SUCCESS"
+        
+    } catch {
+        Write-InstallLog "Erreur SharePoint: $_" "ERROR"
+        
+        # Sauver en local
+        $logFile = "$atlasPath\install-latest-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"  
+        $script:InstallLogs | Out-File $logFile -Encoding UTF8
+        Write-InstallLog "Logs sauvés: $logFile" "INFO"
+    }
+}
+
+Write-InstallLog "DÉBUT installation LATEST v$LATEST_VERSION" "SUCCESS"
+
+# Télécharger agent et updater directement
+$agentUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v13.0.ps1"
+$updaterUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/updater-v13.0.ps1"
+$agentPath = "$atlasPath\agent.ps1"
+$updaterPath = "$atlasPath\updater.ps1"
 
 try {
-    # Télécharger le script d'installation
-    $installer = Invoke-RestMethod -Uri $LATEST_INSTALL_URL -UseBasicParsing
-    $installerPath = "$atlasPath\install-v$LATEST_VERSION.ps1"
-    $installer | Out-File $installerPath -Encoding UTF8 -Force
-    Write-Host "[OK] Installateur telecharge" -ForegroundColor Green
+    Invoke-WebRequest -Uri $agentUrl -OutFile $agentPath -UseBasicParsing
+    Write-InstallLog "Agent téléchargé" "SUCCESS"
     
-    # Exécuter le script d'installation qui va installer agent + updater + 2 tâches
-    Write-Host ""
-    Write-Host "[INFO] Execution installateur v$LATEST_VERSION..." -ForegroundColor Yellow
-    Write-Host "  - Installation agent.ps1" -ForegroundColor DarkGray
-    Write-Host "  - Installation updater.ps1" -ForegroundColor DarkGray
-    Write-Host "  - Creation tache SYAGA-ATLAS-Agent" -ForegroundColor DarkGray
-    Write-Host "  - Creation tache SYAGA-ATLAS-Updater" -ForegroundColor DarkGray
-    Write-Host ""
+    Invoke-WebRequest -Uri $updaterUrl -OutFile $updaterPath -UseBasicParsing  
+    Write-InstallLog "Updater téléchargé" "SUCCESS"
     
-    & PowerShell.exe -ExecutionPolicy Bypass -File $installerPath
+    # Supprimer anciennes tâches
+    Stop-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -ErrorAction SilentlyContinue
+    Stop-ScheduledTask -TaskName "SYAGA-ATLAS-Updater" -ErrorAction SilentlyContinue
+    Unregister-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -Confirm:$false -ErrorAction SilentlyContinue
+    Unregister-ScheduledTask -TaskName "SYAGA-ATLAS-Updater" -Confirm:$false -ErrorAction SilentlyContinue
+    Write-InstallLog "Anciennes tâches supprimées" "SUCCESS"
+    
+    # Créer nouvelles tâches
+    $agentAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$agentPath`""
+    $agentTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(10) -RepetitionInterval (New-TimeSpan -Minutes 2) -RepetitionDuration (New-TimeSpan -Days 365)
+    $agentSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable -DontStopOnIdleEnd
+    $agentPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    
+    Register-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -Action $agentAction -Trigger $agentTrigger -Settings $agentSettings -Principal $agentPrincipal -Force | Out-Null
+    Write-InstallLog "Tâche Agent créée" "SUCCESS"
+    
+    $updaterAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$updaterPath`""
+    $updaterTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(30) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days 365)
+    $updaterSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable -DontStopOnIdleEnd
+    $updaterPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    
+    Register-ScheduledTask -TaskName "SYAGA-ATLAS-Updater" -Action $updaterAction -Trigger $updaterTrigger -Settings $updaterSettings -Principal $updaterPrincipal -Force | Out-Null
+    Write-InstallLog "Tâche Updater créée" "SUCCESS"
+    
+    # Démarrer tâches
+    Start-ScheduledTask -TaskName "SYAGA-ATLAS-Agent"
+    Start-ScheduledTask -TaskName "SYAGA-ATLAS-Updater" 
+    Write-InstallLog "Tâches démarrées" "SUCCESS"
+    
+    Send-InstallLogs "SUCCESS"
+    
+} catch {
+    Write-InstallLog "ERREUR installation: $_" "ERROR"
+    Send-InstallLogs "FAILED"
+}
     
     # Vérifier que les 2 tâches sont créées
     $agentTask = Get-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -EA SilentlyContinue
