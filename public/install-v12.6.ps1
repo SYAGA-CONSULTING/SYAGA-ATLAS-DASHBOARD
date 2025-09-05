@@ -210,16 +210,16 @@ Write-Host "=== MARQUAGE COMMANDE v$VERSION ===" -ForegroundColor Cyan
 & $updaterPath
 
 Write-Host ""
-Write-Host "════════════════════════════════════════════════════" -ForegroundColor Green
-Write-Host " ✓ ATLAS v$VERSION INSTALLÉ AVEC SUCCÈS" -ForegroundColor Green
-Write-Host "════════════════════════════════════════════════════" -ForegroundColor Green
+Write-Host "===================================================" -ForegroundColor Green
+Write-Host " ATLAS v$VERSION INSTALLE AVEC SUCCES" -ForegroundColor Green
+Write-Host "===================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "NOUVEAUTÉS v$VERSION:" -ForegroundColor Yellow
-Write-Host "  ✓ Logs enrichis avec header structuré" -ForegroundColor White
-Write-Host "  ✓ Tracking Agent + Updater séparé" -ForegroundColor White
-Write-Host "  ✓ Buffer 15KB pour plus de logs" -ForegroundColor White
-Write-Host "  ✓ Auto-fix updater intégré" -ForegroundColor White
-Write-Host "  ✓ Métriques détaillées (MB, GB)" -ForegroundColor White
+Write-Host "NOUVEAUTES v$VERSION :" -ForegroundColor Yellow
+Write-Host "  - Logs enrichis avec header structure" -ForegroundColor White
+Write-Host "  - Tracking Agent + Updater separe" -ForegroundColor White
+Write-Host "  - Buffer 15KB pour plus de logs" -ForegroundColor White
+Write-Host "  - Auto-fix updater integre" -ForegroundColor White
+Write-Host "  - Metriques detaillees (MB, GB)" -ForegroundColor White
 Write-Host ""
 Write-Host "Fichiers:" -ForegroundColor Yellow
 Write-Host "  Agent    : $agentPath (v$VERSION)" -ForegroundColor White
@@ -227,18 +227,18 @@ Write-Host "  Updater  : $updaterPath (v$VERSION)" -ForegroundColor White
 Write-Host "  Logs     : $atlasPath\atlas_log.txt" -ForegroundColor White
 Write-Host ""
 Write-Host "Commandes:" -ForegroundColor Yellow
-Write-Host "  Vérifier : .\install-v$VERSION.ps1 -Check" -ForegroundColor White
-Write-Host "  Désinstaller : .\install-v$VERSION.ps1 -Uninstall" -ForegroundColor White
+Write-Host "  Verifier : .\install-v$VERSION.ps1 -Check" -ForegroundColor White
+Write-Host "  Desinstaller : .\install-v$VERSION.ps1 -Uninstall" -ForegroundColor White
 Write-Host ""
 
 # VÉRIFICATION FINALE
 $tasks = Get-ScheduledTask | Where-Object {$_.TaskName -like "SYAGA-ATLAS-*"}
 
 if ($tasks.Count -eq 2) {
-    Write-Host "[OK] Les 2 tâches sont installées:" -ForegroundColor Green
+    Write-Host "[OK] Les 2 taches sont installees:" -ForegroundColor Green
     foreach ($task in $tasks) {
         $info = Get-ScheduledTaskInfo -TaskName $task.TaskName
-        Write-Host "  ✓ $($task.TaskName) : $($task.State)" -ForegroundColor Green
+        Write-Host "  - $($task.TaskName) : $($task.State)" -ForegroundColor Green
     }
 } else {
     Write-Host "[WARNING] Nombre de tâches incorrect: $($tasks.Count)" -ForegroundColor Yellow
