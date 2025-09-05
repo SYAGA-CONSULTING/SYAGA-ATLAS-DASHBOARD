@@ -1,8 +1,7 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "13.5"  # LOGS SHAREPOINT INTÉGRÉS + AGENT/UPDATER v13.5
-$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v13.4.ps1"
+$LATEST_VERSION = "13.5"  # TOUT INTÉGRÉ - DEBUG + LOGS + FIX NOTES
 
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Cyan
