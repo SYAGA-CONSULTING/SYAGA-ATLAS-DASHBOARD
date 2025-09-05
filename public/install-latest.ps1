@@ -1,7 +1,7 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "13.4"  # FIX REMONTÉE LOGS SHAREPOINT (400 CORRIGÉ)
+$LATEST_VERSION = "13.5"  # LOGS SHAREPOINT INTÉGRÉS + AGENT/UPDATER v13.5
 $LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v13.4.ps1"
 
 Write-Host ""
@@ -222,9 +222,9 @@ function Send-InstallLogs {
 
 Write-InstallLog "DÉBUT installation LATEST v$LATEST_VERSION" "SUCCESS"
 
-# Télécharger agent et updater directement
-$agentUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v13.0.ps1"
-$updaterUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/updater-v13.0.ps1"
+# Télécharger agent et updater v13.5
+$agentUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v13.5.ps1"
+$updaterUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/updater-v13.5.ps1"
 $agentPath = "$atlasPath\agent.ps1"
 $updaterPath = "$atlasPath\updater.ps1"
 
