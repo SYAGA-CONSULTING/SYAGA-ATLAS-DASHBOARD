@@ -1,8 +1,8 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "12.0"  # VERSION LOGS ENRICHIS - JSON & BUFFER
-$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v12.0.ps1"
+$LATEST_VERSION = "12.1"  # VERSION FIX ERREUR 400 + ID UPDATER
+$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v12.1.ps1"
 
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Cyan
