@@ -1,5 +1,5 @@
-# ATLAS Updater v12.0 - IDENTIQUE À v11.1 (STABLE)
-$script:Version = "12.0"
+# ATLAS Updater v12.1 - FIX RÉCUPÉRATION ID
+$script:Version = "12.1"
 $hostname = $env:COMPUTERNAME
 $logFile = "C:\SYAGA-ATLAS\updater_log.txt"
 
@@ -33,7 +33,7 @@ function Write-Log {
 }
 
 # ════════════════════════════════════════════════════
-# CHECK UPDATE (MÉTHODE v11.1 STABLE)
+# CHECK UPDATE (MÉTHODE v11.1 + FIX ID)
 # ════════════════════════════════════════════════════
 function Check-And-Update {
     Write-Log "UPDATER v$($script:Version) - Check update" "UPDATE"
@@ -90,18 +90,27 @@ function Check-And-Update {
         $updateCommand = $null
         if ($pendingCommands.Count -gt 0) {
             Write-Log "$($pendingCommands.Count) commandes PENDING trouvees"
-            # Trier par Id decroissant (plus recent = plus gros Id)
+            
+            # v12.1: Trier par Id ou ID (gestion casse)
+            foreach ($cmd in $pendingCommands) {
+                if (-not $cmd.Id -and $cmd.ID) {
+                    $cmd | Add-Member -MemberType NoteProperty -Name "Id" -Value $cmd.ID -Force
+                }
+            }
+            
             $updateCommand = $pendingCommands | Sort-Object -Property Id -Descending | Select-Object -First 1
-            # v12.1: Gestion Id et ID
+            
+            # v12.1: Récupérer l'ID correctement
             $commandId = if ($updateCommand.Id) { $updateCommand.Id } elseif ($updateCommand.ID) { $updateCommand.ID } else { "Unknown" }
             Write-Log ">>> COMMANDE LA PLUS RECENTE: ID $commandId v$($updateCommand.TargetVersion) <<<" "SUCCESS"
             
             # NETTOYER les anciennes
             foreach ($oldCmd in $pendingCommands) {
-                if ($oldCmd.Id -ne $updateCommand.Id) {
-                    Write-Log "Nettoyage ancienne commande ID $($oldCmd.Id) v$($oldCmd.TargetVersion)" "WARNING"
+                $oldId = if ($oldCmd.Id) { $oldCmd.Id } elseif ($oldCmd.ID) { $oldCmd.ID } else { $null }
+                if ($oldId -and $oldId -ne $commandId) {
+                    Write-Log "Nettoyage ancienne commande ID $oldId v$($oldCmd.TargetVersion)" "WARNING"
                     try {
-                        $cleanUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$commandsListId')/items($($oldCmd.Id))"
+                        $cleanUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$commandsListId')/items($oldId)"
                         $cleanBody = @{
                             "__metadata" = @{ type = "SP.Data.ATLASCommandsListItem" }
                             Status = "OBSOLETE"
@@ -150,7 +159,7 @@ function Check-And-Update {
                 
                 Write-Log ">>> MISE A JOUR REUSSIE vers v$newVersion <<<" "SUCCESS"
                 
-                # Marquer DONE (v11.0 avec Id ou ID)
+                # Marquer DONE (v12.1 avec ID correct)
                 $cmdId = if ($updateCommand.Id) { $updateCommand.Id } elseif ($updateCommand.ID) { $updateCommand.ID } else { $null }
                 Write-Log "Marquage commande ID $cmdId comme DONE"
                 
@@ -199,7 +208,7 @@ function Check-And-Update {
 # MAIN
 # ════════════════════════════════════════════════════
 Write-Log "="*50
-Write-Log "UPDATER v$($script:Version) demarre" "UPDATE"
+Write-Log "UPDATER v$($script:Version) demarre - FIX ID" "UPDATE"
 
 Check-And-Update
 

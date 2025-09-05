@@ -1,5 +1,5 @@
-# ATLAS Agent v12.0 - LOGS ENRICHIS ET CONTRÔLE TOTAL
-$script:Version = "12.0"
+# ATLAS Agent v12.1 - FIX ERREUR 400 + LOGS ENRICHIS
+$script:Version = "12.1"
 $hostname = $env:COMPUTERNAME
 $logFile = "C:\SYAGA-ATLAS\atlas_log.txt"
 $jsonLogFile = "C:\SYAGA-ATLAS\atlas_log.json"
@@ -143,7 +143,7 @@ function Send-HeartbeatWithLogs {
         # Cela évite l'erreur 500 sur le filtre
         $existing = @{ d = @{ results = @() } }  # Simule aucune entrée trouvée
         
-        # DONNÉES
+        # DONNÉES - v12.1: Sans champs problématiques
         $data = @{
             "__metadata" = @{ type = "SP.Data.ATLASServersListItem" }
             Title = $hostname
@@ -156,10 +156,17 @@ function Send-HeartbeatWithLogs {
             MemoryUsage = $memUsage
             DiskSpaceGB = $diskFreeGB
             Logs = ($script:LogsBuffer | Select-Object -Last 100 | ForEach-Object { $_.Text }) -join "`r`n"
-            LogsJSON = ($script:LogsBuffer | Select-Object -Last 50 | ForEach-Object { $_.Json } | ConvertTo-Json -Compress)
-            LogCounters = $script:LogCounters | ConvertTo-Json -Compress
-            ProcessCount = $processes
-            ServiceCount = $services
+        }
+        
+        # v12.1: Ajouter LogsJSON et LogCounters seulement si petits
+        $logsJson = ($script:LogsBuffer | Select-Object -Last 20 | ForEach-Object { $_.Json } | ConvertTo-Json -Compress)
+        if ($logsJson.Length -lt 5000) {
+            $data.LogsJSON = $logsJson
+        }
+        
+        $countersJson = $script:LogCounters | ConvertTo-Json -Compress
+        if ($countersJson.Length -lt 1000) {
+            $data.LogCounters = $countersJson
         }
         
         $jsonData = $data | ConvertTo-Json -Depth 10
@@ -191,19 +198,14 @@ function Send-HeartbeatWithLogs {
 # ════════════════════════════════════════════════════
 # MAIN - SIMPLE ET COURT
 # ════════════════════════════════════════════════════
-Write-Log "Agent v$($script:Version) - SIMPLE" "SUCCESS"
+Write-Log "Agent v$($script:Version) - FIX 400" "SUCCESS"
 Write-Log "Pas d'auto-update (gere par updater.ps1)"
-Write-Log "v12.0: Agent avec logs enrichis" "SUCCESS" "STARTUP"
-Write-Log "Buffer: $($script:MaxBufferSize) lignes, Logs JSON activés" "INFO" "CONFIG"
-
-# v12.0 : Test du système de logs
-Write-Log "Test logs - INFO" "INFO" "TEST"
-Write-Log "Test logs - WARNING" "WARNING" "TEST"
-Write-Log "Test logs - DEBUG" "DEBUG" "TEST"
+Write-Log "v12.1: Fix erreur 400 + Logs optimisés" "SUCCESS" "STARTUP"
+Write-Log "Buffer: $($script:MaxBufferSize) lignes, JSON léger" "INFO" "CONFIG"
 
 Send-HeartbeatWithLogs
 
 # v12.0 : Résumé des logs
 Write-Log "Résumé: INFO=$($script:LogCounters.INFO) WARN=$($script:LogCounters.WARNING) ERR=$($script:LogCounters.ERROR) OK=$($script:LogCounters.SUCCESS)" "INFO" "SUMMARY"
-Write-Log "Fin execution v12.0" "INFO" "SHUTDOWN"
+Write-Log "Fin execution v12.1" "INFO" "SHUTDOWN"
 exit 0
