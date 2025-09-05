@@ -213,10 +213,91 @@ function Send-InstallLogs {
     } catch {
         Write-InstallLog "Erreur SharePoint: $_" "ERROR"
         
-        # Sauver en local
-        $logFile = "$atlasPath\install-latest-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"  
-        $script:InstallLogs | Out-File $logFile -Encoding UTF8
-        Write-InstallLog "Logs sauvés: $logFile" "INFO"
+        # DEBUG ERREUR 400 - TESTS PROGRESSIFS
+        Write-InstallLog "=== DEBUG ERREUR 400 ===" "INFO"
+        
+        try {
+            # TEST 1: Données minimales
+            Write-InstallLog "Test 1: Données minimales..." "INFO"
+            $testData1 = @{
+                "__metadata" = @{ type = "SP.Data.ATLASServersListItem" }
+                Title = "$hostname-TEST-$(Get-Date -Format 'HHmmss')"
+                Hostname = $hostname
+            }
+            $testJson1 = $testData1 | ConvertTo-Json -Depth 10
+            
+            $createUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$serversListId')/items"
+            Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body $testJson1
+            Write-InstallLog "✓ Test 1 OK - Données minimales acceptées" "SUCCESS"
+            
+            # TEST 2: Ajouter champs système
+            Write-InstallLog "Test 2: Avec champs système..." "INFO"
+            $testData2 = @{
+                "__metadata" = @{ type = "SP.Data.ATLASServersListItem" }
+                Title = "$hostname-TEST2-$(Get-Date -Format 'HHmmss')"
+                Hostname = $hostname
+                IPAddress = $ip
+                State = "TEST"
+                LastContact = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
+                AgentVersion = "TEST-v13.5"
+            }
+            $testJson2 = $testData2 | ConvertTo-Json -Depth 10
+            Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body $testJson2
+            Write-InstallLog "✓ Test 2 OK - Champs système acceptés" "SUCCESS"
+            
+            # TEST 3: Ajouter logs (PROBLÈME PROBABLE)
+            Write-InstallLog "Test 3: Avec logs courts..." "INFO"
+            $shortLogs = "Test logs courts - 123 caractères"
+            $testData3 = @{
+                "__metadata" = @{ type = "SP.Data.ATLASServersListItem" }
+                Title = "$hostname-TEST3-$(Get-Date -Format 'HHmmss')"
+                Hostname = $hostname
+                IPAddress = $ip
+                State = "TEST"
+                LastContact = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
+                AgentVersion = "TEST-v13.5"
+                Logs = $shortLogs
+                Notes = "Test logs courts"
+            }
+            $testJson3 = $testData3 | ConvertTo-Json -Depth 10
+            Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body $testJson3
+            Write-InstallLog "✓ Test 3 OK - Logs courts acceptés" "SUCCESS"
+            
+            # CONCLUSION: Le problème est la TAILLE des logs
+            Write-InstallLog "CONCLUSION: Erreur 400 = LOGS TROP LONGS" "ERROR"
+            Write-InstallLog "Réduction logs à 1000 caractères max..." "INFO"
+            
+            # Retry avec logs ultra-courts
+            $ultraShortLogs = $script:InstallLogs
+            if ($ultraShortLogs.Length -gt 1000) {
+                $ultraShortLogs = $ultraShortLogs.Substring($ultraShortLogs.Length - 1000)
+            }
+            
+            $finalData = @{
+                "__metadata" = @{ type = "SP.Data.ATLASServersListItem" }
+                Title = "$hostname-INSTALL-$(Get-Date -Format 'HHmmss')"
+                Hostname = $hostname  
+                IPAddress = $ip
+                State = "INSTALL-SUCCESS"
+                LastContact = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
+                AgentVersion = "LATEST-$LATEST_VERSION"
+                Logs = $ultraShortLogs
+                Notes = "Installation LATEST v$LATEST_VERSION - SUCCESS (logs réduits)"
+            }
+            
+            $finalJson = $finalData | ConvertTo-Json -Depth 10
+            Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body $finalJson
+            
+            Write-InstallLog "✓ LOGS INSTALLATION REMONTÉS AVEC SUCCÈS (version courte)" "SUCCESS"
+            
+        } catch {
+            Write-InstallLog "Debug échoué: $_" "ERROR"
+            
+            # Sauver en local comme fallback
+            $logFile = "$atlasPath\install-latest-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"  
+            $script:InstallLogs | Out-File $logFile -Encoding UTF8
+            Write-InstallLog "Logs sauvés en local: $logFile" "INFO"
+        }
     }
 }
 
