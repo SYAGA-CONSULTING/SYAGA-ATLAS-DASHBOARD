@@ -190,7 +190,7 @@ function Send-InstallLogs {
             $fullLogs = $fullLogs.Substring(0, 8000) + "... (tronqué)"
         }
         
-        # Données simplifiées - PAS de Title custom
+        # Données simplifiées - SANS Notes (cause erreur 400)
         $data = @{
             "__metadata" = @{ type = "SP.Data.ATLASServersListItem" }
             Title = $hostname
@@ -200,7 +200,6 @@ function Send-InstallLogs {
             LastContact = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
             AgentVersion = "LATEST-$LATEST_VERSION"
             Logs = $fullLogs
-            Notes = "Installation LATEST v$LATEST_VERSION - $Status"
         }
         
         $jsonData = $data | ConvertTo-Json -Depth 10
@@ -245,8 +244,8 @@ function Send-InstallLogs {
             Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body $testJson2
             Write-InstallLog "✓ Test 2 OK - Champs système acceptés" "SUCCESS"
             
-            # TEST 3: Ajouter logs (PROBLÈME PROBABLE)
-            Write-InstallLog "Test 3: Avec logs courts..." "INFO"
+            # TEST 3: Ajouter logs SANS Notes
+            Write-InstallLog "Test 3: Avec logs (SANS Notes)..." "INFO"
             $shortLogs = "Test logs courts - 123 caractères"
             $testData3 = @{
                 "__metadata" = @{ type = "SP.Data.ATLASServersListItem" }
@@ -257,7 +256,6 @@ function Send-InstallLogs {
                 LastContact = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
                 AgentVersion = "TEST-v13.5"
                 Logs = $shortLogs
-                Notes = "Test logs courts"
             }
             $testJson3 = $testData3 | ConvertTo-Json -Depth 10
             Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body $testJson3
@@ -282,7 +280,6 @@ function Send-InstallLogs {
                 LastContact = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
                 AgentVersion = "LATEST-$LATEST_VERSION"
                 Logs = $ultraShortLogs
-                Notes = "Installation LATEST v$LATEST_VERSION - SUCCESS (logs réduits)"
             }
             
             $finalJson = $finalData | ConvertTo-Json -Depth 10
