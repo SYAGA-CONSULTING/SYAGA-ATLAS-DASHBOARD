@@ -6,7 +6,7 @@
 # - Rapports détaillés
 # ════════════════════════════════════════════════════════════════════
 
-$script:Version = "13.0"
+$script:Version = "13.5"
 $hostname = $env:COMPUTERNAME
 $atlasPath = "C:\SYAGA-ATLAS"
 

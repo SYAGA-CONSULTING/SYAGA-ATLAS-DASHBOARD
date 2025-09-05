@@ -1,7 +1,7 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "13.5"  # TOUT INTÉGRÉ - DEBUG + LOGS + FIX NOTES
+$LATEST_VERSION = "17.0"  # IA PRÉDICTIVE ML - Version finale avec toutes capacités
 
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Cyan
@@ -299,9 +299,9 @@ function Send-InstallLogs {
 
 Write-InstallLog "DÉBUT installation LATEST v$LATEST_VERSION" "SUCCESS"
 
-# Télécharger agent et updater v13.5
-$agentUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v13.5.ps1"
-$updaterUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/updater-v13.5.ps1"
+# Télécharger agent et updater v17.0
+$agentUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v17.0.ps1"
+$updaterUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/updater-v14.0.ps1"
 $agentPath = "$atlasPath\agent.ps1"
 $updaterPath = "$atlasPath\updater.ps1"
 
