@@ -270,26 +270,20 @@ try {
     Write-InstallLog "ERREUR installation: $_" "ERROR"
     Send-InstallLogs "FAILED"
 }
-    
-    # Vérifier que les 2 tâches sont créées
-    $agentTask = Get-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -EA SilentlyContinue
-    $updaterTask = Get-ScheduledTask -TaskName "SYAGA-ATLAS-Updater" -EA SilentlyContinue
-    
-    if ($agentTask -and $updaterTask) {
-        Write-Host ""
-        Write-Host "[OK] Les 2 taches sont installees:" -ForegroundColor Green
-        Write-Host "  ✓ SYAGA-ATLAS-Agent   : Execution toutes les minutes" -ForegroundColor Green
-        Write-Host "  ✓ SYAGA-ATLAS-Updater : Verification MAJ toutes les minutes" -ForegroundColor Green
-    } else {
-        Write-Host "[ERREUR] Installation incomplete - taches manquantes" -ForegroundColor Red
-        if (!$agentTask) { Write-Host "  ✗ SYAGA-ATLAS-Agent manquante" -ForegroundColor Red }
-        if (!$updaterTask) { Write-Host "  ✗ SYAGA-ATLAS-Updater manquante" -ForegroundColor Red }
-        exit 1
-    }
-    
-} catch {
-    Write-Host "[ERREUR] Impossible d'installer: $_" -ForegroundColor Red
-    exit 1
+
+# Vérification finale des tâches
+$agentTask = Get-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -EA SilentlyContinue
+$updaterTask = Get-ScheduledTask -TaskName "SYAGA-ATLAS-Updater" -EA SilentlyContinue
+
+if ($agentTask -and $updaterTask) {
+    Write-Host ""
+    Write-Host "[OK] Les 2 taches sont installees:" -ForegroundColor Green
+    Write-Host "  ✓ SYAGA-ATLAS-Agent   : Execution toutes les minutes" -ForegroundColor Green
+    Write-Host "  ✓ SYAGA-ATLAS-Updater : Verification MAJ toutes les minutes" -ForegroundColor Green
+} else {
+    Write-Host "[ERREUR] Installation incomplete - taches manquantes" -ForegroundColor Red
+    if (!$agentTask) { Write-Host "  ✗ SYAGA-ATLAS-Agent manquante" -ForegroundColor Red }
+    if (!$updaterTask) { Write-Host "  ✗ SYAGA-ATLAS-Updater manquante" -ForegroundColor Red }
 }
 
 Write-Host ""
