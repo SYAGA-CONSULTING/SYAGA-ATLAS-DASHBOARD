@@ -1,8 +1,8 @@
 # ATLAS - Point d'entrée permanent pour la dernière version
 # CE FICHIER NE CHANGE JAMAIS - Toujours utiliser ce lien !
 
-$LATEST_VERSION = "12.6"  # LOGS ENRICHIS + AUTO-FIX + TRACKING
-$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v12.6.ps1"
+$LATEST_VERSION = "13.0"  # ARCHITECTURE PROFESSIONNELLE + MUTEX + VALIDATION
+$LATEST_INSTALL_URL = "https://white-river-053fc6703.2.azurestaticapps.net/public/install-v13.0.ps1"
 
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Cyan

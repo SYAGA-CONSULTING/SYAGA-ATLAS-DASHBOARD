@@ -1,265 +1,133 @@
-# ATLAS Agent v13.0 - ROLLBACK AUTOMATIQUE < 30 SECONDES
+# ════════════════════════════════════════════════════════════════════
+# ATLAS Agent v13.0 - COMPATIBLE AVEC UPDATER v13.0
+# ════════════════════════════════════════════════════════════════════
+# - Logs enrichis avec état updater
+# - Monitoring de l'updater
+# - Rapports détaillés
+# ════════════════════════════════════════════════════════════════════
+
 $script:Version = "13.0"
 $hostname = $env:COMPUTERNAME
-$logFile = "C:\SYAGA-ATLAS\atlas_log.txt"
-$jsonLogFile = "C:\SYAGA-ATLAS\atlas_log.json"
+$atlasPath = "C:\SYAGA-ATLAS"
 
-# ════════════════════════════════════════════════════
-# v13.0 : CONFIGURATION ROLLBACK
-# ════════════════════════════════════════════════════
-$script:RollbackConfig = @{
-    PreviousVersion = "12.0"  # Version de secours
-    MaxErrorCount = 3         # Erreurs max avant rollback
-    HealthcheckTimeout = 20   # Secondes pour validation
-    RollbackHistory = @()     # Historique des rollbacks
-}
-
-# ════════════════════════════════════════════════════
-# SHAREPOINT CONFIG
-# ════════════════════════════════════════════════════
+# Configuration SharePoint
 $tenantId = "6027d81c-ad9b-48f5-9da6-96f1bad11429"
 $clientId = "f7c4f1b2-3380-4e87-961f-09922ec452b4"
 $clientSecretB64 = "Z3Y0OFF+NHRkakY2RE9td1ZXSS5UdXJNcVcwaGJZZEpGRS5aeWFvaw=="
 $clientSecret = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($clientSecretB64))
 $siteName = "syagacons"
 $serversListId = "94dc7ad4-740f-4c1f-b99c-107e01c8f70b"
-$commandsListId = "ce76b316-0d45-42e3-9eda-58b90b3ca4c5"
 
-# ════════════════════════════════════════════════════
-# v12.0 : SYSTÈME DE LOGS AVANCÉ (conservé)
-# ════════════════════════════════════════════════════
-$script:LogsBuffer = @()
-$script:MaxBufferSize = 1000
-$script:LogCounters = @{
-    INFO = 0
-    WARNING = 0
-    ERROR = 0
-    SUCCESS = 0
-    DEBUG = 0
-    CRITICAL = 0  # v13.0: Nouveau niveau pour rollback
-}
+# Buffer logs
+$script:LogsBuffer = ""
+$script:MaxBufferSize = 20000
 
-# ════════════════════════════════════════════════════
-# FONCTION LOG v13.0 - AVEC DÉTECTION CRITIQUE
-# ════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════
+# FONCTION LOG
+# ════════════════════════════════════════════════════════════════════
 function Write-Log {
-    param(
-        $Message, 
-        $Level = "INFO",
-        $Component = "MAIN",
-        $ErrorDetails = $null
-    )
+    param($Message, $Level = "INFO")
+    $timestamp = Get-Date -Format "HH:mm:ss"
+    $logEntry = "[$timestamp] [$Level] $Message"
     
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
-    $timestampShort = Get-Date -Format "HH:mm:ss"
-    
-    # Log texte classique
-    $logEntry = "[$timestampShort] [$Level] $Message"
-    
-    # Log JSON structuré
-    $jsonLog = @{
-        Timestamp = $timestamp
-        Level = $Level
-        Component = $Component
-        Message = $Message
-        Hostname = $hostname
-        Version = $script:Version
+    $script:LogsBuffer += "$logEntry`r`n"
+    if ($script:LogsBuffer.Length -gt $script:MaxBufferSize) {
+        $script:LogsBuffer = $script:LogsBuffer.Substring($script:LogsBuffer.Length - $script:MaxBufferSize)
     }
     
-    if ($ErrorDetails) {
-        $jsonLog.ErrorDetails = $ErrorDetails
-    }
-    
-    # Buffer circulaire
-    $script:LogsBuffer += @{
-        Text = $logEntry
-        Json = $jsonLog
-    }
-    
-    # Limiter la taille du buffer
-    if ($script:LogsBuffer.Count -gt $script:MaxBufferSize) {
-        $script:LogsBuffer = $script:LogsBuffer[-$script:MaxBufferSize..-1]
-    }
-    
-    # Incrémenter compteurs
-    $script:LogCounters[$Level]++
-    
-    # v13.0: Détecter seuil critique pour rollback
-    if ($Level -eq "ERROR" -and $script:LogCounters.ERROR -ge $script:RollbackConfig.MaxErrorCount) {
-        Write-Host "[ROLLBACK] Seuil d'erreurs atteint ($($script:LogCounters.ERROR))" -ForegroundColor Magenta
-        Invoke-AutoRollback -Reason "TooManyErrors"
-    }
-    
-    # Afficher
     switch($Level) {
-        "CRITICAL" { Write-Host $logEntry -ForegroundColor Magenta }
         "ERROR" { Write-Host $logEntry -ForegroundColor Red }
         "WARNING" { Write-Host $logEntry -ForegroundColor Yellow }
         "SUCCESS" { Write-Host $logEntry -ForegroundColor Green }
-        "DEBUG" { Write-Host $logEntry -ForegroundColor Gray }
+        "UPDATE" { Write-Host $logEntry -ForegroundColor Magenta }
+        "DEBUG" { Write-Host $logEntry -ForegroundColor DarkGray }
         default { Write-Host $logEntry }
     }
     
-    # Écrire dans les fichiers
-    Add-Content -Path $logFile -Value $logEntry -Encoding UTF8 -ErrorAction SilentlyContinue
-    $jsonLog | ConvertTo-Json -Compress | Add-Content -Path $jsonLogFile -Encoding UTF8 -ErrorAction SilentlyContinue
-}
-
-# ════════════════════════════════════════════════════
-# v13.0: FONCTION HEALTHCHECK
-# ════════════════════════════════════════════════════
-function Test-AgentHealth {
-    Write-Log "Healthcheck v13.0" "DEBUG" "HEALTH"
-    
-    $healthStatus = @{
-        SharePoint = $false
-        DiskSpace = $false
-        Memory = $false
-        Critical = $false
-    }
-    
+    # Écrire dans le fichier log
+    $logFile = "$atlasPath\atlas_log.txt"
     try {
-        # Test SharePoint
-        $tokenBody = @{
-            grant_type = "client_credentials"
-            client_id = "$clientId@$tenantId"
-            client_secret = $clientSecret
-            resource = "00000003-0000-0ff1-ce00-000000000000/${siteName}.sharepoint.com@$tenantId"
-        }
-        
-        $tokenResponse = Invoke-RestMethod -Uri "https://accounts.accesscontrol.windows.net/$tenantId/tokens/OAuth/2" `
-            -Method POST -Body $tokenBody -ContentType "application/x-www-form-urlencoded" -TimeoutSec 10
-        
-        if ($tokenResponse.access_token) {
-            $healthStatus.SharePoint = $true
-            Write-Log "SharePoint: OK" "SUCCESS" "HEALTH"
-        }
+        Add-Content -Path $logFile -Value $logEntry -Encoding UTF8
     } catch {
-        Write-Log "SharePoint: FAILED" "ERROR" "HEALTH"
-    }
-    
-    # Test Disque
-    $disk = Get-WmiObject -Class Win32_LogicalDisk -Filter "DeviceID='C:'"
-    $diskFreeGB = [math]::Round($disk.FreeSpace / 1GB, 1)
-    if ($diskFreeGB -gt 1) {
-        $healthStatus.DiskSpace = $true
-        Write-Log "DiskSpace: $diskFreeGB GB" "SUCCESS" "HEALTH"
-    } else {
-        Write-Log "DiskSpace: CRITICAL $diskFreeGB GB" "ERROR" "HEALTH"
-    }
-    
-    # Test Mémoire
-    $os = Get-WmiObject -Class Win32_OperatingSystem
-    $memFree = $os.FreePhysicalMemory / 1MB
-    if ($memFree -gt 100) {
-        $healthStatus.Memory = $true
-        Write-Log "Memory: $([math]::Round($memFree))MB free" "SUCCESS" "HEALTH"
-    } else {
-        Write-Log "Memory: CRITICAL $([math]::Round($memFree))MB" "ERROR" "HEALTH"
-    }
-    
-    # Déterminer statut global
-    $healthyCount = ($healthStatus.Values | Where-Object { $_ -eq $true }).Count
-    if ($healthyCount -ge 2) {
-        Write-Log "Health: $healthyCount/3 checks OK" "SUCCESS" "HEALTH"
-        return $true
-    } else {
-        Write-Log "Health: $healthyCount/3 checks - UNHEALTHY" "CRITICAL" "HEALTH"
-        return $false
+        # Silencieux si impossible d'écrire
     }
 }
 
-# ════════════════════════════════════════════════════
-# v13.0: FONCTION ROLLBACK AUTOMATIQUE
-# ════════════════════════════════════════════════════
-function Invoke-AutoRollback {
-    param($Reason = "Unknown")
-    
-    Write-Log "ROLLBACK DÉCLENCHÉ: $Reason" "CRITICAL" "ROLLBACK"
+# ════════════════════════════════════════════════════════════════════
+# FONCTION POUR LIRE L'ÉTAT DE L'UPDATER
+# ════════════════════════════════════════════════════════════════════
+function Get-UpdaterStatus {
+    $updaterInfo = @{
+        Version = "Unknown"
+        LastCheck = "Never"
+        LastUpdate = "Never"
+        Status = "Unknown"
+        LastError = $null
+        LogsAvailable = $false
+        StateFileExists = $false
+    }
     
     try {
-        # Sauvegarder état actuel
-        $backupPath = "C:\SYAGA-ATLAS\agent_v$($script:Version)_failed.ps1"
-        Copy-Item "C:\SYAGA-ATLAS\agent.ps1" $backupPath -Force
-        Write-Log "Backup v$($script:Version) sauvegardé" "INFO" "ROLLBACK"
-        
-        # Créer commande ROLLBACK dans SharePoint
-        $tokenBody = @{
-            grant_type = "client_credentials"
-            client_id = "$clientId@$tenantId"
-            client_secret = $clientSecret
-            resource = "00000003-0000-0ff1-ce00-000000000000/${siteName}.sharepoint.com@$tenantId"
+        # Lire le fichier d'état de l'updater v13.0
+        $statePath = "$atlasPath\updater-state.json"
+        if (Test-Path $statePath) {
+            $updaterInfo.StateFileExists = $true
+            $state = Get-Content $statePath -Raw | ConvertFrom-Json
+            
+            $updaterInfo.Version = if ($state.CurrentVersion) { $state.CurrentVersion } else { "Unknown" }
+            $updaterInfo.LastCheck = if ($state.LastCheck) { $state.LastCheck } else { "Never" }
+            $updaterInfo.LastUpdate = if ($state.LastUpdate) { $state.LastUpdate } else { "Never" }
+            $updaterInfo.Status = if ($state.Status) { $state.Status } else { "Unknown" }
+            $updaterInfo.LastError = $state.LastError
+            
+            # Calculer temps depuis dernière vérification
+            if ($state.LastCheck) {
+                $lastCheckTime = [DateTime]::Parse($state.LastCheck)
+                $timeSince = (Get-Date) - $lastCheckTime
+                $updaterInfo.MinutesSinceCheck = [int]$timeSince.TotalMinutes
+            }
         }
         
-        $tokenResponse = Invoke-RestMethod -Uri "https://accounts.accesscontrol.windows.net/$tenantId/tokens/OAuth/2" `
-            -Method POST -Body $tokenBody -ContentType "application/x-www-form-urlencoded"
-        
-        $token = $tokenResponse.access_token
-        
-        # Créer commande ROLLBACK
-        $rollbackData = @{
-            "__metadata" = @{ type = "SP.Data.ATLASCommandsListItem" }
-            Title = "ROLLBACK_AUTO"
-            CommandType = "ROLLBACK"
-            Status = "EXECUTED"
-            TargetVersion = $script:RollbackConfig.PreviousVersion
-            TargetHostname = $hostname
-            Parameters = @{
-                FromVersion = $script:Version
-                ToVersion = $script:RollbackConfig.PreviousVersion
-                Reason = $Reason
-                Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-                ErrorCount = $script:LogCounters.ERROR
-            } | ConvertTo-Json
-        } | ConvertTo-Json -Depth 10
-        
-        $headers = @{
-            "Authorization" = "Bearer $token"
-            "Accept" = "application/json;odata=verbose"
-            "Content-Type" = "application/json;odata=verbose;charset=utf-8"
+        # Vérifier les logs de l'updater
+        $logsPath = "$atlasPath\logs"
+        if (Test-Path $logsPath) {
+            $todayLog = "$logsPath\updater_$(Get-Date -Format 'yyyyMMdd').log"
+            if (Test-Path $todayLog) {
+                $updaterInfo.LogsAvailable = $true
+                
+                # Lire les dernières lignes du log
+                $lastLines = Get-Content $todayLog -Tail 5 -ErrorAction SilentlyContinue
+                $updaterInfo.RecentLogs = $lastLines -join " | "
+            }
         }
         
-        $createUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$commandsListId')/items"
-        Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body $rollbackData
-        
-        Write-Log "Commande ROLLBACK créée" "SUCCESS" "ROLLBACK"
-        
-        # Télécharger version précédente
-        $previousUrl = "https://white-river-053fc6703.2.azurestaticapps.net/public/agent-v$($script:RollbackConfig.PreviousVersion).ps1"
-        $tempPath = "C:\SYAGA-ATLAS\agent_rollback.ps1"
-        
-        Invoke-WebRequest -Uri $previousUrl -OutFile $tempPath -UseBasicParsing
-        
-        if (Test-Path $tempPath) {
-            # Arrêter tâche
-            Stop-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -ErrorAction SilentlyContinue
-            Start-Sleep -Seconds 2
+        # Vérifier la tâche planifiée
+        $updaterTask = Get-ScheduledTask -TaskName "SYAGA-ATLAS-Updater" -ErrorAction SilentlyContinue
+        if ($updaterTask) {
+            $updaterInfo.TaskState = $updaterTask.State
             
-            # Remplacer
-            Move-Item $tempPath "C:\SYAGA-ATLAS\agent.ps1" -Force
-            
-            # Relancer
-            Start-ScheduledTask -TaskName "SYAGA-ATLAS-Agent"
-            
-            Write-Log "ROLLBACK RÉUSSI vers v$($script:RollbackConfig.PreviousVersion)" "SUCCESS" "ROLLBACK"
-            
-            # Terminer ce script
-            exit 0
-        } else {
-            Write-Log "Impossible de télécharger v$($script:RollbackConfig.PreviousVersion)" "ERROR" "ROLLBACK"
+            $taskInfo = Get-ScheduledTaskInfo -TaskName "SYAGA-ATLAS-Updater" -ErrorAction SilentlyContinue
+            if ($taskInfo) {
+                $updaterInfo.TaskLastRun = $taskInfo.LastRunTime.ToString("yyyy-MM-dd HH:mm:ss")
+                $updaterInfo.TaskNextRun = $taskInfo.NextRunTime.ToString("yyyy-MM-dd HH:mm:ss")
+            }
         }
         
     } catch {
-        Write-Log "ROLLBACK ÉCHOUÉ: $_" "ERROR" "ROLLBACK"
+        Write-Log "Erreur lecture état updater: $_" "WARNING"
     }
+    
+    return $updaterInfo
 }
 
-# ════════════════════════════════════════════════════
-# FONCTION HEARTBEAT (identique v11.1 + health)
-# ════════════════════════════════════════════════════
-function Send-HeartbeatWithLogs {
+# ════════════════════════════════════════════════════════════════════
+# FONCTION HEARTBEAT AVEC MONITORING UPDATER
+# ════════════════════════════════════════════════════════════════════
+function Send-Heartbeat {
     try {
-        # Token
+        Write-Log "Préparation heartbeat..." "DEBUG"
+        
+        # Token SharePoint
         $tokenBody = @{
             grant_type = "client_credentials"
             client_id = "$clientId@$tenantId"
@@ -278,43 +146,92 @@ function Send-HeartbeatWithLogs {
             "Content-Type" = "application/json;odata=verbose;charset=utf-8"
         }
         
-        # CPU
+        # Collecter les métriques système
+        Write-Log "Collecte métriques système..." "DEBUG"
+        
         $cpu = Get-WmiObject -Class Win32_Processor
         $cpuUsage = [math]::Round(($cpu | Measure-Object -Property LoadPercentage -Average).Average)
         
-        # MEMOIRE
         $os = Get-WmiObject -Class Win32_OperatingSystem
         $memTotal = $os.TotalVisibleMemorySize
         $memFree = $os.FreePhysicalMemory
         $memUsage = [math]::Round((($memTotal - $memFree) / $memTotal) * 100, 1)
+        $memUsedMB = [math]::Round(($memTotal - $memFree) / 1024, 1)
+        $memTotalMB = [math]::Round($memTotal / 1024, 1)
         
-        # DISQUE
         $disk = Get-WmiObject -Class Win32_LogicalDisk -Filter "DeviceID='C:'"
         $diskFreeGB = [math]::Round($disk.FreeSpace / 1GB, 1)
+        $diskTotalGB = [math]::Round($disk.Size / 1GB, 1)
+        $diskUsedPercent = [math]::Round((($diskTotalGB - $diskFreeGB) / $diskTotalGB) * 100, 1)
         
-        # IP
         $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -notmatch "Loopback"} | Select-Object -First 1).IPAddress
         
-        Write-Log "Metriques: CPU=$cpuUsage% MEM=$memUsage% DISK=$diskFreeGB GB" "INFO" "METRICS"
+        Write-Log "CPU=$cpuUsage% MEM=$memUsage% ($memUsedMB/$memTotalMB MB) DISK=$diskFreeGB/$diskTotalGB GB ($diskUsedPercent% used)" "INFO"
         
-        # Métriques détaillées
-        $processes = (Get-Process).Count
-        $services = (Get-Service | Where-Object { $_.Status -eq "Running" }).Count
-        $uptime = (Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime
+        # Obtenir l'état de l'updater
+        Write-Log "Vérification état updater..." "DEBUG"
+        $updaterStatus = Get-UpdaterStatus
         
-        # v13.0: Ajouter statut rollback
-        $rollbackStatus = @{
-            Enabled = $true
-            PreviousVersion = $script:RollbackConfig.PreviousVersion
-            ErrorCount = $script:LogCounters.ERROR
-            MaxErrors = $script:RollbackConfig.MaxErrorCount
-            History = $script:RollbackConfig.RollbackHistory
-        } | ConvertTo-Json -Compress
+        # Déterminer le statut de l'auto-update
+        $autoUpdateStatus = "Unknown"
+        if ($updaterStatus.StateFileExists) {
+            if ($updaterStatus.Status -eq "Running") {
+                $autoUpdateStatus = "Active"
+            } elseif ($updaterStatus.Status -eq "Error") {
+                $autoUpdateStatus = "Error"
+            } elseif ($updaterStatus.MinutesSinceCheck -lt 5) {
+                $autoUpdateStatus = "OK"
+            } elseif ($updaterStatus.MinutesSinceCheck -lt 60) {
+                $autoUpdateStatus = "Delayed"
+            } else {
+                $autoUpdateStatus = "Inactive"
+            }
+        }
         
-        # Pas de filtre (v10.7 fix)
-        $existing = @{ d = @{ results = @() } }
+        Write-Log "Updater: $autoUpdateStatus (dernière vérif: $($updaterStatus.LastCheck))" "INFO"
         
-        # DONNÉES
+        # Créer le rapport enrichi
+        $currentTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $logHeader = @"
+════════════════════════════════════════════════════════════════════
+ATLAS v$($script:Version) - MONITORING REPORT
+════════════════════════════════════════════════════════════════════
+Hostname: $hostname ($ip)
+Time: $currentTime
+
+AGENT STATUS:
+  Version: $($script:Version)
+  Status: Active
+  
+UPDATER STATUS:
+  Version: $($updaterStatus.Version)
+  Status: $($updaterStatus.Status)
+  Last Check: $($updaterStatus.LastCheck)
+  Last Update: $($updaterStatus.LastUpdate)
+  Auto-Update: $autoUpdateStatus
+  $(if ($updaterStatus.LastError) { "Last Error: $($updaterStatus.LastError)" })
+  
+SYSTEM METRICS:
+  CPU: $cpuUsage%
+  Memory: $memUsage% ($memUsedMB MB / $memTotalMB MB)
+  Disk C:\: $diskFreeGB GB free / $diskTotalGB GB total ($diskUsedPercent% used)
+  
+SCHEDULED TASKS:
+  Agent Task: $((Get-ScheduledTask -TaskName "SYAGA-ATLAS-Agent" -ErrorAction SilentlyContinue).State)
+  Updater Task: $(if ($updaterStatus.TaskState) { $updaterStatus.TaskState } else { "Not found" })
+
+════════════════════════════════════════════════════════════════════
+RECENT ACTIVITY:
+════════════════════════════════════════════════════════════════════
+"@
+        
+        # Ajouter les logs
+        $enrichedLogs = $logHeader + "`r`n" + $script:LogsBuffer
+        
+        # Créer le champ Notes avec infos de tracking
+        $notesData = "Agent:v$($script:Version)|Updater:$($updaterStatus.Status)|AutoUpdate:$autoUpdateStatus|LastCheck:$($updaterStatus.LastCheck)"
+        
+        # Préparer les données pour SharePoint
         $data = @{
             "__metadata" = @{ type = "SP.Data.ATLASServersListItem" }
             Title = $hostname
@@ -326,60 +243,50 @@ function Send-HeartbeatWithLogs {
             CPUUsage = $cpuUsage
             MemoryUsage = $memUsage
             DiskSpaceGB = $diskFreeGB
-            Logs = ($script:LogsBuffer | Select-Object -Last 100 | ForEach-Object { $_.Text }) -join "`r`n"
-            LogsJSON = ($script:LogsBuffer | Select-Object -Last 50 | ForEach-Object { $_.Json } | ConvertTo-Json -Compress)
-            LogCounters = $script:LogCounters | ConvertTo-Json -Compress
-            ProcessCount = $processes
-            ServiceCount = $services
-            RollbackStatus = $rollbackStatus  # v13.0: Nouveau champ
+            Logs = $enrichedLogs
+            Notes = $notesData
         }
         
         $jsonData = $data | ConvertTo-Json -Depth 10
         
-        # Toujours créer
+        # Envoyer à SharePoint
+        Write-Log "Envoi heartbeat à SharePoint..." "DEBUG"
         $createUrl = "https://${siteName}.sharepoint.com/_api/web/lists(guid'$serversListId')/items"
         Invoke-RestMethod -Uri $createUrl -Headers $headers -Method POST -Body $jsonData
-        Write-Log "Heartbeat OK (v13.0 + Rollback)" "SUCCESS"
+        
+        Write-Log "Heartbeat envoyé avec succès" "SUCCESS"
         
     } catch {
         Write-Log "Erreur heartbeat: $_" "ERROR"
     }
 }
 
-# ════════════════════════════════════════════════════
-# MAIN - v13.0 AVEC VALIDATION SANTÉ
-# ════════════════════════════════════════════════════
-Write-Log "Agent v$($script:Version) - ROLLBACK AUTO" "SUCCESS"
-Write-Log "v13.0: Rollback automatique < 30 sec" "SUCCESS" "STARTUP"
-Write-Log "Config: MaxErrors=$($script:RollbackConfig.MaxErrorCount), Timeout=$($script:RollbackConfig.HealthcheckTimeout)s" "INFO" "CONFIG"
+# ════════════════════════════════════════════════════════════════════
+# MAIN
+# ════════════════════════════════════════════════════════════════════
+Write-Log "════════════════════════════════════════" "INFO"
+Write-Log "ATLAS AGENT v$($script:Version) DÉMARRAGE" "SUCCESS"
+Write-Log "════════════════════════════════════════" "INFO"
 
-# v13.0: Healthcheck initial
-$startTime = Get-Date
-Write-Log "Healthcheck initial..." "INFO" "STARTUP"
-
-$isHealthy = Test-AgentHealth
-
-$elapsed = ((Get-Date) - $startTime).TotalSeconds
-Write-Log "Healthcheck terminé en $([math]::Round($elapsed, 1))s" "INFO" "STARTUP"
-
-if (!$isHealthy) {
-    Write-Log "Agent UNHEALTHY - Rollback dans 10 secondes..." "CRITICAL" "STARTUP"
-    Start-Sleep -Seconds 10
-    
-    # Re-test rapide
-    $isHealthy = Test-AgentHealth
-    if (!$isHealthy) {
-        Invoke-AutoRollback -Reason "HealthcheckFailed"
-    } else {
-        Write-Log "Agent récupéré après 2ème test" "WARNING" "STARTUP"
-    }
+# Vérifier l'environnement
+if (!(Test-Path $atlasPath)) {
+    New-Item -ItemType Directory -Path $atlasPath -Force | Out-Null
+    Write-Log "Dossier ATLAS créé: $atlasPath" "INFO"
 }
 
-# Envoi heartbeat
-Send-HeartbeatWithLogs
+# Vérifier l'état de l'updater
+$updaterStatus = Get-UpdaterStatus
+if ($updaterStatus.StateFileExists) {
+    Write-Log "Updater v13.0 détecté - État: $($updaterStatus.Status)" "INFO"
+} else {
+    Write-Log "Updater v13.0 pas encore configuré" "WARNING"
+}
 
-# v13.0: Résumé avec rollback info
-Write-Log "Résumé: INFO=$($script:LogCounters.INFO) WARN=$($script:LogCounters.WARNING) ERR=$($script:LogCounters.ERROR)/$($script:RollbackConfig.MaxErrorCount) OK=$($script:LogCounters.SUCCESS)" "INFO" "SUMMARY"
-Write-Log "Rollback: v$($script:Version) → v$($script:RollbackConfig.PreviousVersion) si $($script:RollbackConfig.MaxErrorCount) erreurs" "INFO" "SUMMARY"
-Write-Log "Fin execution v13.0" "INFO" "SHUTDOWN"
+# Envoyer le heartbeat
+Send-Heartbeat
+
+Write-Log "════════════════════════════════════════" "INFO"
+Write-Log "ATLAS AGENT v$($script:Version) TERMINÉ" "SUCCESS"
+Write-Log "════════════════════════════════════════" "INFO"
+
 exit 0
